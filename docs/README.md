@@ -26,6 +26,8 @@
 | Design | [ガイドライン参照の設計](products/sdev/features/guideline-reference/design.md) |
 | Requirements | [コマンドの配布とガイドラインの参照](products/sdev/features/command-distribution/requirements.md) |
 | Design | [コマンドの配布と資料参照の設計](products/sdev/features/command-distribution/design.md) |
+| Requirements | [Markdownのリンク切れと文書の参照方向の検査](products/sdev/features/document-lint/requirements.md) |
+| Design | [文書リンクの検査の設計](products/sdev/features/document-lint/design.md) |
 
 文書の配置と関係は[文書の責務と更新](guidelines/documents.md)に従います。
 
