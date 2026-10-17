@@ -1,0 +1,63 @@
+name: Build and check sdev
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdev-build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            target: aarch64-apple-darwin
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
+          - runner: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-gnu
+          - runner: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - runner: windows-2025
+            target: x86_64-pc-windows-msvc
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install 1.96.0 --profile minimal --component rustfmt --component clippy
+      - name: Build the release executable
+        id: build
+        env:
+          TARGET: ${{ matrix.target }}
+        run: python scripts/build-release.py --target "$TARGET"
+      - name: Check formatting, behavior, and warnings
+        env:
+          TARGET: ${{ matrix.target }}
+        run: python scripts/check.py --target "$TARGET"
+      - name: Check the isolated release executable
+        env:
+          BINARY: ${{ steps.build.outputs.binary }}
+        run: python scripts/verify-release.py "$BINARY"
+      - name: Save review artifacts
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ${{ steps.build.outputs.asset }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
