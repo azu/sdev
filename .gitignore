@@ -1,3 +1,6 @@
 /target/
 /dist/
 __pycache__/
+
+/bin/sdev
+/bin/sdev.exe

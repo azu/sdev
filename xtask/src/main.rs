@@ -12,7 +12,7 @@ fn run() -> Result<()> {
     match args.as_slice() {
         [] | ["--help" | "-h"] => {
             println!(
-                "cargo xtask check [--target TARGET]\ncargo xtask build-release --target TARGET\ncargo xtask verify-release BINARY\ncargo xtask release-matrix\ncargo xtask release-preflight VERSION\ncargo xtask publish-release VERSION ARTIFACTS"
+                "cargo xtask check [--target TARGET]\ncargo xtask build-release --target TARGET\ncargo xtask verify-release BINARY\ncargo xtask release-matrix\ncargo xtask release-preflight VERSION\ncargo xtask stage-release VERSION ARTIFACTS OUTPUT\ncargo xtask publish-release VERSION ARTIFACTS ATTESTATION"
             );
             Ok(())
         }
@@ -21,7 +21,12 @@ fn run() -> Result<()> {
             Ok(())
         }
         ["release-preflight", version] => publishing::preflight(version),
-        ["publish-release", version, artifacts] => publishing::run(version, Path::new(artifacts)),
+        ["stage-release", version, artifacts, output] => {
+            publishing::stage(version, Path::new(artifacts), Path::new(output))
+        }
+        ["publish-release", version, artifacts, attestation] => {
+            publishing::run(version, Path::new(artifacts), Path::new(attestation))
+        }
         ["check"] => check(None),
         ["check", "--target", target] => check(Some(target)),
         ["build-release", "--target", target] => release::build(target),

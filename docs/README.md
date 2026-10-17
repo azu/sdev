@@ -28,6 +28,8 @@
 | Design | [コマンドの配布と資料参照の設計](products/sdev/features/command-distribution/design.md) |
 | Requirements | [Markdownのリンク切れと文書の参照方向の検査](products/sdev/features/document-lint/requirements.md) |
 | Design | [文書リンクの検査の設計](products/sdev/features/document-lint/design.md) |
+| Requirements | [プロジェクトへの導入](products/sdev/features/project-bootstrap/requirements.md) |
+| Design | [プロジェクトへの導入の設計](products/sdev/features/project-bootstrap/design.md) |
 
 文書の配置と関係は[文書の責務と更新](guidelines/documents.md)に従います。
 

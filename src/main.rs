@@ -1,3 +1,4 @@
+mod init;
 mod lint;
 
 use std::{
@@ -58,7 +59,7 @@ fn overview(writer: &mut impl Write, operation: &str) -> Result<(), CliError> {
     if operation == "help" {
         output(
             writer,
-            "\n  sdev lint                  文書のリンク切れと参照方向を検査\n  sdev template              テンプレートの種類を確認\n  sdev --version             バージョン\n\n利用先のProduct → 機能のRequirements → Designを前提に進めます。\nsdev自身の仕様ではなく、作業するプロジェクトの文書を参照してください。\n",
+            "\n  sdev init                  AGENTS.mdへ参照指示を追加\n  sdev lint                  文書のリンク切れと参照方向を検査\n  sdev template              テンプレートの種類を確認\n  sdev --version             バージョン\n\n利用先のProduct → 機能のRequirements → Designを前提に進めます。\nsdev自身の仕様ではなく、作業するプロジェクトの文書を参照してください。\n",
         )?;
     }
     Ok(())
@@ -89,6 +90,9 @@ fn run(args: &[String], writer: &mut impl Write) -> Result<u8, CliError> {
     if values.first() == Some(&"lint") {
         return lint_command(&values[1..], writer);
     }
+    if values.first() == Some(&"init") {
+        return init_command(&values[1..], writer);
+    }
     match values.as_slice() {
         [] | ["--help" | "-h" | "help"] => overview(writer, "help"),
         ["--version" | "-V"] => output(writer, &format!("sdev {VERSION}\n")),
@@ -101,6 +105,25 @@ fn run(args: &[String], writer: &mut impl Write) -> Result<u8, CliError> {
         )),
     }
     .map(|()| 0)
+}
+const INIT_HELP: &str = "sdev init\n\nプロジェクトのルートで実行し、AGENTS.mdへ./bin/sdevからガイドとテンプレートを選ぶ指示を追加します。\nWindowsでは./bin/sdev.exeを参照します。先にプロジェクト内へ実行ファイルを配置してください。\n.gitignoreへ/bin/sdevと/bin/sdev.exeを追加します。既存の本文とsdevの設定は保持し、重複させません。\n仕様ファイルや空ディレクトリは作成しません。\n終了コード: 0 成功 / 1 ファイルや出力の処理失敗 / 2 引数の誤り\n";
+fn init_command(args: &[&str], writer: &mut impl Write) -> Result<u8, CliError> {
+    match args {
+        ["--help" | "-h"] => output(writer, INIT_HELP)?,
+        [] => {
+            let body = env::current_dir()
+                .map_err(|error| error.to_string())
+                .and_then(|root| init::initialize(&root))
+                .map_err(|message| CliError { status: 1, message })?;
+            output(writer, &body)?;
+        }
+        _ => {
+            return Err(invalid(format!(
+                "initの引数を確認してください。\n{INIT_HELP}"
+            )));
+        }
+    }
+    Ok(0)
 }
 const LINT_HELP: &str = "sdev lint [--format text|json]\n\n現在のディレクトリをルートとしてREADME.md・AGENTS.md・docs/**/*.mdを検査します。\n既定はtext、AI向けの構造化出力は--format jsonです。設定ファイルや外部URLへの通信は使いません。\n終了コード: 0 検査成功 / 1 規則違反 / 2 検査未完了・引数や出力の処理失敗\n規則: sdev help documents\n";
 fn lint_command(args: &[&str], writer: &mut impl Write) -> Result<u8, CliError> {

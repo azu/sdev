@@ -45,10 +45,13 @@ jobs:
     needs: prepare
     permissions:
       contents: read
-    uses: $/.github/workflows/build.yml
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/build.yml
     with:
       source_sha: ${{ needs.prepare.outputs.source_sha }}
       artifact_prefix: release-${{ github.run_id }}-
+      release_version: ${{ inputs.version }}
 
   publish:
     needs: [prepare, build]
@@ -70,8 +73,13 @@ jobs:
         with:
           pattern: release-${{ github.run_id }}-*
           path: release-artifacts
-      - name: Check all assets, create the tag and publish the complete draft
+      - name: Download this run's attestation from the reusable build workflow
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: sdev-attestation-${{ github.run_id }}
+          path: release-proof
+      - name: Verify provenance, check all assets and publish the complete draft
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
-        run: cargo xtask publish-release "$VERSION" release-artifacts
+        run: cargo xtask publish-release "$VERSION" release-artifacts release-proof/attestation.sigstore.json

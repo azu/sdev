@@ -6,6 +6,31 @@ Product・Requirements・Designのガイドラインと既定テンプレート�
 
 目的は[Product](docs/products/sdev/product.md)、GitHubで読む資料の入口は[文書と作業の入口](docs/README.md)に記述しています。
 
+## プロジェクトへ導入する
+
+プロジェクト内の`./bin/sdev`へ実行ファイルを配置し、その場所からガイドを読めます。
+macOS・Linux向けの`install.sh`はOS・CPUに合う公開済みReleaseを取得し、チェックサムとバージョンを確認してから配置します。
+PATHやRust・Node.js・Pythonの設定は必要ありません。
+
+プロジェクトのルートで、GitHubからインストーラーを取得して実行します。
+バージョンを省略すると最新の安定Releaseを選びます。
+
+```sh
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev/main/install.sh | sh -s -- --init
+./bin/sdev help
+```
+
+`--init`はAGENTS.mdへ参照指示を、.gitignoreへローカル実行ファイルの除外を追加します。
+既存の本文とsdevの指示を保持し、再実行しても重複させません。
+作業の種類を例示し、ガイドが増えても`./bin/sdev help`の一覧から選べる指示を置きます。
+仕様ファイルや空ディレクトリは作りません。
+配置済みの実行ファイルで初期設定だけ行う場合は`./bin/sdev init`を使います。
+以下の例の`sdev`は、プロジェクト内へ導入した場合は`./bin/sdev`に読み替えてください。
+
+チェックサムはファイルの一致を確認し、配布元の証明とは区別します。
+`--verify`を付けると、GitHub CLIで配布元・ワークフロー・ソースと署名のコミットを検証し、検証できなければ実行・配置へ進みません。
+インストーラー自身の確認方法と、通信が制限された環境での手順は[bootstrapと証明の検証](docs/engineering/guidelines/releasing.md#bootstrapと証明の検証)を参照してください。
+
 ## 作業名からガイドを読む
 
 Rust製CLIにガイドとテンプレートを同梱し、実行時にRust・Node.js・Bunやネットワークを必要としません。

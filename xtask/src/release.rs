@@ -322,6 +322,16 @@ pub fn verify(path: &Path) -> Result<()> {
     {
         return Err("Missing lint violation".into());
     }
+    invoke(&binary, &directory.0, &["init", "--help"], 0)?;
+    invoke(&binary, &directory.0, &["init"], 0)?;
+    let instructions = fs::read(directory.0.join("AGENTS.md"))?;
+    let ignores = fs::read(directory.0.join(".gitignore"))?;
+    invoke(&binary, &directory.0, &["init"], 0)?;
+    if instructions != fs::read(directory.0.join("AGENTS.md"))?
+        || ignores != fs::read(directory.0.join(".gitignore"))?
+    {
+        return Err("Repeated initialization changed existing project instructions".into());
+    }
     library_checks(&binary, target)?;
     if metadata["source_commit"] != source_commit()? {
         return Err("Artifact source commit mismatch".into());

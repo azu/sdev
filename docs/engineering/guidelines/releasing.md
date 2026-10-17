@@ -46,6 +46,65 @@ Windowsではファイル名を`sdev.exe`へ変え、PowerShellから起動し�
 OSによる起動制限と署名の状態は、公開者が配布前に確認します。
 開発時のローカルビルドで起動できたことだけでは、ブラウザーで取得したファイルの起動を確認したことにはなりません。
 
+## bootstrapと証明の検証
+
+macOS・Linuxでは、内容と取得元を確認した`install.sh`からプロジェクト内の`./bin/sdev`へ導入できます。
+公開後に確認した配布URLから取得するか、このリポジトリの確認済みソースを使います。
+リポジトリのルートへ導入する場合は`sh install.sh --version 0.1.0 --init`、別のプロジェクトへ導入する場合はそのルートからスクリプトの実際の配置場所を指定します。
+バージョンを省略すると最新の安定Releaseを取得し、`--init`を省略すると実行ファイルだけを用意します。
+`sh install.sh --help`でオプションを確認できます。
+
+チェックサムは毎回照合します。
+これは破損や取得対象の間違いを見つけるための確認で、配布元を証明するものではありません。
+通常の導入では証明の検証を省略したことを表示します。
+
+`--verify`を付けると、GitHub Artifact Attestationsで配布元も検証します。
+[検証に関する修正](https://github.com/cli/cli/security/advisories/GHSA-8xvp-7hj6-mcj9)を含む`gh` 2.93.0以降を必要とし、証明の取得・検証の失敗時はチェックサムだけの導入へ切り替えません。
+同じReleaseの`attestation.sigstore.json`と`sdev-release.txt`を取得してローカルbundleから検証し、証明済みの記録にあるコミットと、実行ファイルのソース・署名ワークフローのコミットを照合します。
+この記録はシェルとして読み込まず、確認済みのバージョン・コミットとしてだけ使います。
+
+```sh
+sh /path/to/sdev/install.sh --version 0.1.0 --verify --init
+```
+
+利用するソースも固定する場合は、Releaseのタグから独立して確認したコミットを`--source-commit "$SDEV_SOURCE_COMMIT"`で指定します。
+指定がない場合は証明済みの配布記録のコミットを使い、Gitのタグを別経路で照合したことにはなりません。
+
+このオプションが検証するのは、これから起動する実行ファイルです。
+すでに実行したインストーラー自身を後から検証するものではありません。
+スクリプトも実行前に検証する場合は、公開済みの`install.sh`と`attestation.sigstore.json`を保存し、独立して導入したGitHub CLIで先に検証します。
+次の例は公開後に同じReleaseの両ファイルを取得した場所で実行します。
+
+```sh
+gh attestation verify ./install.sh --hostname github.com --repo azu/sdev \
+  --bundle ./attestation.sigstore.json \
+  --signer-workflow azu/sdev/.github/workflows/build.yml \
+  --source-ref refs/heads/main --deny-self-hosted-runners \
+  --source-digest "$SDEV_SOURCE_COMMIT" --signer-digest "$SDEV_SOURCE_COMMIT"
+```
+
+`SDEV_SOURCE_COMMIT`には、利用するReleaseのタグから独立して確認したコミットSHAを指定します。
+証明は配布元と作成経路の確認であり、コードの無害さやバグがないことの保証ではありません。
+証明の意味と出力の扱いは[GitHub CLIの仕様](https://cli.github.com/manual/gh_attestation_verify)を参照してください。
+
+### Claude Code on the webで準備する
+
+プロジェクトのAGENTS.mdと.gitignoreをGitへ含め、実行ファイルは含めません。
+Web環境のSetup scriptから、確認済みのインストーラーを`--init`なしで実行します。
+環境を作り直した場合も同じバージョンを用意できるよう、`--version`を指定します。
+非対話で実行でき、PATHやシェルの設定ファイルを変更しません。
+
+[公式の環境仕様](https://code.claude.com/docs/en/cloud-environments)ではUbuntu 24.04のx86_64環境と、起動前のSetup scriptを提供しています。
+既定のTrustedネットワークには公開ファイルとReleaseの配布に使うドメインが含まれますが、別リポジトリのGitHub APIやソースアーカイブには別の制約があります。
+bootstrapは最新Releaseの検索と証明の取得にGitHub APIを使いません。
+
+`--verify`で信頼情報の取得先へ通信できない場合は、独立した信頼できる環境で`gh attestation trusted-root`から準備したファイルを、`--trusted-root /path/to/trusted-root.jsonl`で指定します。
+信頼情報を未検証の配布物と一緒に取得して、そのまま信用しないでください。
+準備と更新の考え方は[GitHubのオフライン検証手順](https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/verify-attestations-offline)を参照します。
+
+実際のRelease取得、Web環境のプロキシを通した取得、起動・証明検証は、公開後に確認します。
+ローカルの取得テストやLinux向けCIの成功だけで、Web環境で検証済みとは扱いません。
+
 ## エージェントからガイドとテンプレートを読む
 
 プロジェクトの指示には、実際に起動できるコマンド名・配置場所を指定します。
@@ -135,8 +194,10 @@ gh workflow run release.yml --ref main -f version=0.1.0
 ```
 
 起動時のコミットを固定し、全対象のビルド・共通チェック・配布物検証を同じ実行で行います。
-全件が成功すると、公開ジョブが対象・コミット・バージョン・チェックサム・通知・LICENSEを照合し、タグと下書きReleaseを作成します。
-実行ファイルとSHA-256、THIRD-PARTY-NOTICES.html、THIRD-PARTY-CRATES.html、sdev自身のLICENSEを添付し、GitHub上の全添付の名前・状態・サイズ・ハッシュも確認してから公開します。
+全件が成功すると、再利用ビルドワークフローの証明生成ジョブが対象・コミット・バージョン・チェックサム・通知・LICENSEを照合し、公開する実行ファイル・インストーラー・記録へ証明を付けます。
+このジョブにだけOIDCと証明生成の権限を付け、通常のビルドジョブと、Releaseを書き込む公開ジョブから分離します。
+公開ジョブは全ファイルの証明をローカルbundleで検証した後に、タグと下書きReleaseを作成します。
+実行ファイルとSHA-256、THIRD-PARTY-NOTICES.html、THIRD-PARTY-CRATES.html、sdev自身のLICENSE、install.shとSHA-256、sdev-release.txt、attestation.sigstore.jsonを添付し、GitHub上の全添付の名前・状態・サイズ・ハッシュも確認してから公開します。
 mainが開始時から進んでいれば公開しません。進行中の公開は新しい手動実行で取り消しません。
 タグのpushだけで公開するワークフローや、実行時にバージョン更新のコミットを作る処理はありません。
 

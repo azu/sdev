@@ -15,6 +15,11 @@ on:
         description: Artifact namespace for the caller's run
         required: true
         type: string
+      release_version:
+        description: Version for the manual release's attestation job
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -45,6 +50,8 @@ jobs:
     name: ${{ matrix.target }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.matrix.outputs.targets) }}
@@ -76,6 +83,48 @@ jobs:
         with:
           name: ${{ inputs.artifact_prefix }}${{ steps.build.outputs.asset }}
           path: dist/*
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14
+
+  attest:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.artifact_prefix != '' && inputs.release_version != ''
+    needs: build
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.source_sha }}
+          persist-credentials: false
+      - name: Install the pinned toolchain
+        run: rustup show active-toolchain
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          pattern: ${{ inputs.artifact_prefix }}*
+          path: release-artifacts
+      - name: Stage only verified public assets
+        env:
+          VERSION: ${{ inputs.release_version }}
+        run: cargo xtask stage-release "$VERSION" release-artifacts release-bundle
+      - name: Attest binaries, installer, source manifest and notices
+        id: attest
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: release-bundle/*
+          create-storage-record: false
+      - name: Name the portable attestation bundle
+        env:
+          ATTESTATION: ${{ steps.attest.outputs.bundle-path }}
+        run: cp "$ATTESTATION" attestation.sigstore.json
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: sdev-attestation-${{ github.run_id }}
+          path: attestation.sigstore.json
           if-no-files-found: error
           overwrite: true
           retention-days: 14

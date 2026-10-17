@@ -361,6 +361,23 @@ fn bundle(
             files.insert(name.into(), bytes);
         }
     }
+    let installer = regular(&source.join("install.sh"))?;
+    if !installer.starts_with(b"#!/bin/sh\n") {
+        return Err("Missing or invalid project installer".into());
+    }
+    files.insert(
+        "install.sh.sha256".into(),
+        format!("{}  install.sh\n", support::digest(&installer)).into_bytes(),
+    );
+    files.insert("install.sh".into(), installer);
+    files.insert(
+        "sdev-release.txt".into(),
+        format!(
+            "version={}\nsource_commit={}\n",
+            context.version, context.sha
+        )
+        .into_bytes(),
+    );
     fs::create_dir_all(out)?;
     if fs::read_dir(out)?.next().is_some() {
         return Err("Release bundle output must be empty".into());
@@ -445,10 +462,71 @@ fn publish(
     println!("Published {} from {}", context.tag(), context.sha);
     Ok(())
 }
-pub fn run(version: &str, artifacts: &Path) -> Result<()> {
+pub fn stage(version: &str, artifacts: &Path, output: &Path) -> Result<()> {
     let context = Context::environment(version)?;
+    bundle(&context, artifacts, output, &root())?;
+    Ok(())
+}
+fn verification_command(context: &Context, artifact: &Path, attestation: &Path) -> Command {
+    let mut command = Command::new("gh");
+    command
+        .args(["attestation", "verify"])
+        .arg(artifact)
+        .arg("--bundle")
+        .arg(attestation)
+        .args([
+            "--hostname",
+            "github.com",
+            "--repo",
+            &context.repository,
+            "--signer-workflow",
+            &format!("{}/.github/workflows/build.yml", context.repository),
+            "--source-ref",
+            "refs/heads/main",
+            "--source-digest",
+            &context.sha,
+            "--signer-digest",
+            &context.sha,
+            "--deny-self-hosted-runners",
+        ]);
+    command
+}
+fn safe_verifier(version: &str) -> bool {
+    let Some(version) = version
+        .lines()
+        .next()
+        .and_then(|line| line.strip_prefix("gh version "))
+        .and_then(|line| line.split_whitespace().next())
+    else {
+        return false;
+    };
+    let parts = version
+        .split('.')
+        .map(str::parse::<u64>)
+        .collect::<std::result::Result<Vec<_>, _>>();
+    matches!(parts.as_deref(), Ok([major, minor, _]) if *major > 2 || (*major == 2 && *minor >= 93))
+}
+pub fn run(version: &str, artifacts: &Path, attestation: &Path) -> Result<()> {
+    let context = Context::environment(version)?;
+    if !safe_verifier(&support::output(Command::new("gh").arg("--version"))?) {
+        return Err("Provenance verification requires gh 2.93.0 or newer".into());
+    }
     let output = TemporaryDirectory::new("release-bundle")?;
-    let files = bundle(&context, artifacts, &output.0, &root())?;
+    let mut files = bundle(&context, artifacts, &output.0, &root())?;
+    let proof = regular(attestation)?;
+    if proof.is_empty() {
+        return Err("Attestation bundle is empty".into());
+    }
+    // Verify the exact bytes about to be uploaded before creating any tag or release.
+    for name in files.keys() {
+        support::run(&mut verification_command(
+            &context,
+            &output.0.join(name),
+            attestation,
+        ))?;
+    }
+    fs::write(output.0.join("attestation.sigstore.json"), &proof)?;
+    files.insert("attestation.sigstore.json".into(), proof);
     publish(&mut Gh, &context, &output.0, &files)
 }
 
@@ -697,6 +775,11 @@ mod tests {
         fs::create_dir(&input).unwrap();
         fs::create_dir(&source).unwrap();
         fs::write(source.join("LICENSE"), "chosen license").unwrap();
+        fs::write(
+            source.join("install.sh"),
+            include_bytes!("../../install.sh"),
+        )
+        .unwrap();
         for target in release::TARGETS {
             let name = release::asset_name(&c.version, target);
             let directory = input.join(format!("release-{}-{name}", c.run));
@@ -727,10 +810,52 @@ mod tests {
         let c = context();
         let (input, source, out) = artifacts(&c, &tmp.0);
         let result = bundle(&c, &input, &out, &source).unwrap();
-        assert_eq!(result.len(), release::TARGETS.len() * 2 + 3);
+        assert_eq!(result.len(), release::TARGETS.len() * 2 + 6);
         assert!(result.keys().all(|name| !name.ends_with(".json")));
         for (name, bytes) in result {
             assert_eq!(fs::read(out.join(name)).unwrap(), bytes);
+        }
+    }
+    #[test]
+    fn verification_policy_binds_the_repository_workflow_source_and_hosted_runner() {
+        let command = verification_command(&context(), Path::new("binary"), Path::new("proof"));
+        let args: Vec<_> = command
+            .get_args()
+            .map(|arg| arg.to_str().unwrap())
+            .collect();
+        assert!(args.windows(2).any(|a| a == ["--repo", "owner/repo"]));
+        assert!(args.windows(2).any(|a| a
+            == [
+                "--signer-workflow",
+                "owner/repo/.github/workflows/build.yml"
+            ]));
+        assert!(
+            args.windows(2)
+                .any(|a| a == ["--source-ref", "refs/heads/main"])
+        );
+        assert!(
+            args.windows(2)
+                .any(|a| a == ["--source-digest", &"a".repeat(40)])
+        );
+        assert!(
+            args.windows(2)
+                .any(|a| a == ["--signer-digest", &"a".repeat(40)])
+        );
+        assert!(args.contains(&"--deny-self-hosted-runners"));
+        for version in [
+            "gh version 2.93.0",
+            "gh version 2.100.0 (date)",
+            "gh version 3.0.0",
+        ] {
+            assert!(safe_verifier(version));
+        }
+        for version in [
+            "",
+            "gh version 2.92.0",
+            "gh version 2.93.0-rc1",
+            "unknown 2.100.0",
+        ] {
+            assert!(!safe_verifier(version));
         }
     }
     #[test]
