@@ -20,6 +20,24 @@ sdevを使う他のプロジェクトに、Rustやこの開発環境を必須に
 
 ## 環境を導入する
 
+共通の入口として[mise](https://mise.jdx.dev/getting-started.html)を用意し、ルートで次を実行します。
+Node.js、pnpm、hkはmise.lockの取得先とチェックサムを使って導入します。
+Rustの管理には、後述のrustupとrust-toolchain.tomlを使います。
+
+```sh
+mise trust
+mise install --locked
+```
+
+postinstallがpnpm-lock.yamlに固定した依存を導入し、hkでこのリポジトリのGit hookを登録します。
+Git 2.54以降では、設定によるhook登録で既存のhookと併用します。
+古いGitで既存hookと競合した場合は、強制上書きせず登録方法を確認します。
+postinstallを無効にした場合は、`mise run setup`で同じ処理を手動実行できます。
+以降は`mise run`から検査を実行でき、シェルの自動切り替え設定は必須ではありません。
+
+ツールの版を変える場合はmise.tomlを編集して`mise lock`を実行し、mise.lockも一緒に更新します。
+pnpmを変更した場合はpackage.jsonのpackageManagerも合わせ、pnpm-lock.yamlの互換性を確認します。
+
 Rustの管理には、[公式の導入案内](https://rust-lang.org/tools/install/)が推奨するrustupを使います。
 コンパイラーのrustcと、ビルド・依存・テストを扱うCargoを同じ環境でそろえます。
 特定のエディターは必須にせず、補完や保存時の整形を使う場合も、後述のコマンドによる確認を共通の基準にします。
@@ -66,7 +84,8 @@ cargo --version
 
 ## 整形・静的検査・テストを行う
 
-Rustの変更後は、リポジトリのルートで`cargo xtask check`を実行します。
+Rustの変更後は、リポジトリのルートで`mise run rs:check`を実行します。
+検査本体の`cargo xtask check`を直接実行することもできます。
 これは固定環境を選び、製品と開発用タスクの整形・静的検査・テストをまとめて確認します。
 個別に調べる場合は次のCargo標準コマンドを使い、別の合否基準にはしません。
 
@@ -96,6 +115,30 @@ Clippyはコードの問題を調べ、警告を失敗として扱います。
 
 失敗した場合は原因を修正して影響する確認を再実行します。
 環境不足や取得失敗はコードの失敗と区別し、未実行の検査を成功として報告しません。
+
+## READMEの文章を検査する
+
+環境の導入後、READMEを変更するときは次を実行します。
+CIもmise.tomlのNode.jsとpnpmを使います。文書検査の依存は、製品を使う環境には導入しません。
+
+```sh
+mise run md:lint
+```
+
+自動修正できる表記は`mise run md:fix`で直せます。
+修正後は差分を読み返し、検査を再実行します。
+textlintは文章の表記を検査し、見出しの構成や内容の正しさは人とAIが確認します。
+Markdownのリンクと参照方向は`./target/debug/sdev lint`で確認します。
+採用したルールとCIの構成は、共通設計で管理します。
+
+コミット前のhookは、READMEの変更時にmd:lint、RustのソースやCargoの設定の変更時にrs:checkを実行します。
+未ステージの変更はhkが一時的に退避し、検査後に復元します。自動修正や再ステージは行いません。
+手動で確認する場合は`mise run pre-commit`、登録を確認する場合は`git hook list pre-commit`を使います。
+登録を外す場合は、次を実行します。
+
+```sh
+mise exec -- hk uninstall
+```
 
 ## 依存とロックファイルを変更する
 

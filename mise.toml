@@ -1,0 +1,34 @@
+[tools]
+node = "24.20.0"
+pnpm = "11.28.6"
+"aqua:jdx/hk" = "2.7.0"
+
+[settings]
+idiomatic_version_file_enable_tools = ["rust"]
+
+[hooks]
+postinstall = "mise run setup"
+
+[tasks.setup]
+description = "Install documentation dependencies and register Git hooks"
+run = ["pnpm install --frozen-lockfile", "hk install --mise"]
+
+[tasks."md:lint"]
+description = "Check README prose with textlint"
+run = "pnpm exec textlint README.md"
+
+[tasks."md:fix"]
+description = "Fix README prose with textlint"
+run = "pnpm exec textlint --fix README.md"
+
+[tasks."rs:check"]
+description = "Run the existing Rust checks"
+run = "cargo xtask check"
+
+[tasks.pre-commit]
+description = "Check staged README and Rust changes with hk"
+run = "hk run pre-commit"
+
+[tasks.check]
+description = "Run Rust and README checks"
+depends = ["rs:check", "md:lint"]

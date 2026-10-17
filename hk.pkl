@@ -1,0 +1,19 @@
+amends "package://github.com/jdx/hk/releases/download/v2.7.0/hk@2.7.0#/Config.pkl"
+
+hooks {
+  ["pre-commit"] {
+    fix = false
+    stage = false
+    stash = "git"
+    steps {
+      ["md:lint"] {
+        glob = "README.md"
+        check = "mise run md:lint"
+      }
+      ["rs:check"] {
+        glob = List("**/*.rs", "**/Cargo.toml", "**/Cargo.lock", "rust-toolchain.toml", ".cargo/**")
+        check = "mise run rs:check"
+      }
+    }
+  }
+}

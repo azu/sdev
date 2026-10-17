@@ -1,0 +1,12 @@
+{
+  "name": "sdev-docs",
+  "private": true,
+  "packageManager": "pnpm@11.28.6",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "devDependencies": {
+    "textlint": "15.8.0",
+    "textlint-rule-preset-ja-technical-writing": "12.0.2"
+  }
+}

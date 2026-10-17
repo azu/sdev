@@ -1,0 +1,50 @@
+name: Check README
+
+on:
+  pull_request:
+    paths:
+      - README.md
+      - package.json
+      - pnpm-lock.yaml
+      - .textlintrc.json
+      - mise.toml
+      - mise.lock
+      - hk.pkl
+      - .github/workflows/docs.yml
+  push:
+    branches: [main]
+    paths:
+      - README.md
+      - package.json
+      - pnpm-lock.yaml
+      - .textlintrc.json
+      - mise.toml
+      - mise.lock
+      - hk.pkl
+      - .github/workflows/docs.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: readme-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  textlint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      MISE_NO_HOOKS: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4
+        with:
+          version: 2026.9.3
+          install_args: --locked
+      - run: pnpm install --frozen-lockfile
+      - run: hk validate
+      - run: mise run md:lint
