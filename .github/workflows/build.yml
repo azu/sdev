@@ -45,15 +45,15 @@ jobs:
         id: build
         env:
           TARGET: ${{ matrix.target }}
-        run: python scripts/build-release.py --target "$TARGET"
+        run: cargo xtask build-release --target "$TARGET"
       - name: Check formatting, behavior, and warnings
         env:
           TARGET: ${{ matrix.target }}
-        run: python scripts/check.py --target "$TARGET"
+        run: cargo xtask check --target "$TARGET"
       - name: Check the isolated release executable
         env:
           BINARY: ${{ steps.build.outputs.binary }}
-        run: python scripts/verify-release.py "$BINARY"
+        run: cargo xtask verify-release "$BINARY"
       - name: Save review artifacts
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:

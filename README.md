@@ -72,12 +72,12 @@ CLIと配布準備の仕様は[Requirements](docs/products/sdev/features/command
 ## 開発する
 
 環境準備と通常の検証は[Rust開発ガイド](docs/engineering/guidelines/rust-development.md)、バージョンと共通CIの方針は[共通設計](docs/engineering/design/rust-development.md)を参照します。
-開発時にはRustupとPython 3を使います。
+開発・配布準備はRustupとCargoを使い、開発用タスクを`cargo xtask`から実行します。
 Cargo.tomlのバージョンと、rust-toolchain.tomlに固定したRustで実行ファイルと資料を一緒にビルドします。
 
 ```sh
-python3 scripts/check.py
-python3 scripts/build-release.py --target aarch64-apple-darwin
+cargo xtask check
+cargo xtask build-release --target aarch64-apple-darwin
 ```
 
 ターゲットは自分の環境に合わせて指定します。

@@ -91,16 +91,16 @@ sdev template design
 ## 開発者が配布物を準備する
 
 開発環境と通常の検証は[Rust開発ガイド](rust-development.md)、Rustの選択と共通CIの構成は[共通設計](../design/rust-development.md)に従います。
-配布準備の補助スクリプトにはPython 3を使い、sdevのバージョンは`Cargo.toml`から読み取ります。
+配布準備はCargoからRust製の開発用タスクを実行し、sdevのバージョンは`Cargo.toml`から読み取ります。
 次はmacOS arm64向けに準備する例です。別の環境ではDesignのターゲット名を指定します。
 
 ```sh
-python3 scripts/build-release.py --target aarch64-apple-darwin
-python3 scripts/check.py --target aarch64-apple-darwin
-python3 scripts/verify-release.py dist/sdev-v0.1.0-macos-arm64
+cargo xtask build-release --target aarch64-apple-darwin
+cargo xtask check --target aarch64-apple-darwin
+cargo xtask verify-release dist/sdev-v0.1.0-macos-arm64
 ```
 
-ファイル名のバージョンはCargo.tomlの値に合わせます。WindowsのPython起動方法は`python`または`py -3`を使えます。
+ファイル名のバージョンはCargo.tomlの値に合わせます。
 `dist/`には実行ファイル、SHA-256、ローカルの確認用メタデータを作ります。
 必要な通知は別のTHIRD-PARTY-NOTICES.htmlへコピーし、sdev自身のLICENSEがあればそれも添付します。
 実行に必要なものは実行ファイルだけで、通知ファイルは実行時に読みません。

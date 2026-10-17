@@ -21,7 +21,7 @@ Rustのロックされた依存15件の公開日も確認し、公開直後の�
 ## 再現する
 
 このディレクトリで実行します。
-開発側にはNode.js・Bun・Python 3・Rustupのstableツールチェーンと、macOSではXcode Command Line Toolsが必要です。
+開発側にはNode.js・Bun・Rustupのstableツールチェーンと、macOSではXcode Command Line Toolsが必要です。
 生成した実行ファイルを使う人に要求する実行環境とは区別します。
 
 ```sh
@@ -29,12 +29,13 @@ npm ci --ignore-scripts --no-audit --no-fund
 node node_modules/scriptc/scripts/install-native.mjs
 node build.mjs --rust
 node verify.mjs
-/usr/bin/python3 measure.py --rust
 node inspect-artifacts.mjs
-node report-rust.mjs
 ```
 
-上記のPythonのパスは今回のmacOSで使ったものです。別の環境ではPython 3の実在するパスに置き換えます。
+測定はリポジトリのルートで`cargo xtask measure --rust`を実行します。
+その後、この実験ディレクトリで`node report-rust.mjs --xtask`を実行すると、新しい測定のレポートを生成します。
+Cargoとrustcにはリポジトリで固定したRustupの環境を使います。
+過去の測定はPython 3.9.6で行いました。現在の再測定はRust製の開発用タスクで行い、過去の結果を上書きしません。
 `verify.mjs`は既存のscriptc生成物も比較するため、初めて再現する場合は先に`node build.mjs`でBun・scriptcを生成します。
 scriptcの導入スクリプトは、取得済みの対象OS用パッケージからネイティブコンパイラーと設定を配置します。
 
@@ -71,7 +72,9 @@ RustとBunのJSONはキーの並び順ではなく、解析後の内容を比較
 
 ## 結果と判断の境界
 
-`results/comparison-rust.md`に今回の数値と推奨、`results/startup-rust.json`に入力のハッシュ・バイナリのハッシュ・測定値を保存します。
+過去の数値と判断は`results/comparison-rust.md`、入力のハッシュ・バイナリのハッシュ・測定値は`results/startup-rust.json`へ保存しています。
+現在の再測定は`results/startup-rust-xtask.json`、`--xtask`付きのレポートは`results/comparison-rust-xtask.md`へ分けます。
+準備実行と測定の回数・中央値・分位点・処理段階の区別は維持し、実行順を決める乱数の方式と測定側の実装が変わったことを新しい結果へ記録します。
 内部時間と起動時間、生成可否と実動作、公表される最低OS条件と確認済みの環境を分けます。
 今回の実動作・時間の確認対象はmacOS 26.5.1 arm64です。
 RustはmacOS arm64/x64を生成でき、Linuxは対象向けのリンク環境、WindowsはMSVCのlink.exe不足で停止しました。

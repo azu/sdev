@@ -1,4 +1,16 @@
 import fs from 'node:fs';
+if (process.argv.includes('--xtask')) {
+ const result = JSON.parse(fs.readFileSync('results/startup-rust-xtask.json', 'utf8'));
+ const lines = ['# Rust製開発タスクによる再測定', '', `測定側: ${result.measurement_runtime}。環境: ${result.host} / ${result.machine}。`, '', result.method, '', '過去のPythonによる測定とは別の記録です。既存の測定値・ビルド時間・互換性の確認結果と混ぜません。', '', '| 操作 | Bun中央値 | Rust中央値 |', '| --- | ---: | ---: |'];
+ for (const key of ['version', 'help', 'docs', 'markdown']) lines.push(`| ${key} | ${result.summary.bun[key].median_ms.toFixed(3)} ms | ${result.summary.rust[key].median_ms.toFixed(3)} ms |`);
+ lines.push('', '## 入力', '');
+ for (const item of result.inputs) lines.push(`- ${item.path}: ${item.bytes} bytes; SHA-256 ${item.sha256}`);
+ lines.push('', '## 内部処理', '', result.internal.method, '', `処理した対象: ${JSON.stringify(result.internal.counts)}`, '', '| 処理 | Bun中央値 | Rust中央値 |', '| --- | ---: | ---: |');
+ for (const key of ['read_ms', 'parse_ms', 'references_ms', 'total_ms']) lines.push(`| ${key} | ${result.internal.summary.bun[key].median_ms.toFixed(4)} ms | ${result.internal.summary.rust[key].median_ms.toFixed(4)} ms |`);
+ fs.writeFileSync('results/comparison-rust-xtask.md', lines.join('\n') + '\n');
+ console.log(lines.slice(0, 14).join('\n'));
+ process.exit(0);
+}
 const read = path => JSON.parse(fs.readFileSync(`results/${path}`,'utf8'));
 const result=read('startup-rust.json'), builds=read('build-rust.json'), verification=read('verification.json');
 const median=values => [...values].sort((a,b)=>a-b)[Math.floor(values.length/2)];

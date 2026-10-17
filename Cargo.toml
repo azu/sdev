@@ -6,6 +6,12 @@ rust-version = "1.96"
 description = "Specifications-first development with people and AI"
 publish = false
 
+[workspace]
+members = ["xtask"]
+default-members = ["."]
+exclude = ["experiments/command-distribution/rust"]
+resolver = "3"
+
 [profile.release]
 opt-level = 3
 lto = true
