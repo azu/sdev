@@ -109,7 +109,7 @@ OS条件、入手・起動・更新、公開前の確認は[配布と更新](doc
 全対象の検証が成功してからタグとReleaseを作成・公開します。ライセンス選択などの前提、再実行の扱いは配布ガイドで確認してください。
 
 CLIと配布準備の仕様は[Requirements](docs/products/sdev/features/command-distribution/requirements.md)と[Design](docs/products/sdev/features/command-distribution/design.md)に記述しています。
-必要なライセンス通知は配布物に別添します。sdev自身のライセンスは公開前の未決事項です。
+必要なライセンス通知は配布物に別添します。sdev自身は[MIT License](LICENSE)で公開します。
 
 ## ソースからローカルへインストールする
 

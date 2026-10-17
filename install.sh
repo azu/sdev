@@ -45,6 +45,7 @@ main() {
     fi
     if [ "$verify" = true ]; then check_verifier; fi
     command -v curl >/dev/null 2>&1 || fail 'curl is required'
+    if [ -t 2 ]; then curl_progress=--progress-bar; else curl_progress=--silent; fi
     if command -v sha256sum >/dev/null 2>&1; then
         hash_command=sha256sum
     elif command -v shasum >/dev/null 2>&1; then
@@ -64,6 +65,7 @@ main() {
     esac
     releases=https://github.com/azu/sdev/releases
     if [ -z "$version" ]; then
+        printf '%s\n' 'sdev: Resolving the latest release...' >&2
         latest=$(curl -q -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 15 --max-time 120 \
             -o /dev/null -w '%{url_effective}' "$releases/latest") || fail 'Cannot resolve latest release'
         case "$latest" in
@@ -90,8 +92,10 @@ main() {
     trap 'exit 1' HUP INT TERM
     asset=sdev-v$version-$platform-$arch
     base=$releases/download/v$version
+    printf 'sdev: Installing %s into ./bin/sdev\n' "$asset" >&2
     fetch "$base/$asset" "$temporary/$asset"
     fetch "$base/$asset.sha256" "$temporary/checksum"
+    printf '%s\n' 'sdev: Checking SHA-256...' >&2
     if [ "$hash_command" = sha256sum ]; then
         actual=$(sha256sum "$temporary/$asset")
     else
@@ -101,6 +105,7 @@ main() {
     expected=$(cat "$temporary/checksum")
     [ "$expected" = "$actual  $asset" ] || fail 'SHA-256 checksum mismatch'
     if [ "$verify" = true ]; then
+        printf '%s\n' 'sdev: Verifying provenance...' >&2
         fetch "$base/attestation.sigstore.json" "$temporary/attestation.sigstore.json"
         fetch "$base/sdev-release.txt" "$temporary/sdev-release.txt"
         commit=
@@ -153,7 +158,8 @@ verify_file() {
     gh "$@" || fail 'Attestation verification failed; nothing installed'
 }
 fetch() {
-    curl -q -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 15 --max-time 120 -o "$2" "$1" || fail "Download failed: $1"
+    printf 'sdev: Downloading %s...\n' "${1##*/}" >&2
+    curl -q -fL "$curl_progress" --show-error --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 15 --max-time 120 -o "$2" "$1" || fail "Download failed: $1"
 }
 check_destination() {
     [ ! -L ./bin ] || fail './bin must not be a symbolic link'
