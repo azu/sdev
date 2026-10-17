@@ -60,13 +60,13 @@ Follow [Document responsibilities and updates](documents.md) for handling open q
 
 ## Check after writing
 
-Save files and reread their actual contents.
-Fix empty files or failed writes.
-Check responsibilities, headings, reasons, exclusions, and open questions against the guidelines and template.
+Read saved content from the start to check whether the explanation serves the document's purpose.
+Use the document-type guide and template to check required content and decision reasons.
+After feedback on writing, review the entire target document following the [change policy](documents.md#handling-changes).
 
-Verify link targets and remove copied upstream text or contradictions.
-Briefly report deliverables, verification, and remaining decisions, distinguishing verified and unverified results.
-Keep verification results in completion reports or PR descriptions.
+Verify file and link contents and existence, correcting empty files, copied upstream text, and contradictions.
+Distinguish what lint or other automated checks established from readability judgments made through reading.
+Briefly record deliverables, checks, unverified conditions, and remaining decisions in the completion report or PR description.
 
 ## Request scope and review
 

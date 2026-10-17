@@ -143,6 +143,24 @@ Scenario: An unanswered asynchronous question does not finalize dependent conten
 - When: The agent reads shared working guidance.
 - Then: It can learn to wait on dependent documents or implementation without treating silence or preselection as the user's decision.
 
+### Write connected explanations and review the whole design
+
+As someone developing designs with AI, I want criteria for writing and reviewing explanations that readers can follow, so I can judge their connections and placement and correct recurring problems beyond a cited passage.
+
+**Acceptance criteria:**
+
+Scenario: Design writing guidance provides criteria and an example for connected explanations
+
+- Given: A design mixes user actions, internal processing, and presentation details.
+- When: The agent reads the Design writing guide.
+- Then: It can read criteria for progressing from overview to detail, relating headings, paragraphs, and sentences, and an improvement example independent of a particular project.
+
+Scenario: Feedback on one passage leads to guidance for a whole-document review
+
+- Given: A passage has a problem with explanation flow or placement.
+- When: The agent reads revision and review guidance.
+- Then: It can learn to find the same problem throughout the document, consider moving, combining, or rewriting existing explanations, and distinguish lint results from judgments made through reading.
+
 ### Understand failures to read materials
 
 As someone developing specifications with AI, I want guidance when materials are unavailable so work does not proceed as if missing sources had been read.
@@ -187,6 +205,8 @@ Explain presentation and progress according to request scope, unresolved decisio
 Honor instructions already given for the task without repeating confirmations.
 Explain questions, answer-driven follow-up, preference for question tools, and conversational alternatives.
 Distinguish confirmed answers from agent proposals and leave unanswered decisions unresolved.
+Writing and review guidance must help judge explanation order, connections, and placement rather than just add content.
+Separate shared criteria from their application to each document type, without repeating equivalent rules.
 Repository Markdown remains directly readable without installing a CLI or building materials.
 
 ##### Continued use

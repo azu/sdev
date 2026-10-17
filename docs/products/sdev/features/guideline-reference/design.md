@@ -37,25 +37,35 @@ Follow the placement conventions identified in prerequisites.
 | Guidelines | Responsibilities, judgment, research, preparation, writing, and review |
 | Templates | Structure for writing |
 
-Relative Markdown links point directly to files.
-Do not generate another delivery copy of the same language version.
-Relative links remain usable when relocating the same tree and when browsing files on GitHub.
-GitHub's [official Markdown guidance](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#relative-links) explains relative links; this does not select GitHub as the only publication destination.
+### Writing and review guidance
 
-The agent's reading operation reveals retrieval failures.
-Put failure guidance in common guidelines and reference it from the entry point.
-Do not add sdev-side retries, guessed document contents, or enforcement of instructions.
+Keep shared criteria for document organization and paragraph connections in [Document responsibilities and updates](../../../../guidelines/documents.md#writing-and-distinguishing-decisions).
+The Design guide applies them to design explanations through a writing procedure and a short improvement example.
+Templates provide starting prompts for each section rather than repeat the guide's rules.
 
-Keep request interpretation, presentation, and necessary user decisions in Request scope and review in the shared working guide.
-Explain that an idea alone does not authorize implementation: clarify purpose and scope through dialogue.
-Requirements and Design guides link to that section for document-only stopping points and implementation progress updates.
-Implementation preparation references the same section.
-Use conversational user instructions without adding review-state files or an execution controller.
+The document guide's [change policy](../../../../guidelines/documents.md#handling-changes) defines the scope of revision review.
+The working guide connects this to checking saved content and the whole document, reporting automated checks separately from judgments made through reading.
+Use feedback covered by existing rules to improve explanations or examples instead of adding equivalent rules.
+
+### Dialogue and request scope
+
+Keep request interpretation and user decisions in Request scope and review in the shared working guide.
+Requirements/Design guides and implementation preparation reference that section to distinguish document-only work from implementation requests.
+Use conversational user instructions without review-state files or an execution controller.
 
 Keep question construction, answer-driven follow-up, tool selection, and waiting behavior in Make ideas concrete through questions.
-Product, Requirements, and Design guides link to it and add questions fitting each document's responsibility.
-The agent calls tools, falling back to conversational questions when unavailable.
-No particular question tool becomes an sdev runtime dependency.
+Product, Requirements, and Design guides link to it with questions fitting their responsibility.
+The agent calls tools and asks conversationally when tools are unavailable.
+
+### References and retrieval failures
+
+Relative Markdown links point directly to files, without another delivery copy of the same language version.
+The same tree remains navigable locally and on GitHub after relocation.
+Follow GitHub's [official Markdown guidance](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#relative-links) for GitHub behavior; this does not restrict publication to GitHub.
+
+The agent's reading operation reveals retrieval failures.
+Route the entry point to shared failure guidance so agents can report missing materials.
+Do not add sdev-side retries, guessed document contents, or enforcement of instructions.
 
 ## Architecture and sequence diagrams
 

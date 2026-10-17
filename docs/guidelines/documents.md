@@ -134,7 +134,34 @@ Multiple affected documents do not authorize proceeding through implementation i
 After implementation, update the same Design when its approach or reasons change; it need not list every small code edit.
 Decide whether a new design is a separate feature from differences in behavior and scope.
 
+Treat feedback on a passage as an example of a problem and check the entire target document for the same problem.
+Consider moving, combining, or removing explanations alongside adding content, retaining what the document's purpose needs.
+When revising guidelines, improve explanations or examples for issues already covered by existing criteria.
+Add a rule only when those criteria cannot guide the decision.
+
 ## Writing and distinguishing decisions
+
+### Organize the explanation
+
+Write explanations that people can understand and judge, and that AI can use to trace assumptions and processing.
+Establish the context and overall approach readers need, then arrange sections to develop that understanding.
+Headings identify subjects; paragraphs develop individual points.
+
+Introduce a paragraph's point, then explain its reasons, conditions, examples, or consequences.
+Make the relationship between consecutive sentences clear; move or rewrite information that does not belong.
+Use familiar words and concrete actions, explaining the role and meaning of unfamiliar terms.
+
+Explain relationships in prose. Use bullets for parallel items, numbered steps for ordered actions, and tables for comparing conditions.
+Choose the amount of structure by whether it helps readers understand.
+Include comparisons needed for a decision, rather than automatically pairing every chosen method with an unchosen one.
+
+These principles draw on [OpenAI's writing guidance](https://developers.openai.com/api/docs/guides/latest-model?model=gpt-6-astra#personality-and-writing-style) for developing paragraphs and [Anthropic's guidance](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-1#formatting-in-chat) for choosing formatting to fit the content.
+
+For new documents, retain the applicable template's fixed headings and explain None for inapplicable sections.
+For existing documents, follow template selection above and respect their structure.
+Replace repeatable headings with concrete topic names and create as many as needed.
+
+### Distinguish conditions and decisions
 
 State decided conditions directly, avoiding vague temporary qualifiers such as For now.
 Update content when it changes and use Git for the earlier version.
@@ -145,17 +172,9 @@ For an open question, state what is unresolved, its interim treatment, when to r
 Resolve decisions needed for the feature before implementation.
 Retain only questions that do not block the current scope and state exclusions explicitly.
 
-For new documents, retain the applicable template's fixed headings and explain None for inapplicable sections.
-For existing documents, follow template selection above and respect their structure.
-Replace repeatable headings with concrete topic names and create as many as needed.
 Distinguish measured values from targets; do not invent measurements or market facts.
 SLA means a guarantee to users, SLI a reliability measure, and SLO its target.
 Explain decisions not to offer guarantees or measurements too.
-
-Give each paragraph one main point and state it first.
-Keep list items at a consistent level and separate permissions, inputs, processing, and completion conditions into meaningful topics when needed.
-Choose headings from content rather than splitting mechanically by item count.
-Write in the configured document language and explain uncommon terms.
 
 ## Boundary between Requirements and Design
 

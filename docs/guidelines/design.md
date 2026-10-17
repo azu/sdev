@@ -34,21 +34,54 @@ Do not change requirements through Design alone.
 
 Save a new document using the chosen template and the consuming project's placement rules.
 Without another rule, put `design.md` beside its corresponding Requirements.
-Link to Requirements and Product at the start without copying their requirements.
-Describe deliverables, responsibilities, flows, data structures, interfaces, and data handling precisely enough to implement.
-For document features without types or APIs, describe the actual documents and links as their interfaces.
+Link to Requirements and Product at the start, then establish the overall approach and main flow.
 
-Use the template to decide whether diagrams help, and give reasons when they are unnecessary.
-Leave fine-grained internal file lists to placement conventions and separate cross-feature designs into their own documents.
-Set deployment notes to None when ordinary deployment is sufficient.
-Follow [implementation and verification](agent.md#implementation-and-verification) for test design and execution.
+Develop that overview through the responsibilities, processing, data, and interfaces of its parts.
+Explain a mechanism's role and purpose before naming APIs, types, or numerical parameters.
+Separate changes of subject or detail, such as user actions, internal processing, and presentation, into appropriate subheadings and paragraphs.
+Develop each paragraph from its point using the [shared writing criteria](documents.md#organize-the-explanation).
+
+Choose the main location for each explanation; elsewhere, give only the necessary context and reference.
+Leave detailed internal file lists to placement conventions and separate cross-feature designs into their own documents.
+
+Adapt the template's sections to the subject:
+
+- Diagrams: use them when structure or interactions are hard to follow in prose; explain why a diagram is unnecessary when omitting it.
+- Interfaces: for document features without types or APIs, describe the actual documents and links.
+- Deployment: set notes to None when ordinary deployment is sufficient.
+
+### Example: connect the explanation
+
+Consider a fictional feature that saves a list as CSV and tells the user the result.
+This version leaves the connection between processing and presentation unclear:
+
+```text
+export() creates CSV. Show a notification. Return the saved file's path.
+```
+
+Establish the roles, then connect the result to its use:
+
+```text
+The export action calls export() so the user can save the list as a file.
+export() converts the list to CSV, saves it, and returns the saved file's path.
+
+After saving succeeds, show that path in the completion notification.
+```
+
+The improvement explains how the notification uses the path returned by saving, rather than just classifying statements under headings.
 
 ## Review
 
-Check that the design provides what implementation needs without redefining Requirements.
-Verify that data requirements lead to storage, deletion, and protection methods, exceptions have clear flows, and alternatives have reasons.
+First compare against Requirements: is there enough information to implement without redefining behavior?
+Check that data needs lead to storage, deletion, and protection methods, and that exception flows and selection reasons are clear.
 Resolve technical decisions that block implementation.
+
+Then read from the start: can readers move from the overview to details and identify each section's subject?
+Even with clear headings, revise paragraphs that merely list disconnected facts.
+Check what each sentence takes from its predecessor and whether API names or numbers appear before their role is explained.
+Reconsider repetition, placement, and mixed levels of detail following the [change policy](documents.md#handling-changes).
+
 Verify saved contents and links, then present the document and key points.
+Report automated checks separately from reading judgments following the [review procedure](agent.md#check-after-writing).
 When only Design work is requested, stop after requesting review.
-For implementation requests and decisions needing user input, follow [request scope and review](agent.md#request-scope-and-review).
-When implementation is requested, provide Design together with Requirements as its input.
+For implementation requests or decisions needing user input, follow [request scope and review](agent.md#request-scope-and-review), providing Design and Requirements together as implementation inputs.

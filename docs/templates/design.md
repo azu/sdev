@@ -20,7 +20,7 @@
 
 ## Implementation approach
 
-[Deliverables, responsibilities, main flow, and failures. Leave detailed internal file lists to placement conventions.]
+[Establish deliverables and the main flow, then develop responsibilities, processing, and failures. See the [Design guide](../guidelines/design.md#write) for organizing the explanation. Leave detailed internal file lists to placement conventions.]
 
 ## Architecture and sequence diagrams
 
@@ -32,7 +32,7 @@
 
 ## APIs and interfaces
 
-[Public interfaces, inputs, outputs, and failures. Without an API, describe actual interfaces such as documents or commands.]
+[Explain each interface's role, then its inputs, outputs, and failures. Separate user actions, internal exchanges, and presentation into appropriate subheadings and paragraphs. Without an API, describe actual interfaces such as documents or commands.]
 
 ## External service integration
 
