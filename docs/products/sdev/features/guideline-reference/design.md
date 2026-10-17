@@ -5,7 +5,7 @@
 [ガイドラインとテンプレートの参照のRequirements](requirements.md)を、静的なMarkdownとリンクで実現する設計です。
 親となる[sdevのProduct](../../product.md)を前提とし、要件の内容はRequirementsを参照します。
 この機能は配置済みMarkdownを直接読む経路を扱います。
-CLIからの参照と実行ファイルの配布は、別の[配布機能のDesign](../command-distribution/design.md)で扱います。
+CLIからの参照と実行ファイルの配布は、[コマンド配布のRequirements](../command-distribution/requirements.md)に対応する機能で扱います。
 
 ### 対象読者
 

@@ -22,7 +22,8 @@ Rust CLIの実装、配布方式、CIの構築、検証の設計と実行手順�
 
 開発基盤はsdevと並列のProductとして配置します。
 共通ガイドは複数機能から参照する規約なので、製品機能の仕様と分けて配置規約の`docs/engineering/guidelines/`に置きます。
-バージョンと共通CIの構成・判断理由は、機能をまたぐ[Rust開発環境と共通CIの設計](../../../../engineering/design/rust-development.md)へ分けます。
+機能をまたぐバージョンと共通CIの構成・判断理由は、開発環境の設計で管理します。
+各機能から使う規約と手順は[Rust開発ガイド](../../../../engineering/guidelines/rust-development.md)にまとめ、設計の採用理由と分けます。
 所属はProductから機能へのリンクと、ガイドからこの設計・Productへのリンクで表します。
 
 [文書と作業の入口](../../../../README.md)に、開発基盤の仕様とRust開発ガイドへの案内を追加します。

@@ -102,11 +102,13 @@ cargo xtask verify-release dist/sdev-v0.1.0-macos-arm64
 
 ファイル名のバージョンはCargo.tomlの値に合わせます。
 `dist/`には実行ファイル、SHA-256、ローカルの確認用メタデータを作ります。
-必要な通知は別のTHIRD-PARTY-NOTICES.htmlへコピーし、sdev自身のLICENSEがあればそれも添付します。
+Rustの通知は別のTHIRD-PARTY-NOTICES.htmlへコピーし、組み込む通常の依存の通知はTHIRD-PARTY-CRATES.htmlへまとめます。
+通知の元資料がない場合は配布準備を失敗にします。
+sdev自身のLICENSEがあればそれも添付します。
 実行に必要なものは実行ファイルだけで、通知ファイルは実行時に読みません。
 生成は公開操作ではありません。
 
-GitHub ActionsのBuild and check sdevは、5組をそれぞれのOSでビルドし、振る舞い・テンプレートの元の本文との一致とガイドの参照先・バージョン・実行環境を空にした起動・依存するシステムライブラリを確認して、レビュー用成果物を保存します。
+GitHub ActionsのBuild and check sdevは、5組をそれぞれのOSでビルドし、振る舞い・文書の自己lint・テンプレートの元の本文との一致とガイドの参照先・バージョン・実行環境を空にした起動・依存するシステムライブラリを確認して、レビュー用成果物を保存します。
 Linuxではglibcの要求、Windowsでは追加のCランタイムDLLへの依存も確認します。
 成果物の保存までとし、タグ・Releaseの作成や公開は自動では行いません。
 
@@ -119,7 +121,7 @@ Rust標準ライブラリの通知はRust 1.96.0のものを配布物へ別添�
 macOS・Windowsの署名・公証や取得後の起動制限、対応環境での動作を確認します。
 このリポジトリの設定では署名・公証はまだ自動化していません。
 
-公開するバージョンのタグとGitHub Releaseを用意し、5つの実行ファイル、必要なチェックサム、THIRD-PARTY-NOTICES.htmlとsdev自身のLICENSEを添付して内容を確認してから公開します。
+公開するバージョンのタグとGitHub Releaseを用意し、5つの実行ファイル、必要なチェックサム、THIRD-PARTY-NOTICES.html、THIRD-PARTY-CRATES.htmlとsdev自身のLICENSEを添付して内容を確認してから公開します。
 実行に必要なものは実行ファイル単体で、通知は別添します。
 CI成果物を取り出す際のアーカイブをそのまま利用者向けインストール形式にはしません。
 公開して実際の取得先と内容を確認した後に、README等へ実在するダウンロード先を追加します。

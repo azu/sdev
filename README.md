@@ -1,6 +1,6 @@
 # sdev
 
-sdevは、人とAIが仕様を起点にオープンソースを開発するためのフレームワークです。
+sdevは、人とAIが仕様を起点にプロダクトを開発するためのフレームワークです。
 仕様からコードへ具体化し、コードから要件や設計、残された前提と判断理由をたどってレビューできる状態を目指します。
 Product・Requirements・Designのガイドラインと既定テンプレートを提供し、対話・調査・執筆・実装の進行は利用するエージェントが担当します。
 
@@ -41,6 +41,21 @@ sdev template design
 これらは内蔵テンプレートのMarkdown本文を表示する操作です。
 利用先の自動探索や推測、テンプレートの生成・上書きは行いません。
 任意のMarkdownや既存の仕様書を、そのままテンプレートとして扱うこともしません。
+
+## 文書のリンクを検査する
+
+プロジェクトのルートで実行します。ルートのREADME.md・AGENTS.mdと、docs以下のMarkdownについて、内部リンクのファイルと見出しの存在、標準配置に基づく文書の参照方向を検査します。
+
+```sh
+sdev lint
+sdev lint --format json
+sdev lint --help
+```
+
+既定は人向けのテキスト、JSONはAIや他の処理から読む形式です。
+終了コードは検査成功が0、規則違反が1、読み取りなどの失敗による検査未完了が2です。
+設定ファイルは不要で、外部URLへの通信や文書の書き換えは行いません。
+検査の範囲は[Requirements](docs/products/sdev/features/document-lint/requirements.md)、処理と出力形式は[Design](docs/products/sdev/features/document-lint/design.md)に記述しています。
 
 ## プロジェクトから参照する
 
@@ -84,5 +99,4 @@ cargo xtask build-release --target aarch64-apple-darwin
 `dist/`の成果物はレビュー用で、ビルドによって自動的に公開されることはありません。
 文書は目的・要件・設計の変更に合わせて更新し、過去の内容はGitの履歴で参照します。
 
-lintや可視化、既存文書の移行、自動更新は製品CLIに含めていません。
-配布方式の比較用コードは`experiments/command-distribution/`に残し、製品の機能と区別します。
+可視化、既存文書の移行、自動更新は製品CLIに含めていません。

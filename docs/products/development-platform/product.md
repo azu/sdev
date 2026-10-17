@@ -7,7 +7,7 @@ Rust開発基盤は、sdev自身を開発する人とAIに、共通の開発環�
 独立した利用者向けアプリケーションや、sdevを使う全プロジェクトへのRust採用規則ではありません。
 
 提供する機能は[共通開発ガイドのRequirements](features/common-development-guide/requirements.md)、日々の作業は[Rust開発ガイド](../../engineering/guidelines/rust-development.md)から参照します。
-採用する環境と共通CIの構成は[Rust開発環境と共通CIの設計](../../engineering/design/rust-development.md)で定義します。
+環境と共通CIを変更するときの基準は、[Rust開発ガイド](../../engineering/guidelines/rust-development.md#ciと異なるosで確かめる)から参照します。
 
 ## 背景と解決する課題
 
