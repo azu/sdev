@@ -5,14 +5,15 @@ set -eu
 fail() { printf 'sdev: %s\n' "$*" >&2; exit 1; }
 usage() {
     cat <<'EOF'
-Usage: sh install.sh [--version X.Y.Z] [--verify] [--source-commit SHA] [--trusted-root FILE] [--init]
+Usage: sh install.sh [--version X.Y.Z] [--install-dir DIR] [--verify] [--source-commit SHA] [--trusted-root FILE] [--init]
 
 Install a public release into ./bin/sdev without changing PATH.
+--install-dir chooses the directory for the binary.
 The default version is the latest stable release. SHA-256 is always checked.
 --verify requires gh and verifies the binary's GitHub Artifact Attestation before execution.
 --source-commit pins an independently checked source commit (requires --verify).
 --trusted-root supplies independently obtained trust material for offline verification.
---init also adds project instructions and gitignore entries with ./bin/sdev init.
+--init runs the installed binary's init command to prepare project instructions and its launcher.
 Without --init, AGENTS.md and .gitignore are not changed.
 Trust this installer before running it; --verify does not verify the running script itself.
 EOF
@@ -23,9 +24,11 @@ main() {
     initialize=false
     trusted_root=
     expected_commit=
+    install_dir=
     while [ "$#" -gt 0 ]; do
         case "$1" in
             --version) [ "$#" -ge 2 ] || fail '--version needs X.Y.Z'; version=$2; shift 2 ;;
+            --install-dir) [ "$#" -ge 2 ] || fail '--install-dir needs a directory'; [ -n "$2" ] || fail '--install-dir needs a directory'; install_dir=$2; shift 2 ;;
             --verify) verify=true; shift ;;
             --source-commit) [ "$#" -ge 2 ] || fail '--source-commit needs a SHA'; expected_commit=$2; shift 2 ;;
             --trusted-root) [ "$#" -ge 2 ] || fail '--trusted-root needs a file'; trusted_root=$2; shift 2 ;;
@@ -85,14 +88,21 @@ main() {
     for part do
         case "$part" in ''|0[0-9]*) fail 'Invalid version component' ;; esac
     done
+    if [ -z "$install_dir" ]; then
+        install_dir=./bin
+    fi
+    # Prefix relative paths so that a name starting with '-' is never an option.
+    case "$install_dir" in /*|./*|../*) ;; *) install_dir=./$install_dir ;; esac
+    install_dir=${install_dir%/}
+    [ -n "$install_dir" ] || install_dir=/
     check_destination
-    mkdir -p ./bin
-    temporary=$(mktemp -d ./bin/.sdev-install.XXXXXXXX) || fail 'Cannot create temporary directory'
+    mkdir -p "$install_dir"
+    temporary=$(mktemp -d "$install_dir/.sdev-install.XXXXXXXX") || fail 'Cannot create temporary directory'
     trap 'rm -rf "$temporary"' EXIT
     trap 'exit 1' HUP INT TERM
     asset=sdev-v$version-$platform-$arch
     base=$releases/download/v$version
-    printf 'sdev: Installing %s into ./bin/sdev\n' "$asset" >&2
+    printf 'sdev: Installing %s into %s/sdev\n' "$asset" "$install_dir" >&2
     fetch "$base/$asset" "$temporary/$asset"
     fetch "$base/$asset.sha256" "$temporary/checksum"
     printf '%s\n' 'sdev: Checking SHA-256...' >&2
@@ -128,12 +138,12 @@ main() {
     actual_version=$("$temporary/$asset" --version) || fail 'Downloaded binary could not start'
     [ "$actual_version" = "sdev $version" ] || fail 'Downloaded binary version does not match'
     check_destination
-    mv -f "$temporary/$asset" ./bin/sdev
-    printf 'Installed sdev %s into ./bin/sdev\n' "$version"
+    mv -f "$temporary/$asset" "$install_dir/sdev"
+    printf 'Installed sdev %s into %s/sdev\n' "$version" "$install_dir"
     if [ "$initialize" = true ]; then
-        ./bin/sdev init
+        "$install_dir/sdev" init
     else
-        printf '%s\n' 'Run ./bin/sdev help, or ./bin/sdev init to add project instructions.'
+        printf 'Run %s/sdev help, or %s/sdev init to add project instructions.\n' "$install_dir" "$install_dir"
     fi
 }
 check_verifier() {
@@ -161,14 +171,22 @@ fetch() {
     printf 'sdev: Downloading %s...\n' "${1##*/}" >&2
     curl -q -fL "$curl_progress" --show-error --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 15 --max-time 120 -o "$2" "$1" || fail "Download failed: $1"
 }
-check_destination() {
-    [ ! -L ./bin ] || fail './bin must not be a symbolic link'
-    if [ -e ./bin ]; then
-        [ -d ./bin ] || fail './bin must be a directory'
+check_directory() {
+    [ ! -L "$1" ] || fail "$1 must not be a symbolic link"
+    if [ -e "$1" ]; then
+        [ -d "$1" ] || fail "$1 must be a directory"
     fi
-    [ ! -L ./bin/sdev ] || fail './bin/sdev must not be a symbolic link'
-    if [ -e ./bin/sdev ]; then
-        [ -f ./bin/sdev ] || fail './bin/sdev must be a regular file'
+    case "$1" in ''|/|.) return ;; esac
+    case "$1" in */*) check_directory "${1%/*}" ;; esac
+}
+check_destination() {
+    check_directory "$install_dir"
+    [ ! -L "$install_dir/sdev" ] || fail "$install_dir/sdev must not be a symbolic link"
+    if [ -e "$install_dir/sdev" ]; then
+        [ -f "$install_dir/sdev" ] || fail "$install_dir/sdev must be a regular file"
+        if head -c 64 "$install_dir/sdev" | LC_ALL=C grep -q '# sdev bootstrap'; then
+            fail 'Destination is a committed sdev launcher; choose --install-dir for the binary'
+        fi
     fi
 }
 # A complete function definition is read before it runs, including when piped to sh.

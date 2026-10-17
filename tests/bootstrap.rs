@@ -18,6 +18,7 @@ use std::{
 
 struct Fixture {
     root: PathBuf,
+    base: String,
     requests: Arc<Mutex<Vec<String>>>,
     stop: Arc<AtomicBool>,
     server: Option<JoinHandle<()>>,
@@ -139,6 +140,7 @@ impl Fixture {
         .unwrap();
         Self {
             root,
+            base,
             requests,
             stop,
             server: Some(server),
@@ -155,6 +157,23 @@ impl Fixture {
     }
     fn run(&self, args: &[&str]) -> Output {
         self.command().args(args).output().unwrap()
+    }
+    fn launcher(&self, path: &str) -> PathBuf {
+        let project = self.root.join("project");
+        fs::create_dir(&project).unwrap();
+        let result = Command::new(env!("CARGO_BIN_EXE_sdev"))
+            .args(["init", "--path", path])
+            .current_dir(&project)
+            .output()
+            .unwrap();
+        assert!(result.status.success(), "{result:?}");
+        let script = project.join(path);
+        let body = fs::read_to_string(&script)
+            .unwrap()
+            .replace("https://github.com/azu/sdev/releases", &self.base)
+            .replace("--proto '=https' --proto-redir '=https' --tlsv1.2 ", "");
+        fs::write(script, body).unwrap();
+        project
     }
     fn verifier(&self, version: &str, success: bool) -> Command {
         let tools = self.root.join("tools");
@@ -189,6 +208,138 @@ impl Fixture {
             }
         }
     }
+}
+
+fn cache_path() -> PathBuf {
+    let platform = if cfg!(target_os = "macos") {
+        "macos"
+    } else {
+        "linux"
+    };
+    let arch = if cfg!(target_arch = "aarch64") {
+        "arm64"
+    } else {
+        "x64"
+    };
+    PathBuf::from(format!(
+        ".sdev/bin/{}/{platform}-{arch}/sdev",
+        env!("CARGO_PKG_VERSION")
+    ))
+}
+
+#[test]
+fn cloned_launcher_pins_the_version_preserves_cwd_arguments_and_exit_status_then_runs_offline() {
+    let fixture = Fixture::with_binary(false, format!(
+        "#!/bin/sh\nif [ \"$1\" = --version ]; then echo 'sdev {}'; exit 0; fi\nprintf '%s\\n' \"$PWD\" \"$@\"\nexit 7\n", env!("CARGO_PKG_VERSION")
+    ).into_bytes());
+    let original = fixture.launcher("tools/scripts/sdev");
+    let cloned = fixture.root.join("cloned project");
+    fs::rename(original, &cloned).unwrap();
+    let working = cloned.join("work");
+    fs::create_dir(&working).unwrap();
+    let agents = fs::read(cloned.join("AGENTS.md")).unwrap();
+    let script = fs::read(cloned.join("tools/scripts/sdev")).unwrap();
+    let invoke = || {
+        Command::new(cloned.join("tools/scripts/sdev"))
+            .args(["template", "two words", "$(no-eval)", ""])
+            .env("NO_PROXY", "127.0.0.1")
+            .env("no_proxy", "127.0.0.1")
+            .current_dir(&working)
+            .output()
+            .unwrap()
+    };
+    for _ in 0..2 {
+        let output = invoke();
+        assert_eq!(output.status.code(), Some(7), "{output:?}");
+        assert_eq!(
+            String::from_utf8(output.stdout).unwrap(),
+            format!(
+                "{}\ntemplate\ntwo words\n$(no-eval)\n\n",
+                working.canonicalize().unwrap().display()
+            )
+        );
+        assert_eq!(fs::read(cloned.join("AGENTS.md")).unwrap(), agents);
+        assert_eq!(fs::read(cloned.join("tools/scripts/sdev")).unwrap(), script);
+        assert!(cloned.join(cache_path()).is_file());
+    }
+    let requests = fixture.requests.lock().unwrap();
+    assert_eq!(requests.len(), 2, "{requests:?}");
+    assert!(
+        requests
+            .iter()
+            .all(|p| p.contains(&format!("/download/v{}/", env!("CARGO_PKG_VERSION"))))
+    );
+}
+
+#[test]
+fn launcher_download_failure_and_symlink_cache_never_execute_a_binary() {
+    let fixture = Fixture::new(true);
+    let project = fixture.launcher("sdev");
+    let invoke = || {
+        Command::new(project.join("sdev"))
+            .arg("help")
+            .env("NO_PROXY", "127.0.0.1")
+            .env("no_proxy", "127.0.0.1")
+            .current_dir(&project)
+            .output()
+            .unwrap()
+    };
+    let output = invoke();
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("SHA-256 checksum mismatch"));
+    assert!(!project.join(cache_path()).exists());
+    fs::remove_dir_all(project.join(".sdev")).unwrap();
+    let outside = fixture.root.join("outside");
+    fs::create_dir(&outside).unwrap();
+    symlink(&outside, project.join(".sdev")).unwrap();
+    let count = fixture.requests.lock().unwrap().len();
+    assert!(!invoke().status.success());
+    assert_eq!(fixture.requests.lock().unwrap().len(), count);
+    assert_eq!(fs::read_dir(outside).unwrap().count(), 0);
+}
+
+#[test]
+fn installer_supports_custom_directory_and_preserves_committed_launchers() {
+    let fixture = Fixture::new(false);
+    let output = fixture.run(&[
+        "--version",
+        env!("CARGO_PKG_VERSION"),
+        "--install-dir",
+        "custom/bin",
+    ]);
+    assert!(output.status.success(), "{output:?}");
+    assert!(fixture.root.join("custom/bin/sdev").is_file());
+    let project = fixture.launcher("bin/sdev");
+    let script = fs::read(project.join("bin/sdev")).unwrap();
+    let output = fixture
+        .command()
+        .current_dir(&project)
+        .args(["--version", env!("CARGO_PKG_VERSION")])
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+    assert_eq!(fs::read(project.join("bin/sdev")).unwrap(), script);
+}
+
+#[test]
+fn launcher_requested_attestation_failure_never_falls_back() {
+    let fixture = Fixture::new(false);
+    let project = fixture.launcher("bin/sdev");
+    let verifier = fixture.verifier("2.93.0", false);
+    let mut command = Command::new(project.join("bin/sdev"));
+    for (key, value) in verifier.get_envs() {
+        command.env(key, value.unwrap());
+    }
+    let output = command
+        .env("SDEV_VERIFY", "1")
+        .arg("help")
+        .current_dir(&project)
+        .output()
+        .unwrap();
+    assert!(!output.status.success(), "{output:?}");
+    assert!(String::from_utf8_lossy(&output.stderr).contains("Attestation verification failed"));
+    assert!(!project.join(cache_path()).exists());
+    assert!(!String::from_utf8_lossy(&output.stderr).contains("provenance NOT verified"));
 }
 impl Drop for Fixture {
     fn drop(&mut self) {

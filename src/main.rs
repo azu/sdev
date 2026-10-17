@@ -1,4 +1,6 @@
 mod init;
+#[cfg(unix)]
+mod launcher;
 mod lint;
 
 use std::{
@@ -59,7 +61,7 @@ fn overview(writer: &mut impl Write, operation: &str) -> Result<(), CliError> {
     if operation == "help" {
         output(
             writer,
-            "\n  sdev init                  AGENTS.mdへ参照指示を追加\n  sdev lint                  文書のリンク切れと参照方向を検査\n  sdev template              テンプレートの種類を確認\n  sdev --version             バージョン\n\n利用先のProduct → 機能のRequirements → Designを前提に進めます。\nsdev自身の仕様ではなく、作業するプロジェクトの文書を参照してください。\n",
+            "\n  sdev init                  プロジェクトの参照指示と起動方法を準備\n  sdev lint                  文書のリンク切れと参照方向を検査\n  sdev template              テンプレートの種類を確認\n  sdev --version             バージョン\n\n利用先のProduct → 機能のRequirements → Designを前提に進めます。\nsdev自身の仕様ではなく、作業するプロジェクトの文書を参照してください。\n",
         )?;
     }
     Ok(())
@@ -106,14 +108,23 @@ fn run(args: &[String], writer: &mut impl Write) -> Result<u8, CliError> {
     }
     .map(|()| 0)
 }
-const INIT_HELP: &str = "sdev init\n\nプロジェクトのルートで実行し、AGENTS.mdへ./bin/sdevからガイドとテンプレートを選ぶ指示を追加します。\nWindowsでは./bin/sdev.exeを参照します。先にプロジェクト内へ実行ファイルを配置してください。\n.gitignoreへ/bin/sdevと/bin/sdev.exeを追加します。既存の本文とsdevの設定は保持し、重複させません。\n仕様ファイルや空ディレクトリは作成しません。\n終了コード: 0 成功 / 1 ファイルや出力の処理失敗 / 2 引数の誤り\n";
+const INIT_HELP: &str = "sdev init [--path PATH]\n\nプロジェクトのルートで実行し、AGENTS.mdへガイドとテンプレートを選ぶ指示を追加します。\nmacOS・Linuxでは./bin/sdevにコミット用の起動スクリプトを生成します。\n--path ./scripts/sdevのように配置先を変更でき、参照指示もそのパスを使います。\n初回の起動時に固定バージョンの本体を取得し、.gitignoreには/.sdev/を追加します。\nWindowsでは手動配置した./bin/sdev.exeを参照し、--pathは使いません。\n既存の本文とsdevの指示は保持します。別のスクリプトは上書きしません。\n仕様ファイルや空の仕様ディレクトリは作成しません。\n終了コード: 0 成功 / 1 ファイルや出力の処理失敗 / 2 引数の誤り\n";
 fn init_command(args: &[&str], writer: &mut impl Write) -> Result<u8, CliError> {
     match args {
         ["--help" | "-h"] => output(writer, INIT_HELP)?,
-        [] => {
+        [] | ["--path", _] => {
+            let path = args.get(1).copied().unwrap_or("./bin/sdev");
+            #[cfg(unix)]
+            let path = launcher::normalize_path(path).map_err(invalid)?;
+            #[cfg(windows)]
+            let path = if args.is_empty() {
+                path.to_owned()
+            } else {
+                return Err(invalid("Windowsのinitでは--pathを使えません。"));
+            };
             let body = env::current_dir()
                 .map_err(|error| error.to_string())
-                .and_then(|root| init::initialize(&root))
+                .and_then(|root| init::initialize(&root, &path))
                 .map_err(|message| CliError { status: 1, message })?;
             output(writer, &body)?;
         }

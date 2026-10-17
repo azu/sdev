@@ -36,7 +36,7 @@ impl Drop for Project {
 }
 
 #[test]
-fn init_creates_only_instructions_and_ignores_and_routes_to_current_catalogs() {
+fn init_creates_project_entry_and_routes_to_current_catalogs() {
     let project = Project::new();
     let output = project.run(&["init"]);
     assert!(output.status.success(), "{output:?}");
@@ -58,8 +58,22 @@ fn init_creates_only_instructions_and_ignores_and_routes_to_current_catalogs() {
     assert!(agents.contains("`./bin/sdev.exe help`"));
     assert!(!agents.contains("help product"));
     assert!(!agents.contains("template product"));
-    assert_eq!(project.read(".gitignore"), "/bin/sdev\n/bin/sdev.exe\n");
-    assert_eq!(fs::read_dir(&project.0).unwrap().count(), 2);
+    #[cfg(unix)]
+    {
+        assert_eq!(project.read(".gitignore"), "/.sdev/\n");
+        assert!(
+            project
+                .read("bin/sdev")
+                .starts_with("#!/bin/sh\n# sdev bootstrap")
+        );
+        assert_eq!(fs::read_dir(&project.0).unwrap().count(), 3);
+        assert!(!project.0.join(".sdev").exists());
+    }
+    #[cfg(windows)]
+    {
+        assert_eq!(project.read(".gitignore"), "/bin/sdev\n/bin/sdev.exe\n");
+        assert_eq!(fs::read_dir(&project.0).unwrap().count(), 2);
+    }
 }
 
 #[test]
@@ -75,6 +89,9 @@ fn repeated_init_preserves_existing_bytes_crlf_and_edited_sdev_instructions() {
     let edited = agents.replace("## 仕様を起点にした開発", "## 利用者が編集した指示");
     fs::write(project.0.join("AGENTS.md"), &edited).unwrap();
     let ignore = project.read(".gitignore");
+    #[cfg(unix)]
+    assert!(!ignore.contains("/bin/sdev"));
+    #[cfg(windows)]
     assert_eq!(ignore.matches("/bin/sdev\r\n").count(), 1);
     let output = project.run(&["init"]);
     assert!(output.status.success());
@@ -85,6 +102,9 @@ fn repeated_init_preserves_existing_bytes_crlf_and_edited_sdev_instructions() {
     );
     assert_eq!(project.read("AGENTS.md"), edited);
     assert_eq!(project.read(".gitignore"), ignore);
+    #[cfg(unix)]
+    assert_eq!(fs::read_dir(&project.0).unwrap().count(), 3);
+    #[cfg(windows)]
     assert_eq!(fs::read_dir(&project.0).unwrap().count(), 2);
 }
 
@@ -170,4 +190,101 @@ fn help_and_invalid_arguments_do_not_write_files() {
         );
         assert_eq!(fs::read_dir(&project.0).unwrap().count(), 0);
     }
+}
+
+#[cfg(unix)]
+#[test]
+fn custom_path_is_executable_and_repeated_init_preserves_all_files() {
+    use std::os::unix::fs::PermissionsExt;
+    let project = Project::new();
+    let args = ["init", "--path", "./tools/scripts/sdev"];
+    assert!(project.run(&args).status.success());
+    assert!(
+        project
+            .read("AGENTS.md")
+            .contains("`./tools/scripts/sdev help`")
+    );
+    let script = project.read("tools/scripts/sdev");
+    assert_eq!(
+        fs::metadata(project.0.join("tools/scripts/sdev"))
+            .unwrap()
+            .permissions()
+            .mode()
+            & 0o111,
+        0o111
+    );
+    assert!(project.run(&args).status.success());
+    assert_eq!(project.read("tools/scripts/sdev"), script);
+    let agents = project.read("AGENTS.md");
+    assert_eq!(project.run(&["init"]).status.code(), Some(1));
+    assert_eq!(project.read("AGENTS.md"), agents);
+    assert!(!project.0.join("bin").exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn invalid_paths_conflicts_and_symlink_parents_leave_documents_untouched() {
+    use std::os::unix::fs::symlink;
+    let project = Project::new();
+    for path in [
+        "",
+        "/tmp/sdev",
+        "../sdev",
+        "bin/../sdev",
+        ".sdev/sdev",
+        ".git/sdev",
+        "AGENTS.md",
+        ".gitignore",
+        "bin/my tool",
+        "bin/$(id)",
+        "bin/`id`",
+        "bin//sdev",
+    ] {
+        let output = project.run(&["init", "--path", path]);
+        assert_eq!(output.status.code(), Some(2), "{path}: {output:?}");
+        assert_eq!(fs::read_dir(&project.0).unwrap().count(), 0);
+    }
+    for existing in ["another script", ""] {
+        fs::write(project.0.join("sdev"), existing).unwrap();
+        assert_eq!(
+            project.run(&["init", "--path", "sdev"]).status.code(),
+            Some(1)
+        );
+        assert_eq!(project.read("sdev"), existing);
+        assert!(!project.0.join("AGENTS.md").exists());
+    }
+    symlink(".", project.0.join("tools")).unwrap();
+    assert_eq!(
+        project
+            .run(&["init", "--path", "tools/bin/sdev"])
+            .status
+            .code(),
+        Some(1)
+    );
+    assert!(!project.0.join("AGENTS.md").exists());
+    assert!(!project.0.join("bin").exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn init_can_replace_the_current_binary_but_never_an_edited_launcher() {
+    let project = Project::new();
+    fs::create_dir(project.0.join("bin")).unwrap();
+    fs::copy(env!("CARGO_BIN_EXE_sdev"), project.0.join("bin/sdev")).unwrap();
+    assert!(project.run(&["init"]).status.success());
+    let script = project.read("bin/sdev");
+    assert!(script.starts_with("#!/bin/sh\n# sdev bootstrap"));
+    let edited = format!("{script}\n# Local changes\n");
+    fs::write(project.0.join("bin/sdev"), &edited).unwrap();
+    assert_eq!(project.run(&["init"]).status.code(), Some(1));
+    assert_eq!(project.read("bin/sdev"), edited);
+}
+
+#[cfg(unix)]
+#[test]
+fn migrating_a_crlf_ignore_keeps_its_newlines_and_does_not_ignore_the_launcher() {
+    let project = Project::new();
+    fs::write(project.0.join(".gitignore"), "/bin/sdev\r\n").unwrap();
+    assert!(project.run(&["init"]).status.success());
+    assert_eq!(project.read(".gitignore"), "/.sdev/\r\n");
 }
