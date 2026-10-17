@@ -1,259 +1,255 @@
-# プロジェクトへの導入
+# Project bootstrap
 
-## このドキュメントについて
+[日本語](requirements.ja.md)
 
-[sdevのProduct](../../product.md)に属する、実行ファイルの導入と、プロジェクトから資料を参照するための初期設定を扱います。
-人の端末とClaude Code on the webで、同じプロジェクト内のコマンドを使えるようにします。
+## About this document
 
-### スコープ
+This feature belongs to the [sdev Product](../../product.md). It covers executable installation and project setup for accessing materials.
+The same project-local command should work on a person's machine and in Claude Code on the web.
 
-macOS・Linux向けの公開済み実行ファイルを取得するbootstrapと、AGENTS.mdへ参照指示を追加する`init`を提供します。
-bootstrapは実行ファイルの準備だけでも使え、初回は続けて初期設定を行えます。
-macOS・Linuxの`init`では、Gitへコミットして共有できる起動スクリプトも生成します。
-配置先は指定でき、clone後もそのスクリプトから同じバージョンを使えるようにします。
-チェックサムの照合と、利用者が指定した場合のGitHub Artifact Attestationsによる配布元の検証を扱います。
+### Scope
 
-### スコープ外
+Provide a bootstrap installer for published macOS/Linux executables and `init` instructions in AGENTS.md.
+Bootstrap can install only the executable or continue with initial setup.
+On macOS/Linux, `init` also generates a launcher that can be committed and shared, at a configurable path, so clones use the same version.
+Always compare checksums and optionally verify provenance with GitHub Artifact Attestations when requested.
+Language configuration and translated instructions follow the [localization requirements](../localization/requirements.md).
 
-仕様本文や空の仕様ディレクトリの作成、ガイドライン一式のコピー、エージェント専用の設定・フックの自動追加は行いません。
-Windowsのbootstrap、OSの署名・公証、独自のパッケージ管理・自己更新は対象外です。
-Windowsでは既存の実行ファイル配布と`init`を使えます。
+### Out of scope
 
-## ユーザーストーリー
+Do not create specification bodies or empty specification directories, copy all guidelines, or automatically add agent-specific settings or hooks.
+Windows bootstrap, OS signing/notarization, custom package management, and self-updates are excluded.
+Windows can use existing executable downloads and `init`.
 
-### 実行環境を追加せずプロジェクトへ導入する
+## User stories
 
-開発者として、OS・CPUに合うsdevをプロジェクト内に取得したい。
-それによって、PATHやRustの設定をせず、AIに実行場所を伝えられる。
+### Install into a project without another runtime
 
-**受け入れ条件:**
+As a developer, I want a project-local sdev matching my OS and CPU so I can tell AI where to run it without configuring PATH or Rust.
 
-Scenario: 対応環境で公開済みバージョンを指定した場合、実行ファイルを配置できる
+**Acceptance criteria:**
 
-- Given: macOSまたはLinuxの対応するCPUで、配布先への通信と必要な取得・ハッシュ計算用の道具が使える。
-- When: プロジェクトのルートでbootstrapを実行する。
-- Then: 選んだバージョンの実行ファイルを`./bin/sdev`に配置し、そのバージョンと配置場所を確認できる。
+Scenario: A published version can be installed on a supported environment
 
-Scenario: 取得・照合・起動確認に失敗する場合、既存の実行ファイルを保持する
+- Given: The user has a supported macOS/Linux CPU, download access, and the required download and hashing tools.
+- When: They run bootstrap from the project root.
+- Then: The selected executable is placed at `./bin/sdev`, with its version and location reported.
 
-- Given: `./bin/sdev`に利用中の実行ファイルがある。
-- When: 新しい配布物の取得、チェックサム照合、または起動確認が失敗する。
-- Then: 非ゼロで終了し、既存の実行ファイルとプロジェクトの指示を変更しない。
+Scenario: Download, checksum, or startup failure preserves an existing executable
 
-Scenario: 対応しない環境や不正な引数の場合、取得を開始しない
+- Given: An executable is already in use at `./bin/sdev`.
+- When: Download, checksum comparison, or startup verification of a replacement fails.
+- Then: Bootstrap exits nonzero without changing the existing executable or project instructions.
 
-- Given: bootstrapの対応外のOS・CPU、または不正なオプション・バージョンが指定されている。
-- When: bootstrapを実行する。
-- Then: 理由を示して非ゼロで終了し、実行ファイルを取得・実行しない。
+Scenario: Unsupported environments and invalid arguments prevent downloads
 
-### 配布元を検証してから使う
+- Given: The OS/CPU is unsupported or an option/version is invalid.
+- When: Bootstrap runs.
+- Then: It reports the reason and exits nonzero without downloading or executing an artifact.
 
-開発者として、取得したファイルがsdevの公開ワークフローで作られたものか検証したい。
-それによって、チェックサムによる一致確認と、配布元の確認を区別して導入できる。
+### Verify provenance before use
 
-**受け入れ条件:**
+As a developer, I want to check that downloaded files came from sdev's release workflow so I can distinguish checksum consistency from provenance verification.
 
-Scenario: 証明の検証を指定した場合、検証後に配置・実行する
+**Acceptance criteria:**
 
-- Given: GitHub CLIと証明の検証に必要な信頼情報が利用できる。
-- When: 証明の検証を有効にしてbootstrapを実行する。
-- Then: 配布元リポジトリ・公開ワークフロー・main由来であることの検証に成功した後にだけ、取得した実行ファイルを起動・配置する。
+Scenario: Requested attestation verification precedes execution and installation
 
-Scenario: 証明が不正、取得不能、または検証の道具が不足する場合、通常の導入へ切り替えない
+- Given: GitHub CLI and the required trust information are available.
+- When: Bootstrap runs with attestation verification enabled.
+- Then: It executes and installs the artifact only after verifying the repository, release workflow, and main source ref.
 
-- Given: 証明の検証が指定されている。
-- When: 証明の取得・検証が失敗するか、必要な道具が使えない。
-- Then: 非ゼロで終了し、取得した実行ファイルを起動せず、既存の配置を保持する。
+Scenario: Missing or invalid attestations or tools do not trigger an unverified fallback
 
-Scenario: curlだけで導入する場合、配布元の検証を省略したことを確認できる
+- Given: Attestation verification was requested.
+- When: Retrieval or verification fails, or a required tool is unavailable.
+- Then: Bootstrap exits nonzero without running the download or changing the existing installation.
 
-- Given: 証明の検証を指定していない。
-- When: bootstrapによる取得とチェックサムの照合に成功する。
-- Then: 証明による配布元の検証は行っていないことが表示される。
+Scenario: A curl-only installation reports skipped provenance verification
 
-### AIが参照する入口を追加する
+- Given: Attestation verification was not requested.
+- When: Download and checksum comparison succeed.
+- Then: Output states that provenance was not verified through attestations.
 
-開発者として、プロジェクトの指示にsdevの読み方を追加したい。
-それによって、ガイドが増えてもAIがその時点の一覧から選べる。
+### Add an entry point for AI
 
-**受け入れ条件:**
+As a developer, I want project instructions to explain how to read sdev so AI can choose from the current list as guides grow.
 
-Scenario: 初めて初期設定する場合、参照指示と実行ファイルの除外を追加する
+**Acceptance criteria:**
 
-- Given: AGENTS.mdと.gitignoreがない、または既存の内容がある。
-- When: プロジェクトのルートで`init`を実行する。
-- Then: 既存の内容を保持してAGENTS.mdへ作業種別の例とhelp・templateの一覧から選ぶ指示を追加し、.gitignoreへローカル実行ファイルの除外を追加する。
+Scenario: First setup adds reference instructions and local executable exclusions
 
-Scenario: 初めて初期設定する場合、依頼の範囲とレビューも案内する
+- Given: AGENTS.md and .gitignore may be missing or contain existing text.
+- When: `init` runs from the project root.
+- Then: It preserves existing text, adds task examples and directions to discover help/templates in AGENTS.md, and adds local executable exclusions to .gitignore.
 
-- Given: AGENTS.mdにsdevの指示がまだない。
-- When: プロジェクトのルートで`init`を実行する。
-- Then: 「作りたい」だけで実装までの依頼とみなさないこと、文書作成だけの依頼なら提示で区切ること、実装まで任されていれば要点を途中で提示すること、利用者の判断が必要な場合に確認することをAGENTS.mdから読み取れる。
+Scenario: First setup explains request scope and review
 
-Scenario: 初めて初期設定する場合、質問と掘り下げも案内する
+- Given: AGENTS.md has no sdev instructions.
+- When: `init` runs.
+- Then: AGENTS.md explains that wanting to build something alone does not authorize implementation, document-only requests end with presentation, implementation requests include intermediate summaries, and decisions requiring the user are confirmed.
 
-- Given: AGENTS.mdにsdevの指示がまだない。
-- When: プロジェクトのルートで`init`を実行する。
-- Then: 目的や条件を仮定で補わずに質問し、利用できる質問ツールを優先して、回答に応じて掘り下げる指示をAGENTS.mdから読み取れる。
+Scenario: First setup explains questions and follow-up
 
-Scenario: 再実行する場合、既存のsdev指示を保持し重複させない
+- Given: AGENTS.md has no sdev instructions.
+- When: `init` runs.
+- Then: Instructions say to ask rather than assume unclear goals or conditions, prefer available question tools, and choose follow-up questions from answers.
 
-- Given: 初期設定済みで、sdevの指示を利用者が編集している場合もある。
-- When: 再び`init`を実行する。
-- Then: 既存の指示を保持し、同じ指示や除外行を追加しない。
+Scenario: Repeated setup preserves edited instructions without duplicates
 
-Scenario: 対象がシンボリックリンク・ディレクトリ・不正な文字列や区切りの場合、初期設定を開始しない
+- Given: Setup is complete and the user may have edited sdev instructions.
+- When: `init` runs again.
+- Then: It preserves those instructions without duplicating instructions or exclusions.
 
-- Given: AGENTS.mdまたは.gitignoreを通常のUTF-8ファイルとして安全に更新できない、あるいはsdevの指示の区切りが壊れている。
-- When: `init`を実行する。
-- Then: 対象と理由を示して失敗し、事前の確認で問題を見つけたファイルも、もう一方のファイルも変更しない。
+Scenario: Unsafe target files or broken markers prevent setup
 
-### クラウド環境で実行ファイルを準備する
+- Given: AGENTS.md or .gitignore cannot safely be updated as an ordinary UTF-8 file, or the sdev instruction markers are malformed.
+- When: `init` runs.
+- Then: It reports the target and reason, leaving every prevalidated target unchanged.
 
-クラウド環境を使う開発者として、セッション開始時に実行ファイルを準備したい。
-それによって、Git管理した指示を使い、端末にだけあるインストールへ依存せず作業できる。
+### Prepare executables in cloud environments
 
-**受け入れ条件:**
+As a developer using a cloud environment, I want the executable prepared at session start so I can use tracked instructions without depending on my local installation.
 
-Scenario: 初期設定済みプロジェクトへ実行ファイルだけを導入する場合、指示を変更しない
+**Acceptance criteria:**
 
-- Given: AGENTS.mdと.gitignoreがGit管理され、実行ファイルがない。
-- When: 初期設定を指定せずbootstrapを実行する。
-- Then: 実行ファイルを準備し、AGENTS.mdと.gitignoreを変更しない。
+Scenario: Installing only an executable preserves tracked instructions
 
-### clone後も同じ入口から使う
+- Given: AGENTS.md and .gitignore are tracked, but the executable is absent.
+- When: Bootstrap runs without initialization.
+- Then: It prepares the executable without changing AGENTS.md or .gitignore.
 
-開発者として、取得方法と使用するバージョンをプロジェクトと一緒に共有したい。
-それによって、別の開発者や新しいクラウド環境でも、導入済みの端末に依存せず資料を読める。
+### Use the same entry point after cloning
 
-**受け入れ条件:**
+As a developer, I want to share acquisition instructions and the chosen version with the project so other developers and cloud environments can read materials without my machine's installation.
 
-Scenario: 起動スクリプトの配置先を指定する場合、参照指示も同じ入口を使う
+**Acceptance criteria:**
 
-- Given: 対応するmacOS・Linuxで、指定先に別のファイルがない。
-- When: `sdev init --path ./scripts/sdev`を実行する。
-- Then: 指定先に実行可能な起動スクリプトを生成し、AGENTS.mdと完了表示もそのパスを参照する。スクリプトはGit管理でき、本体だけが除外される。
+Scenario: A custom launcher path is also used in reference instructions
 
-Scenario: clone後に初めて起動する場合、固定したバージョンを検証して実行する
+- Given: A supported macOS/Linux environment has no conflicting file at the requested path.
+- When: `sdev init --path ./scripts/sdev` runs.
+- Then: It creates an executable launcher there, references that path in AGENTS.md and completion output, and permits tracking the launcher while excluding only downloaded executables.
 
-- Given: 起動スクリプトと指示が共有され、本体がまだ取得されていない。
-- When: 起動スクリプトへ`help`などの引数を渡す。
-- Then: 対応する本体を公開Releaseから取得し、チェックサムとバージョンの確認後にだけ実行する。引数と呼び出し元の作業ディレクトリを保持し、指示を変更しない。
+Scenario: First invocation after clone verifies and runs the pinned version
 
-Scenario: 本体が取得済みの場合、通信せず同じ本体を使う
+- Given: The launcher and instructions are shared, but the executable is not cached.
+- When: The launcher receives arguments such as `help`.
+- Then: It downloads the matching release executable, checks checksum and version before execution, preserves arguments and caller directory, and leaves instructions unchanged.
 
-- Given: 固定したバージョン・OS・CPUの本体がローカルにある。
-- When: 起動スクリプトを実行する。
-- Then: 追加のダウンロードなしで本体を起動し、本体の終了コードを返す。
+Scenario: A cached executable works without network access
 
-Scenario: 配置先が不正または既存の別ファイルと衝突する場合、初期設定を変更しない
+- Given: The pinned version for the current OS/CPU is cached locally.
+- When: The launcher runs.
+- Then: It starts that executable without downloads and returns its exit code.
 
-- Given: プロジェクト外のパス、シンボリックリンク、ディレクトリ、または別のファイルが配置先として指定されている。
-- When: `init`を実行する。
-- Then: 理由を示して失敗し、既存のファイルと指示を保持する。同じ生成済みスクリプトでの再実行は重複しない。
+Scenario: Invalid or conflicting destinations preserve setup
 
-Scenario: 初回取得に失敗する場合、未検証の本体を実行しない
+- Given: The requested path is outside the project, a symlink, directory, or another existing file.
+- When: `init` runs.
+- Then: It fails with a reason and preserves files and instructions. Repeating setup with the identical generated launcher does not duplicate it.
 
-- Given: 本体がまだなく、取得先へ接続できないか、チェックサムまたはバージョンが一致しない。
-- When: 起動スクリプトを実行する。
-- Then: 非ゼロで終了し、未検証の本体を配置・実行せず、コミットしたスクリプトと指示を保持する。
+Scenario: First-download failure never runs an unverified executable
 
-## KPI
+- Given: No executable is cached and download, checksum, or version verification fails.
+- When: The launcher runs.
+- Then: It exits nonzero without installing or running the unverified executable and preserves the committed launcher and instructions.
 
-### 追加の言語実行環境なしで導入できる
+## KPIs
 
-- **現状値:** 新規のため未計測。
-- **目標値:** bootstrapの実行にRust・Node.js・Pythonを必要としない。
-- **計測方法:** 対応するmacOS・Linuxで取得・配置・起動を確認する。
-- **計測期間:** 本機能の変更時と公開前。
+### Installation without a language runtime
 
-## 機能要件
+- **Current value:** Not measured for this new feature.
+- **Target value:** Bootstrap requires no Rust, Node.js, or Python.
+- **Measurement:** Verify download, installation, and startup on supported macOS/Linux environments.
+- **Period:** On feature changes and before publication.
 
-### 実行ファイルの準備
+## Functional requirements
 
-**概要:** 公開済みの指定バージョン、または最新の安定Releaseをプロジェクトへ導入します。
+### Prepare the executable
 
-**入力:** バージョンの任意指定、証明検証の指定、独立して確認したソースコミット・信頼情報の任意指定、初期設定を続ける指定。
+**Overview:** Install a specified published version or the latest stable Release into the project.
 
-**出力:** `./bin/sdev`と、選択したバージョン・検証方法・配置場所の表示。取得中は対象ファイルを示し、対話用の端末ではダウンロードの進捗も表示します。
+**Input:** Optional version, attestation verification, independently verified source commit/trust information, and whether to continue with initialization.
 
-#### 適用する条件
+**Output:** `./bin/sdev`, selected version, verification method, and installation path. Report each download, with a progress indicator on interactive terminals.
 
-取得先はsdevの公開Releaseとし、GitHubへのログインやAPIでの最新バージョン検索を要求しません。
-通常の導入ではチェックサムを必ず照合します。
-証明を検証する場合はGitHub CLIを使い、証明ファイルは配布物から取得します。
-独立して確認したソースコミットを指定した場合は、証明付きの記録とそのコミットが一致することも要求します。
-公開する実行ファイルとインストーラーには証明を付け、選択バージョンのソースを確認する記録と一緒に配布します。
-既存の通常ファイルは確認成功後に差し替え、シンボリックリンクやディレクトリを実行ファイルの置き場所として使いません。
-導入後の`init`が失敗した場合は、その失敗を返し、準備済みの実行ファイルは保持します。
+#### Applicable conditions
 
-#### 例外ケースでの振る舞い
+Use public sdev Releases without login or GitHub API lookup for the latest version.
+Always compare checksums. Requested attestation verification uses GitHub CLI and a bundle downloaded with the artifacts.
+An independently supplied source commit must also match the attested release record.
+Attest public executables and installers, and distribute a record identifying the selected version's source.
+Replace ordinary existing files only after successful checks; reject symlink/directory executable destinations.
+If subsequent `init` fails, return that failure and retain the installed executable.
 
-取得・検証できなければ停止します。
-チェックサムは配布元を証明せず、Attestationsもソフトウェアの無害さを保証しないことを案内します。
-取得したインストーラー自身の信頼は別に扱い、未検証のスクリプトを実行することを「証明済みの導入」と呼びません。
+#### Exceptional behavior
 
-### プロジェクトの初期設定
+Stop if retrieval or verification fails.
+Explain that checksums do not establish provenance and attestations do not guarantee harmless software.
+Treat installer trust separately: executing an unverified script is not an attestation-verified installation of that script.
 
-**概要:** 現在のディレクトリをルートとして参照指示とGitの除外を追加します。
+### Initialize the project
 
-**入力:** `sdev init`と、macOS・Linuxでは起動スクリプトの配置先を指定する`--path PATH`。
+**Overview:** Add reference instructions, Git exclusions, and language configuration using the current directory as root.
 
-**出力:** AGENTS.mdと.gitignore、macOS・Linuxでは起動スクリプト、および変更・既存保持の表示。
+**Input:** `sdev init`, optional language settings, and macOS/Linux `--path PATH` for the launcher.
 
-#### 適用する条件
+**Output:** AGENTS.md, .gitignore, sdev.toml, a macOS/Linux launcher, and a report of changes or preserved files.
 
-macOS・Linuxでは既定の配置先を`./bin/sdev`とし、プロジェクト内の相対パスを指定できます。
-参照指示は指定した起動スクリプトを指します。Windowsは従来どおり手動配置した`./bin/sdev.exe`を参照します。
-起動スクリプトは生成したsdevのバージョンに固定し、その本体を必要時にだけ取得します。
-`init`自体は通信せず、仕様用の空ディレクトリは作りません。スクリプトの親ディレクトリは必要なものだけ作ります。
-同一の生成済みスクリプトは保持し、利用者の別のスクリプトを上書きしません。
-初回インストーラーから続けて`init`する場合は、起動中のsdev本体を既定のスクリプトへ置き換えられるようにします。
-既存のsdev指示が別の配置先を参照する場合は、その指示を無断で書き換えず、確認すべき箇所を示して失敗します。
-作業種別を例示し、ガイドやテンプレートの選択肢を指示本文へ列挙せず、コマンドの一覧へ案内します。
-依頼の範囲とレビューを短く案内し、詳しい進め方は共通の作業ガイドへ委ねます。
-質問ツールの優先利用と回答に応じた掘り下げも短く案内します。
-既存の本文・改行・ファイルの権限を保持します。
-仕様は利用先の規約を優先し、指定がなければ`docs/products/`を使うと案内します。
-仕様ファイルや空ディレクトリは作りません。
+#### Applicable conditions
 
-#### 例外ケースでの振る舞い
+Default to `./bin/sdev` on macOS/Linux and allow project-relative paths.
+Instructions reference that launcher. Windows references the manually installed `./bin/sdev.exe`.
+Pin the launcher to the generating sdev version and fetch the executable only when needed.
+`init` performs no network operations and creates only required launcher parent directories, not empty specification directories.
+Preserve identical generated launchers; do not overwrite another user script.
+Initial installer setup may replace the currently running sdev executable with the default launcher.
+If existing instructions reference another path, report where manual adjustment is needed rather than rewriting them silently.
+Show task examples but direct agents to current help/template lists rather than copying all choices into instructions.
+Briefly explain request scope, review, question tools, and follow-up, with the shared workflow guide owning details.
+Preserve existing text, line endings, permissions, and valid configuration as required by localization.
+Follow consuming repository conventions for specifications, using `docs/products/` only when none is specified.
+Create no specification files or empty directories.
 
-引数の誤りは使い方を表示して終了コード2、ファイルの処理失敗は対象と理由を表示して1を返します。
-複数ファイルの保存途中で失敗した場合は失敗箇所を示します。ファイルをまたぐ保存の同時成功は保証しません。
+#### Exceptional behavior
 
-## データ要件
+Argument errors show usage and exit 2. File processing errors show the target/reason and exit 1.
+A failure during multi-file saving identifies its location; cross-file transactional success is not guaranteed.
 
-### 必要なデータ
+## Data requirements
 
-- **配布物:** 選択バージョンの実行ファイル、チェックサム、任意の検証に使う証明。
-- **既存の指示と除外:** 利用者の記載を保持し、sdevの参照とローカル実行ファイルの除外を追加する対象。
-- **起動スクリプト:** 使用するバージョンと取得処理を保持し、プロジェクトと一緒にGit管理する入口。
+### Required data
 
-### データ間の関係
+- **Artifacts:** Selected executable, checksum, and optional attestation bundle.
+- **Existing instructions and exclusions:** Text to preserve while adding material access and local executable exclusions.
+- **Launcher:** A tracked entry point containing the pinned version and acquisition procedure.
+- **Language configuration:** Shared default and translation languages as defined by localization.
 
-取得した実行ファイルとチェックサム・証明は同じReleaseに属します。
-AGENTS.mdが導入先のコマンドを指し、.gitignoreが取得した本体を除外します。
-macOS・Linuxでは起動スクリプトを除外しません。旧版が追加した指定先と同一の除外行は取り除きます。
+### Relationships
 
-### 個人情報
+Executable, checksum, and attestation belong to one Release.
+AGENTS.md points to the installed command; .gitignore excludes downloaded executables.
+On macOS/Linux, track the launcher and remove only a legacy exclusion exactly matching its path.
 
-扱いません。プロジェクトの本文を外部へ送信しません。
+### Personal information
 
-## 依存する外部サービス
+None. Project text is not sent externally.
 
-- **GitHub ReleasesとArtifact Attestations**
-  - **関連するユーザーストーリー:** 実行環境を追加せずプロジェクトへ導入する、配布元を検証してから使う。
-  - **依存する理由:** 公開バイナリーとその証明を配布するため。
-  - **契約・利用上の判断:** 既存のGitHub配布を使います。証明を生成する初回の公開先は公開リポジトリとし、追加の有料サービスは導入しません。
+## External service dependencies
 
-## セキュリティ上の留意事項
+- **GitHub Releases and Artifact Attestations**
+  - **Related user stories:** Install without another runtime; verify provenance before use.
+  - **Reason:** Distribute public executables and attestations.
+  - **Usage decision:** Reuse GitHub distribution in a public repository initially, without another paid service.
 
-検証を指定した際の失敗を、検証なしの成功へ切り替えません。
-実行・差し替えの前に照合し、通常ファイル以外の更新を拒否します。
-インストーラーを信頼する入口、配布ファイルの一致、配布元の検証を分けて案内します。
+## Security considerations
 
-## 未決事項
+Requested verification failures never become unverified success.
+Compare before execution/replacement and reject updates to nonregular files.
+Explain installer trust, artifact consistency, and provenance as separate checks.
 
-実装に必要な判断はありません。
-記載したURLからの導入とClaude Code on the webでの実際の取得・検証は、ソースの反映とRelease公開後に保守者が確認します。
+## Open questions
+
+No implementation decisions remain.
+After source changes and publication, maintainers verify the documented download URL and actual retrieval/verification in Claude Code on the web.

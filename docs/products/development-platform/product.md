@@ -1,84 +1,86 @@
-# Rust開発基盤
+# Rust development platform
 
-## 概要
+[日本語](product.ja.md)
 
-Rust開発基盤は、sdev自身を開発する人とAIに、共通の開発環境・検証手順・変更時の判断基準を提供するプロダクトです。
-[sdevのProduct](../sdev/product.md)が定める仕様起点の開発を、Rustの実装と検証まで続けられるようにします。
-独立した利用者向けアプリケーションや、sdevを使う全プロジェクトへのRust採用規則ではありません。
+## Overview
 
-提供する機能は[共通開発ガイドのRequirements](features/common-development-guide/requirements.md)、日々の作業は[Rust開発ガイド](../../engineering/guidelines/rust-development.md)から参照します。
-環境と共通CIを変更するときの基準は、[Rust開発ガイド](../../engineering/guidelines/rust-development.md#ciと異なるosで確かめる)から参照します。
+The Rust development platform gives people and AI working on sdev shared environment setup, verification procedures, and criteria for changes.
+It carries the specification-led development defined by the [sdev Product](../sdev/product.md) through Rust implementation and verification.
+It is neither a standalone application nor a rule requiring every consuming project to adopt Rust.
 
-## 背景と解決する課題
+The [shared development guide Requirements](features/common-development-guide/requirements.md) define its feature, while the [Rust development guide](../../engineering/guidelines/rust-development.md) covers daily work.
+Start environment and CI changes from the [CI guidance](../../engineering/guidelines/rust-development.md#ci-and-other-operating-systems).
 
-### 背景
+## Background and problems
 
-sdevはRustを採用して開発します。
-人とAIが作業を引き継ぐには、仕様だけでなく、どの環境で何を確かめたかも共有できる必要があります。
-Rust公式は、Cargoとともに整形やコードの問題を調べる道具を提供しています。
-標準的な道具の役割は[公式の開発ツール紹介](https://doc.rust-lang.org/stable/book/appendix-04-useful-development-tools.html?highlight=clippy)を参照します。
+### Background
 
-### 解決する課題
+sdev is developed in Rust.
+For people and AI to hand work over, they need to share the environment and verified results alongside specifications.
+Rust provides formatting and static-analysis tools with Cargo.
+See the official [development tools introduction](https://doc.rust-lang.org/stable/book/appendix-04-useful-development-tools.html?highlight=clippy) for their roles.
 
-環境や確認方法を作業ごとに選び直すと、同じ変更でも確認できた範囲が異なり、レビューで結果を比較しにくくなります。
-ローカルで成功したことと、異なるOSで成功したことを混同しないためにも、共通の手順と確認範囲を残す基準が必要です。
+### Problems to solve
 
-## ターゲットエンドユーザー
+Choosing environments and verification methods anew for every task makes results inconsistent and harder to compare in review.
+Shared procedures and reporting boundaries help distinguish local success from verification on other operating systems.
 
-### sdevの開発・レビューを行う人
+## Target users
 
-変更の目的、影響、確認結果を判断する人が対象です。
-手でRustを書く頻度にかかわらず、AIの作業を共通の基準で確認する場面で使います。
-個別のエディター操作やRustの習熟度に依存せず、変更理由と確認できた範囲を読めることを必要とします。
+### People developing and reviewing sdev
 
-### Rustの実装・検証を行うAIエージェント
+People judging a change's purpose, impact, and verification results use this platform.
+They need to review AI's work against shared criteria regardless of how often they write Rust themselves.
+They should be able to understand reasons and verified scope without relying on a particular editor or level of Rust expertise.
 
-仕様から実装し、失敗を修正し、結果を報告する実行者が対象です。
-作業開始、別の作業からの引き継ぎ、環境更新で、配置済みの文書と設定から手順を選びます。
-会話にない規則や新しい道具を独自に増やさず作業するための基準を必要とします。
+### AI agents implementing and verifying Rust
 
-## 提供価値
+Agents implement from specifications, repair failures, and report results.
+They select procedures from configured documents when starting, handing work over, or changing environments.
+They need criteria that prevent inventing tools or rules absent from the conversation.
 
-### 同じ基本手順で変更を確かめられる
+## Value provided
 
-人とAIに、環境をそろえて変更を検証するための共通ガイドを提供します。
-担当や実行環境が変わっても、実行内容と結果を比較できるようにするためです。
+### Verify changes through shared basic procedures
 
-### 構成を選んだ理由をたどれる
+Provide common guidance for people and AI to align environments and verification.
+This makes results comparable across contributors and execution environments.
 
-実装・レビューを行う人とAIに、標準の道具を使う理由と、追加の仕組みを検討する条件を提供します。
-道具の数ではなく、必要な確認ができることを判断の基準にするためです。
+### Trace the reasons for the environment
 
-## 成功の定義
+Explain standard tools and conditions for considering additional mechanisms.
+Choose tools by whether they provide the necessary verification, rather than by tool count.
 
-人とAIが共通ガイドとリポジトリの設定を読み、必要な検証を選び、成功・失敗・未確認を区別して変更をレビューできる状態を成功とします。
-環境や手順を変更するときに、理由と影響する文書をたどれることも含めます。
-作業時間の短縮率などの実績は未計測であり、成功を示す数値として使いません。
+## Definition of success
 
-## プロダクト開発を進める上での指針
+People and AI can read shared guidance and settings, select necessary verification, and distinguish success, failure, and unverified conditions in review.
+When environments or procedures change, they can trace the reasons and affected documents.
+No time-saving metric has been measured or claimed as evidence of success.
 
-Rust公式の道具を中心に、sdevに必要な最小構成を使います。
-人の学習用カリキュラムより、人とAIが同じ手順で実行・確認できることを優先します。
-新しいランナー、独自フレームワーク、特定のエディターは必須にしません。
+## Development principles
 
-製品の利用方法、配布先、配布物の形式と対応環境はsdev側の仕様で判断します。
-このProductでは共通の開発・検証基準を扱い、配布機能を再設計しません。
-手順と仕様を二重に保たず、目的はProduct、提供条件はRequirements、構成と判断理由はDesign、日常の実行手順は共通ガイドへ分けます。
+Use Rust's official tools as the core of the smallest environment that meets sdev's needs.
+Prioritize procedures people and AI can both execute and verify over a curriculum for learning Rust.
+Keep direct Cargo procedures available without requiring a runner, custom framework, or specific editor.
 
-## SLA・SLI・SLO
+Define product usage, distribution destinations, artifacts, and supported systems in sdev's product specifications.
+This Product covers shared development and verification criteria without redesigning distribution features.
+Avoid duplicated procedures: Product defines purpose, Requirements conditions, Design methods and reasons, and shared guides daily operations.
+
+## SLA, SLI, and SLO
 
 ### SLA
 
-サービス水準の保証は設けません。
-リポジトリ内の開発基盤であり、利用者に稼働率を保証する公開サービスを提供しないためです。
+No service-level guarantee is provided.
+This repository's development platform is not a public service offering contractual availability.
 
-### SLI・SLO
+### SLI and SLO
 
-継続計測する信頼性指標と数値目標は設けません。
-文書の参照可否と設定・手順の一致を変更時に確認し、CIの結果は対象コミットの検証結果として扱います。
-運用サービスを追加する場合は、開発者が提供範囲と合わせて指標を判断します。
+No continuously measured reliability indicators or numerical targets are defined.
+Check document reachability and consistency with settings when making changes; CI results apply to their specific commit.
+If an operational service is introduced, developers will determine indicators with its scope.
 
-## 未決事項
+## Open questions
 
-この提供範囲に必要な未決事項はありません。
-追加の道具は、標準構成で解決できない具体的な問題が生じた際に、開発者が効果と保守負担を比較して判断します。
+None within this scope.
+Consider additional tools when a concrete problem cannot be resolved with the standard environment, comparing their benefit and maintenance cost.

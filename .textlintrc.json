@@ -1,5 +1,5 @@
 {
   "rules": {
-    "preset-ja-technical-writing": true
+    "preset-slopless": true
   }
 }

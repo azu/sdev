@@ -1,12 +1,17 @@
-name: Check README
+name: Check documents
 
 on:
   pull_request:
     paths:
-      - README.md
+      - "README*.md"
+      - "AGENTS*.md"
+      - "docs/**"
+      - "licenses/*.md"
+      - sdev.toml
+      - scripts/check-doc-languages.mjs
       - package.json
       - pnpm-lock.yaml
-      - .textlintrc.json
+      - ".textlintrc*.json"
       - mise.toml
       - mise.lock
       - hk.pkl
@@ -14,10 +19,15 @@ on:
   push:
     branches: [main]
     paths:
-      - README.md
+      - "README*.md"
+      - "AGENTS*.md"
+      - "docs/**"
+      - "licenses/*.md"
+      - sdev.toml
+      - scripts/check-doc-languages.mjs
       - package.json
       - pnpm-lock.yaml
-      - .textlintrc.json
+      - ".textlintrc*.json"
       - mise.toml
       - mise.lock
       - hk.pkl
@@ -28,11 +38,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: readme-${{ github.workflow }}-${{ github.ref }}
+  group: docs-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  textlint:
+  documents:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
@@ -47,4 +57,6 @@ jobs:
           install_args: --locked
       - run: pnpm install --frozen-lockfile
       - run: hk validate
+      - name: Install the repository's pinned Rust toolchain
+        run: rustup show active-toolchain
       - run: mise run md:lint

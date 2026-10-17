@@ -19,6 +19,7 @@ impl Project {
     }
     fn run(&self, args: &[&str]) -> Output {
         Command::new(env!("CARGO_BIN_EXE_sdev"))
+            .args(["--lang", "ja"])
             .args(args)
             .current_dir(&self.0)
             .env("PATH", "")
@@ -66,13 +67,13 @@ fn init_creates_project_entry_and_routes_to_current_catalogs() {
                 .read("bin/sdev")
                 .starts_with("#!/bin/sh\n# sdev bootstrap")
         );
-        assert_eq!(fs::read_dir(&project.0).unwrap().count(), 3);
+        assert_eq!(fs::read_dir(&project.0).unwrap().count(), 4);
         assert!(!project.0.join(".sdev").exists());
     }
     #[cfg(windows)]
     {
         assert_eq!(project.read(".gitignore"), "/bin/sdev\n/bin/sdev.exe\n");
-        assert_eq!(fs::read_dir(&project.0).unwrap().count(), 2);
+        assert_eq!(fs::read_dir(&project.0).unwrap().count(), 3);
     }
 }
 
@@ -103,9 +104,9 @@ fn repeated_init_preserves_existing_bytes_crlf_and_edited_sdev_instructions() {
     assert_eq!(project.read("AGENTS.md"), edited);
     assert_eq!(project.read(".gitignore"), ignore);
     #[cfg(unix)]
-    assert_eq!(fs::read_dir(&project.0).unwrap().count(), 3);
+    assert_eq!(fs::read_dir(&project.0).unwrap().count(), 4);
     #[cfg(windows)]
-    assert_eq!(fs::read_dir(&project.0).unwrap().count(), 2);
+    assert_eq!(fs::read_dir(&project.0).unwrap().count(), 3);
 }
 
 #[test]

@@ -4,7 +4,9 @@ pnpm = "11.28.6"
 "aqua:jdx/hk" = "2.7.0"
 
 [settings]
-idiomatic_version_file_enable_tools = ["rust"]
+# Rust is managed by rustup and rust-toolchain.toml, outside mise.lock.
+idiomatic_version_file_enable_tools = []
+disable_tools = ["rust"]
 
 [hooks]
 postinstall = "mise run setup"
@@ -14,21 +16,29 @@ description = "Install documentation dependencies and register Git hooks"
 run = ["pnpm install --frozen-lockfile", "hk install --mise"]
 
 [tasks."md:lint"]
-description = "Check README prose with textlint"
-run = "pnpm exec textlint README.md"
+description = "Check English/Japanese prose, language pairs, and document links"
+run = [
+  "pnpm exec textlint --config .textlintrc.json README.md",
+  "pnpm exec textlint --config .textlintrc.ja.json README.ja.md",
+  "node scripts/check-doc-languages.mjs",
+  "cargo run --locked --package sdev --bin sdev -- lint",
+]
 
 [tasks."md:fix"]
-description = "Fix README prose with textlint"
-run = "pnpm exec textlint --fix README.md"
+description = "Fix English and Japanese README prose"
+run = [
+  "pnpm exec textlint --config .textlintrc.json --fix README.md",
+  "pnpm exec textlint --config .textlintrc.ja.json --fix README.ja.md",
+]
 
 [tasks."rs:check"]
 description = "Run the existing Rust checks"
 run = "cargo xtask check"
 
 [tasks.pre-commit]
-description = "Check staged README and Rust changes with hk"
+description = "Check staged document and Rust changes with hk"
 run = "hk run pre-commit"
 
 [tasks.check]
-description = "Run Rust and README checks"
+description = "Run Rust and document checks"
 depends = ["rs:check", "md:lint"]

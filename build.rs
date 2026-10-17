@@ -39,7 +39,12 @@ fn validate_catalog(root: &Path) {
         let registered: BTreeSet<_> = catalog::TOPICS
             .iter()
             .filter(|topic| topic.operation == operation)
-            .map(|topic| root.join(topic.source))
+            .flat_map(|topic| {
+                [
+                    root.join(topic.source),
+                    root.join(topic.source.replace(".md", ".ja.md")),
+                ]
+            })
             .collect();
         assert_eq!(
             registered,
@@ -70,6 +75,8 @@ fn target_command(source: &str, destination: &str) -> Option<String> {
         }
     }
     let normalized = path.to_str().unwrap().replace('\\', "/");
+    let japanese = normalized.ends_with(".ja.md");
+    let normalized = normalized.replace(".ja.md", ".md");
     let command = if normalized == "docs/README.md" {
         "sdev help".to_owned()
     } else {
@@ -79,10 +86,15 @@ fn target_command(source: &str, destination: &str) -> Option<String> {
             .unwrap_or_else(|| panic!("Unmapped guide link: {source} -> {destination}"));
         format!("sdev {} {}", topic.operation, topic.name)
     };
+    let command = format!("{command} --lang {}", if japanese { "ja" } else { "en" });
     Some(if anchor.is_empty() {
         format!("`{command}`")
     } else {
-        format!("`{command}`の「{anchor}」節")
+        if japanese {
+            format!("`{command}`の「{anchor}」節")
+        } else {
+            format!("`{command}` (section: {anchor})")
+        }
     })
 }
 
@@ -96,7 +108,24 @@ fn guide_body(source: &str, text: &str) -> String {
                     link = Some((range.start, command, String::new()));
                 }
             }
-            Event::Text(text) | Event::Code(text) => {
+            Event::Code(text) => {
+                if let Some((_, _, label)) = &mut link {
+                    label.push_str(&text);
+                } else if (text.as_ref() == "sdev help"
+                    || text.starts_with("sdev help ")
+                    || text.as_ref() == "sdev template"
+                    || text.starts_with("sdev template "))
+                    && !text.contains("--lang")
+                {
+                    let language = if source.ends_with(".ja.md") {
+                        "ja"
+                    } else {
+                        "en"
+                    };
+                    edits.push((range, format!("`{text} --lang {language}`")));
+                }
+            }
+            Event::Text(text) => {
                 if let Some((_, _, label)) = &mut link {
                     label.push_str(&text);
                 }
@@ -108,7 +137,14 @@ fn guide_body(source: &str, text: &str) -> String {
             }
             Event::End(TagEnd::Link) => {
                 if let Some((start, command, label)) = link.take() {
-                    edits.push((start..range.end, format!("{label}（{command}）")));
+                    edits.push((
+                        start..range.end,
+                        if source.ends_with(".ja.md") {
+                            format!("{label}（{command}）")
+                        } else {
+                            format!("{label} ({command})")
+                        },
+                    ));
                 }
             }
             _ => {}
@@ -127,17 +163,22 @@ fn main() {
     validate_catalog(&root);
     let mut generated = String::from("const MATERIALS: &[Material] = &[\n");
     for topic in catalog::TOPICS {
-        println!("cargo:rerun-if-changed={}", topic.source);
-        let original = fs::read_to_string(root.join(topic.source)).expect("read UTF-8 Markdown");
-        let body = if topic.operation == "help" {
-            guide_body(topic.source, &original)
-        } else {
-            original
-        };
-        generated.push_str(&format!(
-            "Material {{ operation: {:?}, topic: {:?}, title: {:?}, body: {:?} }},\n",
-            topic.operation, topic.name, topic.title, body
-        ));
+        for (language, source, title) in [
+            ("en", topic.source.to_owned(), topic.title),
+            ("ja", topic.source.replace(".md", ".ja.md"), topic.title_ja),
+        ] {
+            println!("cargo:rerun-if-changed={source}");
+            let original = fs::read_to_string(root.join(&source)).expect("read UTF-8 Markdown");
+            let body = if topic.operation == "help" {
+                guide_body(&source, &original)
+            } else {
+                original
+            };
+            generated.push_str(&format!(
+                "Material {{ operation: {:?}, topic: {:?}, language: {:?}, title: {:?}, body: {:?} }},\n",
+                topic.operation, topic.name, language, title, body
+            ));
+        }
     }
     generated.push_str("];\n");
     fs::write(

@@ -241,29 +241,51 @@ pub fn verify(path: &Path) -> Result<()> {
         return Err("Release version mismatch".into());
     }
     let help = String::from_utf8(invoke(&binary, &directory.0, &["--help"], 0)?.stdout)?;
-    let templates = String::from_utf8(invoke(&binary, &directory.0, &["template"], 0)?.stdout)?;
-    for topic in catalog::TOPICS {
-        let overview = if topic.operation == "help" {
-            &help
-        } else {
-            &templates
-        };
-        if !overview.contains(&format!("sdev {} {}", topic.operation, topic.name))
-            || !overview.contains(topic.title)
-        {
-            return Err(format!(
-                "Missing topic in overview: {} {}",
-                topic.operation, topic.name
-            )
-            .into());
-        }
-        let body = invoke(&binary, &directory.0, &[topic.operation, topic.name], 0)?.stdout;
-        if topic.operation == "template" {
-            if body != fs::read(root().join(topic.source))? {
-                return Err(format!("Template body mismatch: {}", topic.name).into());
+    for language in ["en", "ja"] {
+        let localized_help = String::from_utf8(
+            invoke(&binary, &directory.0, &["help", "--lang", language], 0)?.stdout,
+        )?;
+        let templates = String::from_utf8(
+            invoke(&binary, &directory.0, &["template", "--lang", language], 0)?.stdout,
+        )?;
+        for topic in catalog::TOPICS {
+            let overview = if topic.operation == "help" {
+                &localized_help
+            } else {
+                &templates
+            };
+            if !overview.contains(&format!("sdev {} {}", topic.operation, topic.name))
+                || !overview.contains(if language == "en" {
+                    topic.title
+                } else {
+                    topic.title_ja
+                })
+            {
+                return Err(format!(
+                    "Missing topic in overview: {} {}",
+                    topic.operation, topic.name
+                )
+                .into());
             }
-        } else if !body.starts_with(b"# ") {
-            return Err(format!("Invalid guide body: {}", topic.name).into());
+            let body = invoke(
+                &binary,
+                &directory.0,
+                &[topic.operation, topic.name, "--lang", language],
+                0,
+            )?
+            .stdout;
+            if topic.operation == "template" {
+                let source = if language == "en" {
+                    topic.source.to_owned()
+                } else {
+                    topic.source.replace(".md", ".ja.md")
+                };
+                if body != fs::read(root().join(source))? {
+                    return Err(format!("Template body mismatch: {}", topic.name).into());
+                }
+            } else if !body.starts_with(b"# ") {
+                return Err(format!("Invalid guide body: {}", topic.name).into());
+            }
         }
     }
     for removed in ["docs get", "entry", "licenses", "docs/guidelines/"] {
@@ -326,9 +348,14 @@ pub fn verify(path: &Path) -> Result<()> {
     invoke(&binary, &directory.0, &["init"], 0)?;
     let instructions = fs::read(directory.0.join("AGENTS.md"))?;
     let ignores = fs::read(directory.0.join(".gitignore"))?;
+    let languages = fs::read(directory.0.join("sdev.toml"))?;
+    if languages != b"language = \"en\"\ntranslations = []\n" {
+        return Err("Unexpected initialized document languages".into());
+    }
     invoke(&binary, &directory.0, &["init"], 0)?;
     if instructions != fs::read(directory.0.join("AGENTS.md"))?
         || ignores != fs::read(directory.0.join(".gitignore"))?
+        || languages != fs::read(directory.0.join("sdev.toml"))?
     {
         return Err("Repeated initialization changed existing project instructions".into());
     }

@@ -1,8 +1,10 @@
 mod init;
+mod language;
 #[cfg(unix)]
 mod launcher;
 mod lint;
 
+use language::{Language, ProjectConfig};
 use std::{
     env,
     io::{self, Write},
@@ -12,6 +14,7 @@ use std::{
 struct Material {
     operation: &'static str,
     topic: &'static str,
+    language: &'static str,
     title: &'static str,
     body: &'static str,
 }
@@ -34,44 +37,60 @@ fn output(writer: &mut impl Write, text: &str) -> Result<(), CliError> {
         message: error.to_string(),
     })
 }
-fn overview(writer: &mut impl Write, operation: &str) -> Result<(), CliError> {
-    if operation == "help" {
-        output(
-            writer,
-            "sdev — 人とAIが仕様を起点に開発するためのフレームワーク\n\n読むガイドを作業名から選んでください。\n",
-        )?;
-    } else {
-        output(
-            writer,
-            "内蔵の既定テンプレートの種類を選んでください。Markdown本文を表示するだけです。利用先の指示・規約で対象用と指定されたテンプレートがあれば、そちらを優先してください。\n",
-        )?;
-    }
+fn overview(writer: &mut impl Write, operation: &str, language: Language) -> Result<(), CliError> {
+    output(
+        writer,
+        if operation == "help" {
+            language.select("sdev — specifications-first development with people and AI\n\nChoose a guide for your task.\n", "sdev — 人とAIが仕様を起点に開発するためのフレームワーク\n\n読むガイドを作業名から選んでください。\n")
+        } else {
+            language.select("Choose a built-in fallback template. Commands display Markdown only. Prefer any template designated for the document by the consuming project.\n", "内蔵の既定テンプレートの種類を選んでください。Markdown本文を表示するだけです。利用先の指示・規約で対象用と指定されたテンプレートがあれば、そちらを優先してください。\n")
+        },
+    )?;
     for material in MATERIALS
         .iter()
-        .filter(|material| material.operation == operation)
+        .filter(|material| material.operation == operation && material.language == language.code())
     {
         output(
             writer,
             &format!(
-                "  sdev {} {:<12} {}\n",
-                material.operation, material.topic, material.title
+                "  sdev {} {:<12} --lang {}  {}\n",
+                material.operation,
+                material.topic,
+                language.code(),
+                material.title
             ),
         )?;
     }
     if operation == "help" {
-        output(
-            writer,
-            "\n  sdev init                  プロジェクトの参照指示と起動方法を準備\n  sdev lint                  文書のリンク切れと参照方向を検査\n  sdev template              テンプレートの種類を確認\n  sdev --version             バージョン\n\n利用先のProduct → 機能のRequirements → Designを前提に進めます。\nsdev自身の仕様ではなく、作業するプロジェクトの文書を参照してください。\n",
-        )?;
+        output(writer, language.select(
+            "\n  sdev init                  Set up project instructions, languages, and a launcher\n  sdev lint                  Check document links and reference directions\n  sdev template              List templates\n  sdev --version             Show version\n\nUse the consuming project's Product → Requirements → Design, not sdev's own specifications.\nSelect a language with --lang en|ja. Configure project defaults in sdev.toml.\n",
+            "\n  sdev init                  プロジェクトの参照指示・言語・起動方法を準備\n  sdev lint                  文書のリンク切れと参照方向を検査\n  sdev template              テンプレートの種類を確認\n  sdev --version             バージョン\n\n利用先のProduct → 機能のRequirements → Designを前提に進めます。\nsdev自身の仕様ではなく、作業するプロジェクトの文書を参照してください。\n--lang en|jaで言語を選択できます。プロジェクトの既定はsdev.tomlに設定します。\n"))?;
     }
     Ok(())
 }
-fn material(writer: &mut impl Write, operation: &str, topic: &str) -> Result<(), CliError> {
-    let chosen = MATERIALS
-        .iter()
-        .find(|material| material.operation == operation && material.topic == topic)
-        .ok_or_else(|| {
-            invalid(format!(
+fn material(
+    writer: &mut impl Write,
+    operation: &str,
+    topic: &str,
+    language: Language,
+) -> Result<(), CliError> {
+    let available = |lang| {
+        MATERIALS
+            .iter()
+            .find(|m| m.operation == operation && m.topic == topic && m.language == lang)
+    };
+    let chosen = if let Some(chosen) = available(language.code()) {
+        chosen
+    } else if let Some(chosen) = available("en") {
+        eprintln!(
+            "No {} translation for {operation} {topic}; using English.",
+            language.code()
+        );
+        chosen
+    } else {
+        return Err(invalid(language.select(
+            &format!("Unknown {operation} topic: {topic}\nUse sdev {operation} to list choices."),
+            &format!(
                 "不明な{}: {topic}\nsdev {}で選択肢を確認してください。",
                 if operation == "help" {
                     "ガイド"
@@ -83,89 +102,157 @@ fn material(writer: &mut impl Write, operation: &str, topic: &str) -> Result<(),
                 } else {
                     "template"
                 }
-            ))
-        })?;
+            ),
+        )));
+    };
     output(writer, chosen.body)
 }
-fn run(args: &[String], writer: &mut impl Write) -> Result<u8, CliError> {
-    let values: Vec<&str> = args.iter().map(String::as_str).collect();
-    if values.first() == Some(&"lint") {
-        return lint_command(&values[1..], writer);
+fn options(args: &[String]) -> Result<(Vec<&str>, Option<Language>), CliError> {
+    let mut values = Vec::new();
+    let mut language = None;
+    let mut args = args.iter();
+    while let Some(value) = args.next() {
+        let code = if value == "--lang" {
+            Some(
+                args.next()
+                    .ok_or_else(|| invalid("--lang requires en or ja."))?
+                    .as_str(),
+            )
+        } else {
+            value.strip_prefix("--lang=")
+        };
+        if let Some(code) = code {
+            if language.is_some() {
+                return Err(invalid("Specify --lang only once."));
+            }
+            language = Some(Language::parse(code).map_err(invalid)?);
+        } else {
+            values.push(value.as_str());
+        }
     }
-    if values.first() == Some(&"init") {
-        return init_command(&values[1..], writer);
-    }
-    match values.as_slice() {
-        [] | ["--help" | "-h" | "help"] => overview(writer, "help"),
-        ["--version" | "-V"] => output(writer, &format!("sdev {VERSION}\n")),
-        ["help", "--help" | "-h"] => overview(writer, "help"),
-        ["help", topic] => material(writer, "help", topic),
-        ["template"] | ["template", "--help" | "-h"] => overview(writer, "template"),
-        ["template", topic] => material(writer, "template", topic),
-        _ => Err(invalid(
-            "コマンドまたは引数を確認してください。sdev --helpで使い方を確認できます。",
-        )),
-    }
-    .map(|()| 0)
+    Ok((values, language))
 }
-const INIT_HELP: &str = "sdev init [--path PATH]\n\nプロジェクトのルートで実行し、AGENTS.mdへガイドとテンプレートを選ぶ指示を追加します。\nmacOS・Linuxでは./bin/sdevにコミット用の起動スクリプトを生成します。\n--path ./scripts/sdevのように配置先を変更でき、参照指示もそのパスを使います。\n初回の起動時に固定バージョンの本体を取得し、.gitignoreには/.sdev/を追加します。\nWindowsでは手動配置した./bin/sdev.exeを参照し、--pathは使いません。\n既存の本文とsdevの指示は保持します。別のスクリプトは上書きしません。\n仕様ファイルや空の仕様ディレクトリは作成しません。\n終了コード: 0 成功 / 1 ファイルや出力の処理失敗 / 2 引数の誤り\n";
-fn init_command(args: &[&str], writer: &mut impl Write) -> Result<u8, CliError> {
-    match args {
-        ["--help" | "-h"] => output(writer, INIT_HELP)?,
-        [] | ["--path", _] => {
-            let path = args.get(1).copied().unwrap_or("./bin/sdev");
-            #[cfg(unix)]
-            let path = launcher::normalize_path(path).map_err(invalid)?;
-            #[cfg(windows)]
-            let path = if args.is_empty() {
-                path.to_owned()
-            } else {
-                return Err(invalid("Windowsのinitでは--pathを使えません。"));
-            };
-            let body = env::current_dir()
-                .map_err(|error| error.to_string())
-                .and_then(|root| init::initialize(&root, &path))
-                .map_err(|message| CliError { status: 1, message })?;
-            output(writer, &body)?;
+fn run(args: &[String], writer: &mut impl Write) -> Result<u8, CliError> {
+    let (values, explicit) = options(args)?;
+    if matches!(values.as_slice(), ["--version" | "-V"]) {
+        output(writer, &format!("sdev {VERSION}\n"))?;
+        return Ok(0);
+    }
+    let root = env::current_dir().map_err(|e| invalid(e.to_string()))?;
+    let config = ProjectConfig::read(&root).map_err(invalid)?;
+    let language = explicit.unwrap_or_else(|| config.as_ref().map_or(Language::En, |c| c.language));
+    let result = match values.as_slice() {
+        ["lint", rest @ ..] => lint_command(rest, writer, language),
+        ["init", rest @ ..] => init_command(rest, writer, language, explicit, config.as_ref()),
+        [] | ["--help" | "-h" | "help"] | ["help", "--help" | "-h"] => {
+            overview(writer, "help", language).map(|()| 0)
         }
-        _ => {
-            return Err(invalid(format!(
-                "initの引数を確認してください。\n{INIT_HELP}"
-            )));
+        ["help", topic] => material(writer, "help", topic, language).map(|()| 0),
+        ["template"] | ["template", "--help" | "-h"] => {
+            overview(writer, "template", language).map(|()| 0)
+        }
+        ["template", topic] => material(writer, "template", topic, language).map(|()| 0),
+        _ => Err(invalid(language.select(
+            "Unknown command or arguments. See sdev --help.",
+            "コマンドまたは引数を確認してください。sdev --helpで使い方を確認できます。",
+        ))),
+    };
+    result.map_err(|mut error| {
+        error.message = language.message(&error.message);
+        error
+    })
+}
+fn init_command(
+    args: &[&str],
+    writer: &mut impl Write,
+    language: Language,
+    explicit: Option<Language>,
+    existing: Option<&ProjectConfig>,
+) -> Result<u8, CliError> {
+    let help = language.select(
+        "sdev init [--path PATH] [--lang en|ja] [--translations ja|en]\n\nRun at the project root. Create sdev.toml and append guide-selection instructions to AGENTS.md.\nOn macOS/Linux, create a committed launcher at ./bin/sdev; --path ./scripts/sdev chooses another location.\nThe first launch downloads the pinned binary into .sdev/. Add /.sdev/ to .gitignore.\nOn Windows, use the manually installed ./bin/sdev.exe; --path is unavailable.\nPreserve existing files and edited instructions. No specification files or empty directories are created.\nExit codes: 0 success / 1 file or output failure / 2 invalid arguments or configuration\n",
+        "sdev init [--path PATH] [--lang en|ja] [--translations ja|en]\n\nプロジェクトのルートで実行し、sdev.tomlとAGENTS.mdの参照指示を準備します。\nmacOS・Linuxでは./bin/sdevにコミット用の起動スクリプトを生成します。\n--path ./scripts/sdevのように配置先を変更でき、参照指示もそのパスを使います。\n初回の起動時に固定バージョンの本体を取得し、.gitignoreには/.sdev/を追加します。\nWindowsでは手動配置した./bin/sdev.exeを参照し、--pathは使いません。\n既存の本文とsdevの指示は保持します。別のスクリプトは上書きしません。\n仕様ファイルや空の仕様ディレクトリは作成しません。\n終了コード: 0 成功 / 1 ファイルや出力の処理失敗 / 2 引数や設定の誤り\n");
+    if matches!(args, ["--help" | "-h"]) {
+        output(writer, help)?;
+        return Ok(0);
+    }
+    let mut path = None;
+    let mut translations = None;
+    let mut args = args.iter();
+    while let Some(&flag) = args.next() {
+        let value = args
+            .next()
+            .ok_or_else(|| invalid(format!("Missing value for {flag}.\n{help}")))?;
+        match flag {
+            "--path" if path.is_none() => path = Some(*value),
+            "--translations" if translations.is_none() => {
+                translations = Some(if value.is_empty() {
+                    Vec::new()
+                } else {
+                    value
+                        .split(',')
+                        .map(Language::parse)
+                        .collect::<Result<Vec<_>, _>>()
+                        .map_err(invalid)?
+                });
+            }
+            _ => return Err(invalid(format!("Invalid init arguments.\n{help}"))),
         }
     }
+    #[cfg(windows)]
+    if path.is_some() {
+        return Err(invalid("--path is only available on macOS and Linux."));
+    }
+    let selected = ProjectConfig {
+        language,
+        translations: translations
+            .clone()
+            .unwrap_or_else(|| existing.map_or_else(Vec::new, |c| c.translations.clone())),
+    };
+    if let Some(existing) = existing
+        && ((explicit.is_some() && existing.language != language)
+            || (translations.is_some() && existing.translations != selected.translations))
+    {
+        return Err(invalid(
+            "Language settings differ. Edit sdev.toml explicitly before reinitializing; no files were changed.",
+        ));
+    }
+    selected.validate().map_err(invalid)?;
+    let path = path.unwrap_or("bin/sdev");
+    #[cfg(unix)]
+    let path = launcher::normalize_path(path).map_err(invalid)?;
+    #[cfg(windows)]
+    let path = path.to_owned();
+    let root = env::current_dir().map_err(|e| CliError {
+        status: 1,
+        message: e.to_string(),
+    })?;
+    let result = init::initialize(&root, &path, &selected)
+        .map_err(|message| CliError { status: 1, message })?;
+    output(writer, &language.message(&result))?;
     Ok(0)
 }
-const LINT_HELP: &str = "sdev lint [--format text|json]\n\n現在のディレクトリをルートとしてREADME.md・AGENTS.md・docs/**/*.mdを検査します。\n既定はtext、AI向けの構造化出力は--format jsonです。設定ファイルや外部URLへの通信は使いません。\n終了コード: 0 検査成功 / 1 規則違反 / 2 検査未完了・引数や出力の処理失敗\n規則: sdev help documents\n";
-fn lint_command(args: &[&str], writer: &mut impl Write) -> Result<u8, CliError> {
+fn lint_command(
+    args: &[&str],
+    writer: &mut impl Write,
+    language: Language,
+) -> Result<u8, CliError> {
+    let help = language.select(
+        "sdev lint [--format text|json] [--lang en|ja]\n\nCheck README.md, AGENTS.md, their language versions, and docs/**/*.md from the current directory.\nDefault output is text; --format json provides structured output for tools. No external URLs are fetched.\nExit codes: 0 pass / 1 violations / 2 incomplete, invalid arguments, or output failure\nRules: sdev help documents\n",
+        "sdev lint [--format text|json] [--lang en|ja]\n\n現在のディレクトリをルートとしてREADME.md・AGENTS.md・各言語版・docs/**/*.mdを検査します。\n既定はtext、AI向けの構造化出力は--format jsonです。外部URLへの通信は使いません。\n終了コード: 0 検査成功 / 1 規則違反 / 2 検査未完了・引数や出力の処理失敗\n規則: sdev help documents --lang ja\n");
     let format = match args {
         ["--help" | "-h"] => {
             writer
-                .write_all(LINT_HELP.as_bytes())
+                .write_all(help.as_bytes())
                 .map_err(|e| invalid(e.to_string()))?;
             return Ok(0);
         }
         [] | ["--format", "text"] => "text",
         ["--format", "json"] => "json",
-        _ => {
-            return Err(invalid(format!(
-                "lintの引数を確認してください。\n{LINT_HELP}"
-            )));
-        }
+        _ => return Err(invalid(format!("Invalid lint arguments.\n{help}"))),
     };
-    let report = match env::current_dir() {
-        Ok(root) => lint::check(&root),
-        Err(error) => {
-            let mut report = lint::Report::default();
-            report.add(
-                std::path::Path::new(""),
-                None,
-                "discovery-failed",
-                format!("作業ディレクトリを取得できません: {error}"),
-            );
-            report.finish()
-        }
-    };
+    let root = env::current_dir().map_err(|e| invalid(e.to_string()))?;
+    let report = lint::check(&root).with_language(language);
     let body = if format == "json" {
         report.json()
     } else {
@@ -181,7 +268,7 @@ fn main() -> ExitCode {
         .skip(1)
         .map(|arg| {
             arg.into_string()
-                .map_err(|_| invalid("引数はUTF-8で指定してください。"))
+                .map_err(|_| invalid("Arguments must be UTF-8."))
         })
         .collect::<Result<Vec<_>, _>>()
     {
@@ -191,9 +278,7 @@ fn main() -> ExitCode {
             return ExitCode::from(error.status);
         }
     };
-    let stdout = io::stdout();
-    let mut writer = stdout.lock();
-    match run(&args, &mut writer) {
+    match run(&args, &mut io::stdout().lock()) {
         Ok(code) => ExitCode::from(code),
         Err(error) => {
             eprintln!("{}", error.message);

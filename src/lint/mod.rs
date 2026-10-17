@@ -57,6 +57,43 @@ pub fn check(root: &Path) -> Report {
             ),
         }
     }
+    // Root entries retain the same allowlist when localized; arbitrary root Markdown stays out of scope.
+    match fs::read_dir(&checker.root) {
+        Ok(entries) => {
+            for entry in entries {
+                match entry {
+                    Ok(entry) => {
+                        let path = PathBuf::from(entry.file_name());
+                        if path != Path::new("README.md")
+                            && path != Path::new("AGENTS.md")
+                            && [PathBuf::from("README.md"), PathBuf::from("AGENTS.md")]
+                                .contains(&paths::document_identity(&path))
+                        {
+                            match fs::symlink_metadata(entry.path()) {
+                                Ok(metadata)
+                                    if metadata.is_dir() && !paths::unsafe_link(&metadata) =>
+                                {
+                                    checker.failure(
+                                        &path,
+                                        "discovery-failed",
+                                        "入口文書が通常のファイルではありません".into(),
+                                    )
+                                }
+                                Ok(metadata) => checker.discovered(&path, metadata, &mut targets),
+                                Err(error) => {
+                                    checker.failure(&path, "discovery-failed", error.to_string())
+                                }
+                            }
+                        }
+                    }
+                    Err(error) => {
+                        checker.failure(Path::new(""), "discovery-failed", error.to_string())
+                    }
+                }
+            }
+        }
+        Err(error) => checker.failure(Path::new(""), "discovery-failed", error.to_string()),
+    }
     let docs = Path::new("docs");
     match fs::symlink_metadata(checker.root.join(docs)) {
         Ok(metadata) if metadata.is_dir() && !paths::unsafe_link(&metadata) => {
@@ -261,6 +298,15 @@ impl Checker {
         };
         let real = self.boundary(&path);
         let same = real.as_ref().is_ok_and(|real| *real == source.real);
+        let same_document = match &real {
+            Ok(target) => {
+                paths::document_identity(target) == paths::document_identity(&source.real)
+            }
+            Err(("missing-target", _)) => {
+                paths::document_identity(&path) == paths::document_identity(&source.path)
+            }
+            Err(_) => false,
+        };
         let target_kind = paths::kind(
             real.as_ref()
                 .ok()
@@ -268,7 +314,7 @@ impl Checker {
                 .unwrap_or(&path),
         );
         if source.kind.directional()
-            && !same
+            && !same_document
             && matches!(target_kind, Kind::Design | Kind::Implementation)
         {
             self.report.add(

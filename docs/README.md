@@ -1,43 +1,47 @@
-# 文書と作業の入口
+# Documentation and task entry point
 
-利用先の指示・規約を先に確認し、作業に合うガイドライン、前提となる仕様、適用するテンプレートの順に読みます。
-以下のテンプレートは、利用先で対象文書用のものが指定されていない場合に使うsdevの既定です。
-既存文書の変更では、その文書の構造を尊重します。
-この入口と配下の文書だけで、仕様の作成から実装・変更まで進められます。
+[日本語](README.ja.md)
 
-## 作業別の参照先
+Read the consuming project's instructions and conventions first, then the relevant guidelines, prerequisite specifications, and applicable template.
+The templates below are sdev's defaults when the consuming project has not designated one for that document type.
+Respect an existing document's structure when making changes.
+This entry point and its linked documents support work from writing specifications through implementation and revision.
 
-| 作業 | 読むガイドライン | 前提となる仕様 | テンプレート |
+## References by task
+
+| Task | Guidelines | Prerequisite specifications | Template |
 | --- | --- | --- | --- |
-| プロダクトの目的・利用者・価値を決める | [Productを書く](guidelines/product.md) | 対象の既存Productがあれば読む | [product.md](templates/product.md) |
-| 機能の振る舞い・受け入れ条件を決める | [Requirementsを書く](guidelines/requirements.md)、[シナリオ](guidelines/scenarios.md) | 対象Product、変更なら既存Requirements・Design | [requirements.md](templates/requirements.md) |
-| 要件を実現する方法を決める | [Designを書く](guidelines/design.md) | 対象Product・Requirements、既存Design | [design.md](templates/design.md) |
-| 実装・検証・既存文書の変更を行う | [文書の責務と更新](guidelines/documents.md)、[実装と検証](guidelines/agent.md#実装と検証) | 対象Product・Requirements・Design | 変更対象の文書のテンプレート |
+| Define product purpose, users, and value | [Writing a Product](guidelines/product.md) | Existing target Product, if any | [product.md](templates/product.md) |
+| Specify feature behavior and acceptance criteria | [Writing Requirements](guidelines/requirements.md), [Scenarios](guidelines/scenarios.md) | Target Product; existing Requirements and Design for changes | [requirements.md](templates/requirements.md) |
+| Choose how to meet requirements | [Writing Design](guidelines/design.md) | Target Product, Requirements, and existing Design | [design.md](templates/design.md) |
+| Implement, verify, or revise existing documents | [Document responsibilities and updates](guidelines/documents.md), [Implementation and verification](guidelines/agent.md#implementation-and-verification) | Target Product, Requirements, and Design | Template applicable to the document |
 
-共通の判断基準は[文書の責務と更新](guidelines/documents.md)、対話や調査の進め方は[エージェントの作業原則](guidelines/agent.md)に記述しています。
-ガイドラインに判断基準と作業の進め方を、テンプレートに文書の構造をまとめています。
+Common decision criteria are in [Document responsibilities and updates](guidelines/documents.md); dialogue and research practices are in [Agent working principles](guidelines/agent.md).
+Guidelines define judgment and working practices; templates define document structure.
 
-## sdev自身の仕様
+## sdev's specifications
 
-| 文書 | 参照先 |
+| Document | Reference |
 | --- | --- |
 | Product | [sdev](products/sdev/product.md) |
-| Requirements | [ガイドラインとテンプレートの参照](products/sdev/features/guideline-reference/requirements.md) |
-| Design | [ガイドライン参照の設計](products/sdev/features/guideline-reference/design.md) |
-| Requirements | [コマンドの配布とガイドラインの参照](products/sdev/features/command-distribution/requirements.md) |
-| Design | [コマンドの配布と資料参照の設計](products/sdev/features/command-distribution/design.md) |
-| Requirements | [Markdownのリンク切れと文書の参照方向の検査](products/sdev/features/document-lint/requirements.md) |
-| Design | [文書リンクの検査の設計](products/sdev/features/document-lint/design.md) |
-| Requirements | [プロジェクトへの導入](products/sdev/features/project-bootstrap/requirements.md) |
-| Design | [プロジェクトへの導入の設計](products/sdev/features/project-bootstrap/design.md) |
+| Requirements | [Referencing guidelines and templates](products/sdev/features/guideline-reference/requirements.md) |
+| Design | [Guideline reference design](products/sdev/features/guideline-reference/design.md) |
+| Requirements | [Command distribution and material reference](products/sdev/features/command-distribution/requirements.md) |
+| Design | [Command distribution and material reference design](products/sdev/features/command-distribution/design.md) |
+| Requirements | [Markdown links and reference directions](products/sdev/features/document-lint/requirements.md) |
+| Design | [Document-link checking design](products/sdev/features/document-lint/design.md) |
+| Requirements | [Project bootstrap](products/sdev/features/project-bootstrap/requirements.md) |
+| Design | [Project bootstrap design](products/sdev/features/project-bootstrap/design.md) |
+| Requirements | [Default language and multilingual documents](products/sdev/features/localization/requirements.md) |
+| Design | [Language and document localization design](products/sdev/features/localization/design.md) |
 
-文書の配置と関係は[文書の責務と更新](guidelines/documents.md)に従います。
+Follow [Document responsibilities and updates](guidelines/documents.md) for placement and relationships.
+For selecting distributions, reading materials through commands, and preparing updates and publication, read [Releasing and updating](engineering/guidelines/releasing.md).
 
-配布物の選択、コマンドからの参照、更新と公開準備は[配布と更新](engineering/guidelines/releasing.md)を参照します。
+## sdev's development platform
 
-## sdev自身の開発基盤
-
-Rustの実装・検証を行う場合は、[Rust開発ガイド](engineering/guidelines/rust-development.md)を参照します。
-目的と提供範囲は独立した[Rust開発基盤のProduct](products/development-platform/product.md)、参照機能の条件と構成は[共通開発ガイドのRequirements](products/development-platform/features/common-development-guide/requirements.md)と[Design](products/development-platform/features/common-development-guide/design.md)に記述しています。
-採用する環境と共通CIの構成は[Rust開発環境と共通CIの設計](engineering/design/rust-development.md)で定義します。
-この開発環境はsdev自身が対象であり、sdevを使う他のプロジェクトへ一律に適用しません。
+For Rust implementation and verification, read the [Rust development guide](engineering/guidelines/rust-development.md).
+Purpose and scope are defined in the separate [Rust development platform Product](products/development-platform/product.md). Conditions and structure for the shared guide are in its [Requirements](products/development-platform/features/common-development-guide/requirements.md) and [Design](products/development-platform/features/common-development-guide/design.md).
+Start environment and CI changes from the [cross-platform CI guidance](engineering/guidelines/rust-development.md#ci-and-other-operating-systems).
+Adopted environment and CI decisions are in [Rust environment and shared CI design](engineering/design/rust-development.md).
+This environment applies to sdev itself; it does not require every consuming project to adopt Rust or these tools.

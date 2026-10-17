@@ -1,128 +1,125 @@
-# 共通開発ガイド
+# Shared development guide
 
-## このドキュメントについて
+[日本語](requirements.ja.md)
 
-[Rust開発基盤のProduct](../../product.md)に属する、人とAIが共通の開発・検証方法を参照する機能の要件です。
+## About this document
 
-### スコープ
+This feature of the [Rust development platform](../../product.md) lets people and AI reference shared development and verification procedures.
 
-sdev自身のRust開発に必要な環境準備、通常の検証、依存の変更、異なる実行環境の確認、文書更新の判断を案内します。
-手順を参照する機能を対象とし、その手順を実行したこと自体は保証しません。
+### Scope
 
-### スコープ外
+Explain environment setup, routine verification, dependency changes, checking other environments, and document-update decisions for sdev's own Rust development.
+This feature provides procedures; it does not guarantee that they have been executed.
 
-Rustの学習教材、製品の配布仕様、CIの実装、実装済み設定の自動修正、外部プロジェクトへの導入や強制は扱いません。
+### Out of scope
 
-## ユーザーストーリー
+Rust teaching materials, product distribution specifications, CI implementation, automatic repair of settings, and imposing the environment on external projects.
 
-### 共通の手順を見つける
+## User stories
 
-sdevを開発する人とAIとして、作業の入口から開発ガイドを参照したい。
-それによって、環境準備と変更後の確認方法を会話から探し直さずに済む。
+### Find common procedures
 
-**受け入れ条件:**
+As people and AI developing sdev, we want to reach the development guide from the task entry point so that we need not reconstruct setup and verification procedures from conversations.
 
-Scenario: Rustの変更を始める場合、入口から必要な手順を参照できる
+**Acceptance criteria:**
 
-- Given: sdevの文書が配置されている。
-- When: 開発者が文書の入口からRust開発の案内を読む。
-- Then: 環境準備、整形、静的検査、テスト、CIとの関係、依存と文書の変更基準を読める。
+Scenario: Starting a Rust change, developers can reach the required procedures
 
-### 確認範囲を区別する
+- Given: sdev's documents are available.
+- When: A developer follows Rust development guidance from the documentation entry point.
+- Then: They can read setup, formatting, static checks, tests, relationships with CI, and criteria for dependency and document changes.
 
-実装する人とAIとして、実行できた確認と実行できない確認を区別したい。
-それによって、ローカルの成功を全環境の成功として報告せずに済む。
+### Distinguish verification scope
 
-**受け入れ条件:**
+As implementers, we want to distinguish executed verification from unavailable verification so that local success is not reported as success everywhere.
 
-Scenario: 必要な環境を使えない場合、未確認の内容と理由を示せる
+**Acceptance criteria:**
 
-- Given: 変更に関係するOSの一部を作業環境で使えない。
-- When: 実装者がガイドの結果報告の基準を読む。
-- Then: 実行環境・確認内容・結果と、未確認の環境・理由を分けて報告する基準が読める。
+Scenario: When an environment is unavailable, unverified results and reasons can be reported
 
-Scenario: 開発用の設定が配置されていない場合、動作済みと誤認せずに判断できる
+- Given: Some operating systems affected by a change are unavailable in the working environment.
+- When: An implementer reads the guide's reporting criteria.
+- Then: They can distinguish the execution environment, checks, and results from unverified environments and their reasons.
 
-- Given: 文書はあるが、対象のRust設定またはコードが配置されていない。
-- When: 実装者が環境準備の案内を読む。
-- Then: 手順を適用できる前提と、不足を報告して成功扱いにしない基準を読める。
+Scenario: Without the required settings, developers can avoid claiming working behavior
 
-### 構成変更の影響を確認する
+- Given: Documents exist but target Rust settings or code are absent.
+- When: An implementer reads environment setup guidance.
+- Then: They can identify prerequisites and the requirement to report missing items rather than claim success.
 
-開発を引き継ぐ人とAIとして、環境や依存を変えたときの確認事項を参照したい。
-それによって、設定だけを変更して手順や仕様を古いまま残すことを防げる。
+### Check the impact of environment changes
 
-**受け入れ条件:**
+As contributors taking over development, we want to find checks for environment and dependency changes so that changing settings does not leave procedures and specifications outdated.
 
-Scenario: Rustや依存を更新する場合、関連する確認と文書更新を選べる
+**Acceptance criteria:**
 
-- Given: 開発環境または依存を変更する必要がある。
-- When: 実装者が変更に関する案内を読む。
-- Then: 変更理由、必要な検証、ロックされた依存、CI、影響する仕様・ガイドの見直しを確認できる。
+Scenario: Updating Rust or dependencies, developers can select verification and document changes
 
-## KPI
+- Given: The environment or dependencies need changing.
+- When: An implementer reads the change guidance.
+- Then: They can review reasons, verification, locked dependencies, CI, and affected specifications and guides.
 
-### 受け入れ条件の確認率
+## KPIs
 
-- **現状値:** 未計測。
-- **目標値:** この文書の受け入れ条件を100%確認できる。
-- **計測方法:** 文書を読み、入口からの到達と必要な説明の有無を確認する。検証の実行率とは分ける。
-- **計測期間:** ガイドの作成・変更ごと。
+### Acceptance-criterion review coverage
 
-## 機能要件
+- **Current value:** Unmeasured.
+- **Target value:** All acceptance criteria in this document can be verified.
+- **Measurement method:** Read documents and verify entry-point reachability and required explanations, separately from procedure execution rates.
+- **Measurement period:** Whenever the guide is created or changed.
 
-### 開発・検証基準の参照
+## Functional requirements
 
-**概要:** 作業の入口から、共通の開発・検証基準とその前提を参照できます。
+### Reference development and verification criteria
 
-**入力:** 開発者またはAIが行う作業と、対象の仕様・設定。
+**Overview:** Reach shared development and verification criteria and their prerequisites from the entry point.
 
-**出力:** 作業に必要な手順、判断理由、確認範囲の報告基準。
+**Input:** Work performed by developers or AI and its specifications and settings.
 
-#### 適用する条件
+**Output:** Required procedures, decision reasons, and criteria for reporting verification scope.
 
-ガイドは人とAIで共通とし、特定のエディターの操作を必須にしません。
-公式資料に基づく道具の説明と、sdevで採る開発上の方針を区別します。
-現在の設定値をすべて複製するのではなく、参照する設定の役割と更新時の判断を示します。
+#### Applicable conditions
 
-ガイドは、コマンドが成功したことだけで製品要件を満たしたと判断しない基準を示します。
-生成物と一時実験を継続利用するソースや文書から区別し、必要な確認を省くための規則緩和を通常手順にしません。
+People and AI share the guide; no specific editor operation is mandatory.
+Distinguish official tool explanations from sdev's adopted development policies.
+Explain setting responsibilities and update decisions rather than copying every configured value.
 
-#### 例外ケースでの振る舞い
+The guide must distinguish command success from satisfaction of product requirements.
+Separate generated artifacts and temporary experiments from maintained source and documents. Do not make relaxed rules a routine way to skip necessary checks.
 
-参照先や必要な設定を読めない場合は、不足する対象を報告し、推測で実行結果を補いません。
-設定とガイドが食い違う場合は差を調べ、実際に使った条件と未解決の差を報告します。
-文書だけで設定を自動変更する仕組みは提供しません。
+#### Exceptional behavior
 
-## データ要件
+Report unavailable references or settings without inventing results.
+Investigate differences between settings and guidance, and report actual conditions and unresolved differences.
+The document itself does not automatically change settings.
 
-### 必要なデータ
+## Data requirements
 
-- **開発ガイド:** 手順、前提、判断理由、一次資料への参照を保持します。
-- **設定の参照情報:** 環境と検証方法を決める設定の役割を示します。設定そのものや検証ログの複製は保持しません。
+### Required data
 
-### データ間の関係
+- **Development guide:** Procedures, prerequisites, decision reasons, and primary-source references.
+- **Setting references:** Roles of settings determining the environment and verification, without copies of settings or verification logs.
 
-開発ガイドはこの機能に対応し、開発基盤の目的と、既存の文書作成・更新規則を参照します。
-実行結果は作業報告へ残し、ガイドの規則とは分けます。
+### Relationships
 
-### 個人情報
+The guide corresponds to this feature and references the development platform purpose and existing document rules.
+Keep execution results in work reports, separately from guide rules.
 
-扱いません。
-開発手順を読む機能に、利用者の識別情報や行動の収集は不要です。
+### Personal information
 
-## 依存する外部サービス
+None. Reading development procedures needs no user identification or behavior collection.
 
-なし。
-この参照機能は配置済み文書で利用できます。
-環境導入やCI実行時に使う外部接続は、ガイドの参照機能そのものの動作依存とは分けます。
-新しい有料サービスや利用契約は追加しません。
+## External service dependencies
 
-## セキュリティ上の留意事項
+None. The reference feature works through repository documents.
+Connections for environment installation or CI execution are separate from dependencies for reading the guide.
+No new paid services or usage contracts are introduced.
 
-公開するガイドに認証情報、個別環境のパス、社内資料の本文や内部URLを含めません。
-依存の取得や開発用コードの実行に必要な注意を示し、実行環境の情報や検証ログを自動送信しません。
+## Security considerations
 
-## 未決事項
+Exclude credentials, machine-specific paths, private source contents, and internal URLs from public guidance.
+Explain necessary care when fetching dependencies and executing development code. Do not automatically send environment information or verification logs.
 
-なし。
+## Open questions
+
+None.

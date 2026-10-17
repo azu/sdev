@@ -409,7 +409,7 @@ fn publish(
             "POST",
             &context.endpoint("releases"),
             Some(
-                json!({"tag_name":context.tag(),"target_commitish":context.sha,"name":context.tag(),"draft":true,"prerelease":false,"body":format!("{}\n\nSource commit: {}\n\n単体実行ファイル・SHA-256・ライセンスと依存通知を添付しています。",context.marker(),context.sha)}),
+                json!({"tag_name":context.tag(),"target_commitish":context.sha,"name":context.tag(),"draft":true,"prerelease":false,"body":format!("{}\n\nSource commit: {}\n\nIncludes standalone executables, SHA-256 checksums, the license, and dependency notices.",context.marker(),context.sha)}),
             ),
         )?,
     };

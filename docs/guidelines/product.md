@@ -1,38 +1,40 @@
-# Productを書く
+# Writing a Product
 
-[文書の責務と更新](documents.md)、[エージェントの作業原則](agent.md)、[Productテンプレート](../templates/product.md)を読みます。
-対象はプロダクト全体です。
-個別機能の条件はRequirementsへ委ねます。
-テンプレートは[選び方](documents.md#テンプレートの選び方)に従って選び、上のリンクは適用するものがない場合のsdevの既定テンプレートとして使います。
+[日本語](product.ja.md)
 
-## 入力を整理する
+Read [Document responsibilities and updates](documents.md), [Agent working principles](agent.md), and the [Product template](../templates/product.md).
+The scope is the whole product.
+Leave individual feature conditions to Requirements.
+Follow [template selection](documents.md#choosing-templates): the linked template is sdev's fallback when no applicable project template is designated.
 
-[質問で考えを具体化する](agent.md#質問で考えを具体化する)手順に従い、利用者の回答と調査結果をもとに目的を整理します。
-何を作るかに加えて、誰がどの場面で困るのか、なぜ今取り組むのか、実現したら何が変わるのかを掘り下げます。
-機能名だけの説明や「便利にしたい」という回答を、提供価値が確定したものとして執筆へ進めません。
+## Understand the input
 
-依頼と既存資料から、何を提供するか、背景と課題、利用者の特性・課題・利用場面を整理します。
-提供価値には、対象・内容・提供理由を添えます。
-市場や競合を根拠にするなら一次資料を調べ、裏付けがない差別化を断定しません。
+Use [questions to make ideas concrete](agent.md#make-ideas-concrete-through-questions), building on the user's answers and research.
+Explore who has a problem, in what situation, why address it now, and what would change if it were solved.
+A feature name or a wish for convenience does not establish the value the product should provide.
 
-成功の定義、迷ったときに優先する指針、利用者への保証と信頼性目標を確認します。
-質問はプロダクト全体の目的・利用者・価値・範囲に合わせ、個別機能の条件や実装方法は対応する文書で具体化します。
-関連する仕様や事業上の資料があれば、用語と前提をそろえます。
+Use the request and existing materials to identify the offering, background, problems, and users' characteristics and situations.
+For each value, identify its recipient, content, and reason.
+Consult primary sources when discussing markets or competitors; support claims about differentiation with evidence.
 
-## 執筆する
+Clarify success, principles for decisions, service guarantees, and reliability targets.
+Keep questions at the product level: purpose, users, value, and scope. Detail feature conditions and implementation methods in their own documents.
+Align terminology and assumptions with existing specifications and business materials.
 
-新規文書は選んだテンプレートと利用先の配置規約に従って保存します。
-指定がない場合は、sdevの既定構成の`product.md`を使います。
-概要は一読でプロダクトを説明し、背景と利用者の課題を分けて書きます。
-対象を「すべての人」のように広げず、利用場面が分かるようにします。
-成功の定義はプロダクト全体の成果にし、個別機能の受け入れ条件とは分けます。
+## Write
 
-信頼性の指標・目標・計測方法を記述します。
-設けない場合は、その旨と理由を明示し、未計測値を実績として書きません。
-個別機能の実装方法やファイル構成は書きません。
+Save a new document using the chosen template and the consuming project's placement rules.
+Without another rule, use `product.md` in sdev's default layout.
+Make the overview explain the product on the first reading, and distinguish background from users' problems.
+Identify concrete usage situations rather than an audience as broad as everyone.
+Define product-wide outcomes separately from feature acceptance criteria.
 
-## 読み返す
+Describe reliability indicators, targets, and measurement methods.
+When none are appropriate, state that decision and its reason. Never present unmeasured values as results.
+Leave feature implementation methods and file layouts to their own documents.
 
-ガイドラインと照合し、目的・利用者・価値が一貫しているか、提供理由があるかを確認します。
-固定見出しの抜け、根拠のない主張、個別機能の条件の混入、未決事項の扱いを見直します。
-保存したファイルとリンク先を確認してから、次のRequirementsの入力として使います。
+## Review
+
+Check the guidelines for consistent purpose, users, and value, with reasons for the offering.
+Review missing fixed headings, unsupported claims, feature-level conditions, and unresolved decisions.
+Verify the saved file and its links before using it as input to Requirements.

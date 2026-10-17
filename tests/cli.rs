@@ -36,6 +36,7 @@ fn invoke(args: &[&str]) -> Output {
     let directory = Directory::new();
     let mut command = Command::new(env!("CARGO_BIN_EXE_sdev"));
     command
+        .args(["--lang", "ja"])
         .args(args)
         .current_dir(&directory.0)
         .env_clear()
@@ -125,6 +126,7 @@ fn each_guide_keeps_its_role_and_routes_to_related_commands() {
     {
         let guide = success(&["help", topic.name]);
         assert!(guide.starts_with("# "));
+        assert!(!topic.title.is_empty());
         assert!(!guide.contains("sdev docs"));
     }
 }
@@ -141,8 +143,9 @@ fn template_overview_explains_the_fallback_and_source_bodies_are_exact() {
         .filter(|topic| topic.operation == "template")
     {
         assert!(overview.contains(&format!("sdev template {}", topic.name)));
-        assert!(overview.contains(topic.title));
-        let original = fs::read_to_string(root.join(topic.source)).unwrap();
+        assert!(overview.contains(topic.title_ja));
+        let original =
+            fs::read_to_string(root.join(topic.source.replace(".md", ".ja.md"))).unwrap();
         assert_eq!(success(&["template", topic.name]), original);
     }
 }
@@ -184,7 +187,7 @@ fn all_referenced_help_and_template_commands_are_reachable() {
                     .chars()
                     .take_while(|c| c.is_ascii_lowercase() || *c == '-')
                     .collect();
-                if !name.is_empty() {
+                if name.starts_with(|c: char| c.is_ascii_lowercase()) {
                     pending.push((next_operation.to_owned(), name));
                 }
             }

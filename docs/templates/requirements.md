@@ -1,91 +1,93 @@
-# [機能名]
+# [Feature name]
 
-## このドキュメントについて
+[日本語](requirements.ja.md)
 
-[対象機能の振る舞いの概要。親Productへの相対Markdownリンクを付ける。]
+## About this document
 
-### スコープ
+[Summarize the feature's behavior and link to its parent Product with a relative Markdown link.]
 
-[この機能で扱う範囲。詳細条件の繰り返しは避ける。]
+### Scope
 
-### スコープ外
+[What this feature covers. Avoid repeating detailed conditions.]
 
-[扱わない範囲。必要なら別の機能として判断する境界。]
+### Out of scope
 
-## ユーザーストーリー
+[What it excludes and boundaries that may belong to another feature.]
 
-### [ストーリー名]
+## User stories
 
-[利用者]として、[行動]したい。それによって[得られる価値]となる。
+### [Story name]
 
-**受け入れ条件:**
+As a [user], I want [action] so that [value received].
 
-Scenario: [条件]の場合、[期待結果]
+**Acceptance criteria:**
 
-- Given: [操作前の状態]
-- When: [1つの目的の操作]
-- Then: [観測できる結果。何が行われないかも必要に応じて示す。]
+Scenario: When [condition], [expected result]
 
-[結果が異なるケースは別のシナリオにする。正常系・異常系・境界を検討する。]
+- Given: [State before the action]
+- When: [An action serving one purpose]
+- Then: [Observable result, including absence of changes where relevant]
 
-## KPI
+[Separate different outcomes into different scenarios. Consider success, failure, and boundaries.]
 
-### [成功指標の名前]
+## KPIs
 
-- **現状値:** [実測値、未計測、または新規のためなし]
-- **目標値:** [達成すべき具体的な数値]
-- **計測方法:** [どの結果から測るか]
-- **計測期間:** [いつ測るか]
+### [Metric name]
 
-## 機能要件
+- **Current value:** [Measured value, unmeasured, or none for a new feature]
+- **Target value:** [Specific result to achieve]
+- **Measurement method:** [Which results establish the value]
+- **Measurement period:** [When to measure]
 
-### [機能名]
+## Functional requirements
 
-**概要:** [機能の振る舞い]
+### [Function name]
 
-**入力:** [利用者の操作や必要な情報]
+**Overview:** [Behavior]
 
-**出力:** [利用者が得る結果]
+**Input:** [User actions and required information]
 
-#### 適用する条件
+**Output:** [What the user receives]
 
-##### [論点名]
+#### Applicable conditions
 
-[権限・入力・完了条件などを、必要な論点ごとに整理する。論点が1つなら小見出しは不要。]
+##### [Topic]
 
-#### 例外ケースでの振る舞い
+[Group relevant permissions, inputs, and completion conditions by topic. Omit subheadings when only one topic exists.]
 
-##### [例外ケース名]
+#### Exceptional behavior
 
-[異常時に何をするか、何をしないか。]
+##### [Exception]
 
-## データ要件
+[What happens and what remains unchanged when this exception occurs.]
 
-### 必要なデータ
+## Data requirements
 
-- **[データ名]:** [役割と主な情報。取得・保持・削除期限に利用上の条件があれば書く。型や保存場所はDesignへ委ねる。]
+### Required data
 
-### データ間の関係
+- **[Data name]:** [Role and main information. Include user-facing collection, retention, or deletion conditions. Leave types and storage locations to Design.]
 
-[機能として必要なデータの関係。]
+### Relationships
 
-### 個人情報
+[Relationships needed for the feature.]
 
-[扱わない、または識別可能なデータと利用目的。他のデータとの照合で個人を識別する場合も含む。]
+### Personal information
 
-## 依存する外部サービス
+[None, or identifiable data and its purpose, including identification through combination with other data.]
 
-- **[サービス名]**
-  - **関連するユーザーストーリー:** [必要なストーリー]
-  - **依存する理由:** [このサービスなしでは実現できないこと]
-  - **契約・利用上の判断:** [費用や利用条件などの判断。技術上の接続や実装手段の選定はDesignへ委ねる。]
+## External service dependencies
 
-[依存がなければ「なし」と理由を書く。]
+- **[Service name]**
+  - **Related user stories:** [Stories requiring this service]
+  - **Reason for dependency:** [What cannot be achieved without it]
+  - **Contractual and usage decisions:** [Costs and usage terms. Leave technical connections and implementation choices to Design.]
 
-## セキュリティ上の留意事項
+[If none, state None and explain why.]
 
-[機能として守る情報やアクセスの条件。具体的な保護方法はDesignへ委ねる。]
+## Security considerations
 
-## 未決事項
+[Information and access conditions the feature must protect. Leave protection mechanisms to Design.]
 
-[未決の内容、決まるまでの扱い、見直すきっかけと判断する人。この機能の成立に必要な判断は解消する。なければ「なし」。]
+## Open questions
+
+[Unresolved decisions, interim treatment, revisit conditions, and who decides. Resolve anything needed for this feature to work. Write None if there are none.]

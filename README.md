@@ -1,52 +1,54 @@
 # sdev
 
-sdevは、人とAIが仕様をもとに開発を進めるためのフレームワークです。
-目的や要件、設計を文書に残し、実装やレビューで判断の理由をたどれるようにします。
-文書を書くためのガイドとテンプレートは、CLIから参照できます。
+[日本語](README.ja.md)
 
-仕様は次の3種類に分けます。
-利用先に既存の文書や規約がある場合は、それらを使って進めます。
+sdev is a framework for developing software from specifications with people and AI.
+Record purposes, requirements, and design decisions so implementation and review can follow their reasons.
+The CLI provides writing guidelines and templates.
 
-| 文書 | 整理すること |
+Specifications have three responsibilities.
+Follow the consuming project's existing documents and conventions when available.
+
+| Document | What it defines |
 | --- | --- |
-| Product | 誰のどんな課題を解決するか、何を提供するか |
-| Requirements | 機能の振る舞いと、受け入れ条件 |
-| Design | 要件を実現する方法と、その方法を選んだ理由 |
+| Product | Whose problem to solve and what to provide |
+| Requirements | Feature behavior and acceptance criteria |
+| Design | How to meet requirements and why that approach was chosen |
 
-## 導入する
+## Install
 
-### macOS・Linux
+### macOS and Linux
 
-使いたいプロジェクトのルートで、次のコマンドを実行します。
-OS・CPUに合う最新の安定版を取得し、初期設定します。
-RustやNode.jsの準備、PATHの変更は必要ありません。
+Run these commands at the root of the project where you want to use sdev.
+The installer selects the latest stable release for your OS and CPU and initializes the project.
+No Rust, Node.js, or PATH setup is required.
 
 ```sh
 curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev/main/install.sh | sh -s -- --init
 ./bin/sdev help
 ```
 
-初期設定では、次のファイルを用意します。
-既存のAGENTS.mdにある指示は保持します。
+Initialization prepares these files, preserving existing AGENTS.md instructions.
 
-| ファイル | 役割 |
+| File | Purpose |
 | --- | --- |
-| `bin/sdev` | 使用するバージョンを固定した起動スクリプト |
-| `AGENTS.md` | AIがsdevのガイドを読むための指示 |
-| `.gitignore` | 取得した本体の保存先`.sdev/`をGit管理から除外する設定 |
+| `bin/sdev` | A launcher pinned to a specific version |
+| `AGENTS.md` | Instructions for agents to read sdev's guides |
+| `sdev.toml` | The project's default and translation languages |
+| `.gitignore` | Excludes downloaded binaries in `.sdev/` from Git |
 
-この3ファイルをコミットすると、cloneした環境でも`./bin/sdev help`から使えます。
-本体がなければ起動時に取得し、取得済みなら通信せずに実行します。
-仕様ファイルや空の仕様ディレクトリは作りません。
+Commit these four files so a clone can use `./bin/sdev help` too.
+The launcher downloads the binary when absent and runs cached copies without network access.
+Initialization creates no specifications or empty specification directories.
 
-取得時にはチェックサムとバージョンを照合します。
-GitHubによる配布元の証明も確認したい場合は、インストーラーへ`--verify`を付けてください。
-詳しい手順は[bootstrapと証明の検証](docs/engineering/guidelines/releasing.md#bootstrapと証明の検証)を参照してください。
+Downloads are checked against their checksum and version.
+Add `--verify` to the installer to verify GitHub's evidence of the build's origin too.
+See [bootstrap and attestation verification](docs/engineering/guidelines/releasing.md#bootstrap-and-attestation-verification) for details.
 
-### 起動スクリプトの配置先を変える
+### Choose a launcher location
 
-初期設定の`--path`で、`bin/sdev`以外の場所を選べます。
-本体を別の場所へ取得してから初期設定すると、AGENTS.mdも指定先を参照します。
+Use initialization's `--path` option to choose a location other than `bin/sdev`.
+Download the initial binary elsewhere first; generated AGENTS.md instructions will use the chosen path.
 
 ```sh
 curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev/main/install.sh | sh -s -- --install-dir ./.sdev/setup
@@ -54,92 +56,107 @@ curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev
 ./scripts/sdev help
 ```
 
-既存の別ファイルや編集済みの起動スクリプトは上書きしません。
-初期設定済みの配置先変更やバージョン更新は、[配布と更新](docs/engineering/guidelines/releasing.md)を参照してください。
+Existing unrelated files and edited launchers are preserved.
+For changing an initialized location or updating versions, see [Releasing and updating](docs/engineering/guidelines/releasing.md).
 
 ### Windows
 
-[GitHub Releases](https://github.com/azu/sdev/releases)からWindows x64向けの実行ファイルを取得し、`bin/sdev.exe`として配置します。
-PowerShellで初期設定し、ガイドを表示します。
+Download the Windows x64 executable from [GitHub Releases](https://github.com/azu/sdev/releases) and place it at `bin/sdev.exe`.
+Initialize and read a guide from PowerShell:
 
 ```powershell
 .\bin\sdev.exe init
 .\bin\sdev.exe help
 ```
 
-Windowsでは起動スクリプトを生成せず、配置した実行ファイルを使います。
-対応するOSの条件と手動の導入手順は、[配布対象と選択](docs/engineering/guidelines/releasing.md#配布対象と選択)を参照してください。
+Windows uses the installed executable directly.
+See [distribution targets and selection](docs/engineering/guidelines/releasing.md#platforms-and-artifact-selection) for OS requirements and manual installation.
 
-## ガイドを読む
+## Choose project languages
 
-`help`に作業名を渡すと、その作業に必要なガイドを読めます。
-まずは一覧から選んでください。
+English is the default when no language is configured.
+For a new project, `sdev init --lang en --translations ja` records English as the default with Japanese translations in `sdev.toml`.
+For an initialized project, edit that file to change the choices:
+
+```toml
+language = "en"
+translations = ["ja"]
+```
+
+Default-language documents use `.md`; other language versions use names such as `requirements.ja.md`.
+Maintain both versions as the same specification in the same change.
+Select Japanese for a single command with `./bin/sdev help design --lang ja`.
+The project's default also selects the language of guides and templates when `--lang` is omitted.
+
+## Read a guide
+
+Pass a task name to `help` to read its guide.
+List the available choices first:
 
 ```sh
 ./bin/sdev help
 ```
 
-| コマンド | 読む内容 |
+| Command | Guide |
 | --- | --- |
-| `./bin/sdev help product` | プロダクトの目的・利用者・価値 |
-| `./bin/sdev help requirements` | 機能の振る舞い・受け入れ条件 |
-| `./bin/sdev help design` | 要件を実現する方法 |
-| `./bin/sdev help documents` | 文書の責務・配置・更新 |
-| `./bin/sdev help workflow` | 対話・調査・実装・検証の進め方 |
-| `./bin/sdev help scenarios` | 受け入れ条件のシナリオ |
+| `./bin/sdev help product` | Product purpose, users, and value |
+| `./bin/sdev help requirements` | Feature behavior and acceptance criteria |
+| `./bin/sdev help design` | Methods for meeting requirements |
+| `./bin/sdev help documents` | Document responsibilities, placement, and updates |
+| `./bin/sdev help workflow` | Dialogue, research, implementation, and verification |
+| `./bin/sdev help scenarios` | Acceptance scenarios |
 
-AIはこれらのガイドに従って、利用者と目的や作業の範囲を整理します。
-「作りたい」という相談だけで実装を始めず、文書の作成だけを頼まれた場合は、その提示で区切ります。
-詳しい進め方は[エージェントの作業原則](docs/guidelines/agent.md)にまとめています。
+Agents use these guides to clarify purpose and scope with the user.
+An idea alone does not authorize implementation; a request limited to writing a document ends with presenting it for review.
+See [Agent working principles](docs/guidelines/agent.md) for the workflow.
 
-### テンプレートを使う
+### Use a template
 
-利用先で指定されたテンプレートがあれば、それを使います。
-指定がない場合は、内蔵のテンプレートを一覧から選べます。
+Use a template designated by the consuming project when available.
+Otherwise, choose an embedded fallback:
 
 ```sh
 ./bin/sdev template
 ./bin/sdev template requirements
 ```
 
-コマンドはテンプレートの本文を表示します。
-既存の仕様を変更するときは、その文書の構造を尊重してください。
-ガイドとテンプレートは本体に同梱しているため、個別に取得する必要はありません。
+Commands display template bodies.
+Respect an existing specification's structure when editing it.
+Guides and templates are embedded in the executable, so no separate download is needed.
 
-## 文書のリンクを検査する
+## Check document links
 
-プロジェクトのルートで`lint`を実行すると、文書のリンク切れと参照方向を検査できます。
-対象はREADME.md、AGENTS.md、docs以下のMarkdownです。
+Run `lint` at the project root to check broken links and reference directions.
+It checks README.md, AGENTS.md, their language versions, and Markdown under docs.
 
 ```sh
 ./bin/sdev lint
 ./bin/sdev lint --format json
 ```
 
-通常はテキストで結果を表示し、他のツールから使う場合はJSONで取得できます。
-検査の範囲や終了コードは[文書リンク検査のRequirements](docs/products/sdev/features/document-lint/requirements.md)を参照してください。
+Text output is the default; JSON is available for other tools.
+See [document-lint Requirements](docs/products/sdev/features/document-lint/requirements.md) for scope and exit codes.
 
-## sdevを開発する
+## Develop sdev
 
-Rustの環境を用意し、開発用のツールと検査コマンドは[mise](https://mise.jdx.dev/getting-started.html)でそろえます。
-初回はリポジトリのルートで環境と依存を導入します。
+Prepare Rust, then use [mise](https://mise.jdx.dev/getting-started.html) for development tools and commands.
+At the repository root, trust the configuration and install locked tools:
 
 ```sh
 mise trust
 mise install --locked
 ```
 
-READMEの文章検査にはtextlintを使います。
-postinstallで[hk](https://hk.jdx.dev/)のhookも登録し、コミット前にREADMEとRustの変更を検査します。
+The postinstall hook installs dependencies and registers [hk](https://hk.jdx.dev/) to check document and Rust changes before commits.
+English README prose uses [slopless](https://github.com/berelevant-ai/slopless); Japanese README prose uses textlint's technical-writing preset.
 
 ```sh
 mise run md:lint
-mise run md:fix     # 自動修正した後は差分を確認
-mise run rs:check   # Rustの整形・静的検査・テスト
+mise run md:fix     # Review automatic changes
+mise run rs:check   # Rust formatting, static checks, and tests
 ```
 
-環境の導入と検証の手順は[Rust開発ガイド](docs/engineering/guidelines/rust-development.md)にまとめています。
-配布物の作成やリリースの手順は、[配布と更新](docs/engineering/guidelines/releasing.md)を参照してください。
+Read the [Rust development guide](docs/engineering/guidelines/rust-development.md) for setup and verification, and [Releasing and updating](docs/engineering/guidelines/releasing.md) for distributions and publication.
+Start from the [sdev Product](docs/products/sdev/product.md) and [documentation entry point](docs/README.md) to explore its purpose and specifications.
 
-目的や仕様を確認する場合は、[sdevのProduct](docs/products/sdev/product.md)と[文書と作業の入口](docs/README.md)からたどれます。
-sdevは[MIT License](LICENSE)で公開しています。
+sdev is released under the [MIT License](LICENSE).

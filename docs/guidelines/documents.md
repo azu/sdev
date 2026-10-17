@@ -1,27 +1,28 @@
-# 文書の責務と更新
+# Document responsibilities and updates
 
-Productはプロダクトの位置づけ、Requirementsは個別機能の振る舞い、Designは実現方法を記述します。
-利用する人とエージェントは、上位の文書を読んでから下位の文書を書き、同じ要件を別の文書に書き直しません。
+[日本語](documents.ja.md)
 
-`docs/`には、継続して参照・更新するガイドライン、テンプレート、仕様を置きます。
-作業ごとの計画、確認結果、完了記録は会話やPR本文に残します。
+Product describes the product's purpose and place, Requirements describes feature behavior, and Design describes how to realize it.
+People and agents read upstream documents before writing downstream ones, avoiding duplicate requirements in separate documents.
 
-## 3種類の責務
+Keep guidelines, templates, and specifications in `docs/` when they will remain in use and be maintained.
+Keep task plans, verification results, and completion records in the conversation or PR description.
 
-| 種別 | 書くこと | 書くタイミング | 書かないこと |
+## Three responsibilities
+
+| Type | Content | When to write | Excludes |
 | --- | --- | --- | --- |
-| Product（product.md） | 何を、誰に、なぜ提供するか。背景、利用者、提供価値、成功の定義、開発の指針、サービスの保証と信頼性目標 | 立ち上げ、提供目的や対象利用者の見直し | 個別機能の入力・出力・受け入れ条件、実装方法 |
-| Requirements（requirements.md） | 機能の範囲、利用者の行動、受け入れ条件、成功指標、機能の条件、必要なデータ、利用上の外部依存と安全上の条件 | 新しい機能の要件を決めるとき、既存要件を変えるとき | Productの説明の繰り返し、型・保存先・APIなどの実現方法 |
-| Design（design.md） | 対応するRequirementsを実装できる設計と判断理由。責務、処理の流れ、データ構造、インターフェース、接続、保護、公開時の特記事項、代替案 | 対応するRequirementsの実装前に必ず作成。更新は後述の変更の扱いに従う | 要件の再定義、Productの信頼性目標の再掲、テストの設計・実行手順 |
+| Product (product.md) | What is offered, to whom, and why; background, users, value, success, development principles, service guarantees, and reliability targets | Product creation or changes in purpose or users | Feature inputs, outputs, acceptance criteria, and implementation methods |
+| Requirements (requirements.md) | Feature scope, user actions, acceptance criteria, success measures, conditions, data needs, external usage dependencies, and safety conditions | Defining a feature or changing its behavior | Repeated Product explanations and implementation details such as types, storage, or APIs |
+| Design (design.md) | Methods and reasons sufficient to implement its Requirements: responsibilities, flows, structures, interfaces, integration, protection, deployment notes, and alternatives | Before implementing the corresponding Requirements; update as described below | Redefining requirements, restating Product reliability targets, and test design or execution procedures |
 
-Requirementsのゴールは、要件の意味を決め直さずにDesignを書けることです。
-Designのゴールは、Requirementsと合わせて渡せば、実装者が実装を進められることです。
-上位文書へのリンクで前提を示し、本文のコピーで関係を表さないようにします。
+Requirements should let someone write Design without redefining the meaning of the requirements.
+Design and Requirements together should let someone implement the feature.
+Establish upstream context through links rather than copied text.
 
-## 配置と文書間の関係
+## Placement and document relationships
 
-sdevの文書は次の構成に配置します。
-プロダクト名と機能名は内容を表す名前に置き換えます。
+Use this layout for sdev documents, replacing product and feature placeholders with descriptive names.
 
 ```text
 docs/
@@ -29,148 +30,160 @@ docs/
 ├── guidelines/
 ├── templates/
 └── products/
-    └── <プロダクト名>/
+    └── <product>/
         ├── product.md
         └── features/
-            └── <機能名>/
+            └── <feature>/
                 ├── requirements.md
                 └── design.md
 ```
 
-利用側のプロジェクトでは、その指示・規約による配置を優先します。
-指定がない場合は、仕様を`docs/products/`以下の既定構成に配置します。
-ガイドラインとテンプレートは参照元から読み、仕様を書くために一式を複製する必要はありません。
+Honor the consuming project's placement instructions and conventions first.
+Without another rule, put specifications under `docs/products/` using the default layout.
+Read guidelines and templates from their source; creating specifications does not require copying the entire framework.
 
-1つのProductには複数のRequirementsが属し、1つのRequirementsには1つのDesignが対応します。
-親ディレクトリでProductとの所属を、同じ機能ディレクトリに並べることでRequirementsとDesignの対応を表します。
-Requirementsから親Productへ、Designから対応するRequirementsとProductへ、相対Markdownリンクを付けます。
-Productから機能への案内は文書の一覧へのリンクでよく、機能の条件は繰り返しません。
+One Product has multiple Requirements documents, and each Requirements document corresponds to one Design.
+Directory nesting establishes the parent Product; placement in the same feature directory pairs Requirements and Design.
+Link Requirements to its parent Product, and Design to its Requirements and Product, using relative Markdown links.
+A Product may point to a feature index without repeating feature conditions.
 
-リンクは対象ファイルを直接指し、作成後に存在を確認します。
-機能をまたぐ設計が必要なら、機能のDesignと分けて`docs/engineering/design/`へ置きます。
-継続して使う開発規約は`docs/engineering/guidelines/`へ置き、設計時には規約を先に読みます。
-これらのディレクトリは必要になったときに作成します。
+Link directly to existing target files and verify their existence after writing.
+Put cross-feature design separately under `docs/engineering/design/`.
+Keep ongoing development conventions under `docs/engineering/guidelines/` and read them before designing.
+Create these directories when needed.
 
-このディレクトリ構成とMarkdownリンクを、将来のlintと可視化が共通して読み取る関係の出発点にします。
-文書の参照方向は次の規則に従います。
-細かな要件と設計の対応記法や専用メタデータは、必要になる実例を得た際に判断します。
+Use this directory layout and Markdown links as the starting point for relationships that lint and future visualization can both read.
+Apply the reference-direction rules below.
+Decide more detailed requirement-to-design notation or dedicated metadata when real examples demonstrate the need.
 
-## 文書の参照方向
+## Document languages
 
-Markdownのリンクは、文書の責務に応じた方向で記述します。
-確定している参照の許可・禁止は次のとおりです。
+Use the default and translation languages configured by the consuming project. Without a specified default, use English.
+`sdev init --lang en --translations ja` records these choices in sdev.toml.
+Default-language documents use ordinary `.md` names; other versions use `.<language>.md`.
+For an English default, use `requirements.md` and `requirements.ja.md`; for a Japanese default, use `requirements.md` and `requirements.en.md`.
+The language of a guide you are reading does not override the consuming project's document-language instructions.
 
-| 参照元 ＼ 参照先 | Product | Requirements | Design | ガイドライン | 実装ファイル |
+Language versions are one document with the same responsibility, conditions, and decisions.
+Update both in the same change when meaning changes, and resolve disagreements before dependent implementation.
+Choose the editing order for the task; a default language is not permission to ignore a conflicting translation.
+Use links and headings in the same language where available, and provide navigation to the other language version.
+Keep original legal notices, identifiers, and quoted source text unchanged when translation would misrepresent them.
+
+## Reference directions
+
+Write Markdown references according to each document's responsibility.
+The established permissions are:
+
+| Source / target | Product | Requirements | Design | Guidelines | Implementation files |
 | --- | --- | --- | --- | --- | --- |
-| Product | ○ | ○ | × | ○ | × |
-| Requirements | ○ | ○ | × | ○ | × |
-| Design | ○ | ○ | × | ○ | × |
+| Product | Yes | Yes | No | Yes | No |
+| Requirements | Yes | Yes | No | Yes | No |
+| Design | Yes | Yes | No | Yes | No |
 
-○は許可、×は禁止を表します。
-個別機能のRequirementsに同じ規則表を掲載する場合は、規則の変更時に表と説明を一緒に更新します。
-共通規則とRequirementsの内容が食い違う場合は、違いを解消してからDesignや実装へ進みます。
-ProductからRequirementsへの参照は許可します。
-ガイドラインを参照元とする方向の規則は、この表の対象として追加しません。
-Markdownとしてのリンク切れの検査は行います。
-コード起点の参照は初回の解析対象外です。
+Yes allows a reference; No forbids it.
+If feature Requirements repeat this table, update both the table and explanation when rules change.
+Resolve differences between common rules and Requirements before proceeding to Design or implementation.
+Product-to-Requirements links are allowed.
+This table does not add direction rules for guideline sources, but their Markdown links are still checked for broken targets.
+Code-origin references are outside the initial analysis scope.
 
-Requirements同士の参照は、別プロダクトへの参照も含めて許可します。
-表は参照方向の可否を定めます。依存の表現方法や参照の必須性は別に扱います。
-Designから別文書のDesignへの参照は禁止します。別プロダクトや共通開発基盤のDesignも含みます。
-同じDesign内の見出しへのリンクは別Designへの参照に当たらず、見出しのリンク切れとして検査します。
+Requirements may reference other Requirements, including those of other products.
+Direction permissions are separate from whether a dependency must be expressed or a reference is mandatory.
+Design cannot reference another Design, including another product's or the common development platform's Design.
+A heading within the same Design is checked as an internal heading link, not a reference to another Design.
+Navigation to a corresponding language version of that same Design is also permitted; another feature's Design remains forbidden in every language.
 
-共通基盤を使うために必要な利用条件はRequirementsへ、継続して従う規約はガイドラインへ記述します。
-技術の比較や採用理由などの設計判断はDesignに残し、参照先を作るためだけにDesign全体をガイドラインと呼び替えません。
-実装コードから要件や設計に残された前提・判断理由をたどる考え方は維持します。
-コードコメントのリンクをどう解析・検査するかは、初回の文書lintでは扱いません。
+Put conditions for using shared infrastructure in Requirements and ongoing conventions in guidelines.
+Keep technical comparisons and selection reasons in Design; do not relabel an entire Design as a guideline merely to make a link permissible.
+Retain the principle of tracing implementation code back to documented assumptions and reasons.
+Code-comment link parsing is outside the initial document linter.
 
-[Living Documentationの記事](https://efcl.info/2017/05/12/living-documentation-ddd/)では、変わりやすいものから安定したものへ参照し、文書からコードへ結び付けるよりコードから文書へ結び付ける考え方を説明しています。
-Design同士を例外なく禁止することは、記事の明示ルールではなくsdevで決めた規則です。
+The [Living Documentation article](https://efcl.info/2017/05/12/living-documentation-ddd/) describes references from changing things to more stable things, and from code to documentation rather than the reverse.
+The rule forbidding links between different Designs is sdev's own decision, not an explicit rule from that article.
 
-## テンプレートの選び方
+## Choosing templates
 
-新規文書を書く前に、利用先の指示・規約と、対象文書用として指定されたテンプレートを確認します。
-対象文書へ適用されるテンプレートがあればそれを優先し、なければsdevの内蔵の既定テンプレートを参照します。
-任意のMarkdownがあるだけでテンプレートとは扱わず、何に適用するかを既存の指示や利用者の指定から確かめます。
+Before writing a new document, read the consuming project's instructions and conventions and identify any template designated for that document type.
+Use an applicable designated template first; otherwise use sdev's embedded fallback.
+An arbitrary Markdown file is not automatically a template. Establish its intended use from existing instructions or the user.
 
-既存の仕様を変更するときは、その文書の構造を尊重します。
-既存の仕様書と新規作成用のテンプレートを混同せず、既定テンプレートへ機械的に書き直しません。
-内蔵テンプレートをコマンドで読む場合は、`sdev template`で種類を確認します。
-コマンドは本文を表示するだけで、利用先の自動探索、テンプレートの推測、生成・上書きは行いません。
+Respect the structure of existing specifications when editing them.
+Do not confuse existing specifications with templates for new documents or mechanically replace their structure with sdev's fallback.
+Use `sdev template` to list embedded templates.
+The command only displays bodies; it does not discover local templates, infer applicability, generate, or overwrite documents.
 
-## 変更の扱い
+## Handling changes
 
-Product・Requirements・Designは、実装済みかどうかにかかわらず、決まっている目的・要件・設計を反映します。
-過去の内容はGitの履歴を参照し、同じ機能の要件変更のために日付付きの別文書を作りません。
-実装済みかどうかは要件の文面から推測せず、コードや検証結果で確かめます。
+Product, Requirements, and Design reflect decided purposes, behavior, and methods whether or not implementation is complete.
+Use Git history for past content, rather than dated parallel documents for changes to the same feature.
+Establish implementation status from code and verification, rather than inferring it from specification wording.
 
-| 変更の種類 | 更新するものと判断 |
+| Change | What to update |
 | --- | --- |
-| 提供目的・対象利用者・提供価値の変更 | 同じProductを更新し、影響するRequirementsとDesignを確認する |
-| 機能の追加 | 親Productを確認し、新しい機能ディレクトリにRequirementsとDesignを作成する |
-| 既存機能の要件変更 | 既存Requirementsと対応するDesignを一緒に更新する。実装中に矛盾や改善点を発見した場合も、実装と合わせて直す |
-| 実装中の設計改善・不備の修正 | 実装と合わせて対応するDesignを更新してよい。利用者への振る舞いや制約も変わるなら、先にRequirementsを更新する |
-| 実装完了後の、要件を変えない実装方法だけの改善 | Requirementsは変えず、設計方針や判断理由が変わる場合はDesignを更新する。要件が変わるなら上の要件変更として扱う |
-| 誤字・壊れたリンクの修正 | 意味を変えずに該当文書を修正する。意味が変わるなら上の該当する変更として扱う |
+| Purpose, target users, or value | Update the same Product and inspect affected Requirements and Design |
+| New feature | Read the parent Product and create Requirements and Design in a new feature directory |
+| Existing feature behavior | Update existing Requirements and its Design together, including specification corrections discovered during implementation |
+| Design improvement or correction during implementation | Update Design with implementation; if behavior or constraints change, update Requirements first |
+| Method-only improvement after implementation | Leave Requirements unchanged; update Design when its approach or reasons change. For behavior changes, use the preceding rule |
+| Typo or broken link | Fix the document without changing meaning; if meaning changes, apply the relevant rule above |
 
-Designは対応するRequirementsと作成・変更を共にします。
-Requirements・Designを作成・変更した後は、[依頼の範囲とレビュー](agent.md#依頼の範囲とレビュー)に従って文書と要点を提示します。
-更新対象が複数あることを、一度に実装まで進める指示とは扱いません。
-実装完了後も、設計方針や判断理由が変わったら同じDesignを更新します。
-コードの細かな変更を逐一写す必要はありません。
-新しい設計を独立した機能として扱うかは、振る舞いや範囲の違いから判断します。
+Create and change Design together with its Requirements.
+After changing Requirements or Design, present the document and key points following [request scope and review](agent.md#request-scope-and-review).
+Multiple affected documents do not authorize proceeding through implementation in one step.
+After implementation, update the same Design when its approach or reasons change; it need not list every small code edit.
+Decide whether a new design is a separate feature from differences in behavior and scope.
 
-## 書き方と判断の区別
+## Writing and distinguishing decisions
 
-決定済みの内容はそのまま書き、「現時点では」「当面」のような言葉で曖昧にしません。
-内容が変わったら該当箇所を書き換え、古い内容はGitで参照します。
-実装前の状態を説明するなら、「存在しない」ではなく「追加する」「既存の処理を変更する」と、変更として書きます。
+State decided conditions directly, avoiding vague temporary qualifiers such as For now.
+Update content when it changes and use Git for the earlier version.
+For pre-implementation specifications, describe the intended change, such as Add or Change, rather than merely saying it does not exist.
 
-提案は採用候補として、決定済みの要件と分けます。
-未決事項には「何が未決か」「決まるまでどう扱うか」「何をきっかけに誰と判断するか」を書きます。
-その機能の要件・設計に必要な判断は、未決のまま実装へ進めません。
-決めなくても成立する事項だけを残し、今回扱わない範囲は対象外として明記します。
+Keep proposals separate from decided requirements.
+For an open question, state what is unresolved, its interim treatment, when to revisit it, and who decides.
+Resolve decisions needed for the feature before implementation.
+Retain only questions that do not block the current scope and state exclusions explicitly.
 
-新規作成では適用するテンプレートの固定見出しを残し、該当しない項目は「なし」と理由を書きます。
-既存文書の変更では、上記のテンプレートの選び方に従い、その文書の構造を尊重します。
-繰り返し用の見出しは具体的な項目名へ置き換え、必要な数だけ作ります。
-指標の実測値と目標値を分け、未計測の値や市場の事実を作りません。
-SLAは利用者への保証、SLIは信頼性を測る指標、SLOはその目標です。
-保証や計測を設けない場合も、その判断と理由を記述します。
+For new documents, retain the applicable template's fixed headings and explain None for inapplicable sections.
+For existing documents, follow template selection above and respect their structure.
+Replace repeatable headings with concrete topic names and create as many as needed.
+Distinguish measured values from targets; do not invent measurements or market facts.
+SLA means a guarantee to users, SLI a reliability measure, and SLO its target.
+Explain decisions not to offer guarantees or measurements too.
 
-段落ごとに要点を分け、最初の文に結論を置きます。
-箇条書きは同じ論点・粒度にそろえ、権限・入力・処理・完了条件が混ざる場合は意味ごとの小見出しに分けます。
-項目数だけを理由に機械的に分割せず、見出しは内容に合わせます。
-日本語で記述し、一般的でない用語は意味を添えます。
+Give each paragraph one main point and state it first.
+Keep list items at a consistent level and separate permissions, inputs, processing, and completion conditions into meaningful topics when needed.
+Choose headings from content rather than splitting mechanically by item count.
+Write in the configured document language and explain uncommon terms.
 
-## RequirementsとDesignの境界
+## Boundary between Requirements and Design
 
-受け入れ条件は[シナリオのガイドライン](scenarios.md)に従い、利用者から観測できる結果を記述します。
-機能要件の範囲では、概要・入力・出力・適用する条件・例外時の振る舞いを整理します。
-シナリオが具体的な例を、機能要件が共通の条件を担当し、同じ条件を何度も列挙しません。
+Follow [scenario guidelines](scenarios.md) for acceptance criteria, describing outcomes observable by users.
+Functional requirements establish scope, inputs, outputs, conditions, and exceptions.
+Scenarios supply concrete examples; functional requirements establish shared conditions without repeating them throughout the document.
 
-データ要件には、必要なデータ、その役割、主な情報、データ間の関係を記述します。
-取得・保持・削除期限に利用上の条件があればRequirementsに書き、型・保存場所・削除処理・保護方法はDesignへ委ねます。
-単体で個人を識別するデータに加え、他のデータと容易に照合して識別できる組み合わせも、個人情報として確認します。
+Data requirements describe needed data, its roles, main information, and relationships.
+Put user-facing collection, retention, and deletion conditions in Requirements; leave types, storage, deletion processes, and protection mechanisms to Design.
+Treat information identifying a person through easy combination with other data as personal information too.
 
-Requirementsの外部サービス欄には、契約・利用条件・費用などの判断を要する依存を書きます。
-既存サービスへの新たな依存も含みます。
-接続や認証の方法、利用上の判断を要しない実装手段の選定はDesignへ委ねます。
-技術選定によって新たな費用や利用条件の判断が必要なら、Requirementsの不足として利用者に確認します。
+List external dependencies requiring contractual, cost, or usage decisions in Requirements, including new reliance on an existing service.
+Leave connection, authentication, and implementation choices without such decisions to Design.
+When technical choices introduce new cost or usage decisions, ask the user to resolve the Requirements gap.
 
-Designでは、成果物と責務、主要な流れ、失敗時の扱いを具体化します。
-内部の細かなファイル一覧は書かず、配置規約を参照します。
-文書を提供する機能で外部から参照する入口や文書のリンクは、利用者との接点なのでDesignに記述できます。
-図が必要なら、処理のやり取りにはMermaidの`sequenceDiagram`、データ間の関係には`erDiagram`を使います。
-図が不要な項目は理由を記述します。
+Design specifies deliverables, responsibilities, primary flows, and failure handling.
+Leave detailed internal file lists to placement conventions.
+For document features, externally referenced entry points and document links are interfaces and may be described in Design.
+Use Mermaid `sequenceDiagram` for interactions and `erDiagram` for data relationships when diagrams help.
+Explain why a diagram is unnecessary when omitting it.
 
-デプロイ（利用者が使える場所への反映）の特記事項には、通常の反映手順で扱えない切り替え・移行・復旧などだけを書きます。
-通常の手順で足りるなら「なし」とし、Productの信頼性目標は再定義しません。
-テストの設計と実行、文書のリンク検査や受け入れ条件の確認結果は、実装・検証の作業で扱い、Designには混ぜません。
+Deployment notes cover only unusual cutover, migration, or recovery beyond normal deployment.
+When ordinary procedures suffice, write None. Do not restate Product reliability targets.
+Test design, execution, document-link checks, and acceptance-verification results belong to implementation and verification work, rather than Design.
 
-## 参照の確認
+## Checking references
 
-文書の根拠は、依頼内容、既存文書、実ファイル、確認した一次資料に求めます。
-URLを追加するときは、実際に開いて実在と記述内容を確認し、根拠となる主張の近くにリンクします。
-未公開のファイルを公開済みURLとして案内しません。
-公開先が決まっていなくても、実在するローカル文書のMarkdownリンクで作業を進められます。
+Ground documents in the request, existing documents, actual files, and verified primary sources.
+Before adding a URL, open it to verify its existence and content, then link it near the supported claim.
+Do not present an unpublished file as a published URL.
+Use real local Markdown references while publication locations remain undecided.

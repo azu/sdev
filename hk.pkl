@@ -7,7 +7,7 @@ hooks {
     stash = "git"
     steps {
       ["md:lint"] {
-        glob = "README.md"
+        glob = List("**/*.md", ".textlintrc*.json", "package.json", "pnpm-lock.yaml", "mise.toml", "sdev.toml", "scripts/check-doc-languages.mjs")
         check = "mise run md:lint"
       }
       ["rs:check"] {

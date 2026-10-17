@@ -1,100 +1,99 @@
-# 共通開発ガイドの設計
+# Shared development guide design
 
-## このドキュメントについて
+[日本語](design.ja.md)
 
-[共通開発ガイドのRequirements](requirements.md)を、リポジトリ内のMarkdownとリンクで実現します。
-目的と対象利用者は[Rust開発基盤のProduct](../../product.md)を参照します。
+## About this document
 
-### 対象読者
+Implement the [shared development guide Requirements](requirements.md) with repository Markdown and links.
+Refer to the [Rust development platform Product](../../product.md) for purpose and users.
 
-開発ガイドを作成・更新する人とAI。
+### Audience
 
-### 前提知識
+People and AI maintaining development guidance.
 
-[文書の責務と配置](../../../../guidelines/documents.md)と、[Rust開発ガイド](../../../../engineering/guidelines/rust-development.md)を前提とします。
+### Prerequisites
 
-### このドキュメントで扱わないこと
+[Document responsibilities and placement](../../../../guidelines/documents.md) and the [Rust development guide](../../../../engineering/guidelines/rust-development.md).
 
-Rust CLIの実装、配布方式、CIの構築、検証の設計と実行手順は扱いません。
-日常の開発手順は共通ガイド、今回の文書変更の検証は[実装と検証](../../../../guidelines/agent.md#実装と検証)に従います。
+### Outside this document
 
-## 実装方針
+Rust CLI implementation, distribution methods, CI construction, and verification design and execution procedures.
+Daily development belongs to the shared guide; verification of document changes follows [implementation and verification](../../../../guidelines/agent.md#implementation-and-verification).
 
-開発基盤はsdevと並列のProductとして配置します。
-共通ガイドは複数機能から参照する規約なので、製品機能の仕様と分けて配置規約の`docs/engineering/guidelines/`に置きます。
-機能をまたぐバージョンと共通CIの構成・判断理由は、開発環境の設計で管理します。
-各機能から使う規約と手順は[Rust開発ガイド](../../../../engineering/guidelines/rust-development.md)にまとめ、設計の採用理由と分けます。
-所属はProductから機能へのリンクと、ガイドからこの設計・Productへのリンクで表します。
+## Implementation approach
 
-[文書と作業の入口](../../../../README.md)に、開発基盤の仕様とRust開発ガイドへの案内を追加します。
-既存の作業別案内と分けて、sdev自身の開発に適用する範囲を示します。
-利用先プロジェクトへ配布するガイドの対象やCLIの参照コマンドは増やしません。
+Place the development platform as a Product alongside sdev.
+The shared guide is a convention referenced by multiple features, so place it separately from product specifications under `docs/engineering/guidelines/`.
+Manage cross-feature tool versions, CI structure, and their reasons in the shared environment design.
+Keep conventions and daily procedures in the [Rust development guide](../../../../engineering/guidelines/rust-development.md), separately from adoption reasons.
+Express membership through Product-to-feature links and guide-to-Design and Product links.
 
-採用するバージョンと共通CIの構成は共通設計で定義し、リポジトリの設定へ反映します。
-共通の実行手順はガイドで管理します。
-ガイドは設定の存在を前提にする手順と、不足・食い違いの扱いを示し、別の作業フォルダーへリンクしません。
-設定の反映状況や検証結果をこの設計へ転記せず、作業報告へ残します。
+Add navigation to the platform specifications and guide in the [documentation entry point](../../../../README.md).
+Separate this from ordinary task guidance and identify its scope as developing sdev itself.
+Do not expand the consuming-project guides or add CLI reference topics for this development guide.
 
-## アーキテクチャ・シーケンス図
+Define adopted versions and common CI in the shared design and reflect them in repository settings.
+Keep common execution procedures in the guide.
+Explain prerequisites, missing settings, and mismatches without linking to another working directory.
+Keep implementation status and verification results in work reports rather than copying them into this design.
 
-入口が仕様とガイドへ案内し、人とAIが文書と設定を読みます。
-実行エンジンやサービス間の通信は追加しないため、シーケンス図は使いません。
+## Architecture and sequence diagrams
 
-## データモデル・ER 図
+The entry point directs people and AI to specifications, guidance, and settings.
+No engine or service communication is added, so a sequence diagram is unnecessary.
 
-データはUTF-8のMarkdown本文と通常の相対Markdownリンクです。
-Product、Requirements、Designは配置規約に従い、共通ガイドへの参照でつなぎます。
-設定情報の複製や専用データベースを持たないため、ER図は使いません。
+## Data model and ER diagrams
 
-## API・インターフェース
+Use UTF-8 Markdown and ordinary relative links.
+Place Product, Requirements, and Design according to conventions, connecting them through shared guides.
+No copied settings or dedicated database are needed, so there is no ER diagram.
 
-接点は[文書と作業の入口](../../../../README.md)と[Rust開発ガイド](../../../../engineering/guidelines/rust-development.md)です。
-作業内容に応じた節を読み、設定が不足する場合や参照できない場合は、利用する人またはAIが不足を報告します。
-HTTP APIやガイド専用のCLIコマンドは追加しません。
+## APIs and interfaces
 
-## 外部サービスとの連携方式
+The interfaces are the [documentation entry point](../../../../README.md) and [Rust development guide](../../../../engineering/guidelines/rust-development.md).
+Readers choose task-relevant sections and report missing settings or references.
+No HTTP API or guide-specific CLI command is added.
 
-なし。
-Markdownの読み取りに認証・ネットワークは不要です。
-Rust公式サイトへのリンクは根拠の参照であり、本文の読み取りを成立させる必須接続ではありません。
+## External service integration
 
-## データの取り扱い設計
+None. Reading Markdown requires no authentication or network.
+Rust's official links support explanations; they are not required connections for reading the guide body.
 
-ガイドは同じファイルを編集・参照し、変更履歴はGitで保持します。
-ガイドでは設定の役割を説明し、採用する値は共通設計へ集約します。
-未配置ファイルへのリンクは作りません。
-検証ログを収集する仕組みや保存期限の管理は追加しません。
-移動・削除時は参照元のリンクも更新します。
+## Data handling
 
-## 認証認可に関する特記事項
+Read and edit the same guide files, preserving history in Git.
+Guides describe setting roles; shared design collects adopted choices.
+Do not link to unavailable files.
+No verification-log collection or retention management is added.
+Update incoming links when moving or deleting documents.
 
-なし。
-リポジトリを読み書きする既存の権限に従い、アカウントや認証情報を追加しません。
+## Authentication and authorization notes
 
-## セキュリティ上の留意事項
+None. Use existing repository read/write permissions without new accounts or credentials.
 
-外部URLは公式資料を開いて内容を確認してから追加します。
-導入手順は公式の案内へつなぎ、認証値や個別環境のパスを例に埋め込みません。
-社内資料からは公開可能な構造上の参考だけを扱い、本文や内部URLを含めません。
+## Security considerations
 
-## デプロイに関する特記事項
+Open official sources and verify contents before adding URLs.
+Link installation procedures to official guidance, without examples containing credentials or personal paths.
+Publicly shareable structural ideas may inform the guide; exclude private text and internal URLs.
 
-なし。
-Markdownの変更を通常のレビューで反映でき、製品の公開や移行処理を伴いません。
+## Deployment notes
 
-## 検討した代替手段
+None. Ordinary review can publish Markdown changes without product releases or migration.
 
-### sdevのProductへ開発手順を追記する
+## Alternatives considered
 
-参照先を減らせますが、利用者に提供する価値とsdev自身の開発環境が混ざります。
-独立したProductと共通ガイドへ分け、双方の変更理由を追える構成を選びます。
+### Add development procedures to the sdev Product
 
-### 専用ランナーや新しいツール群を導入する
+This reduces reference locations but mixes user value with sdev's development environment.
+Use a separate Product and shared guide so changes retain distinct reasons.
 
-操作をまとめられますが、手順の参照のために追加の実装と保守が必要になります。
-Cargoを中心とした既存構成を説明する文書で要件を満たせるため、追加しません。
-共通設計で定めるRust製開発用タスクを使う場合も、その役割をガイドで説明します。
+### Add a dedicated runner or tool suite for the guide
 
-## 未決事項
+A runner can combine operations but needs implementation and maintenance merely to provide procedural reference.
+Documents explaining the Cargo-based environment meet this feature's requirements.
+When shared design adopts Rust development tasks or other tooling, explain their roles in the guide rather than implementing them as this reference feature.
 
-なし。
+## Open questions
+
+None.

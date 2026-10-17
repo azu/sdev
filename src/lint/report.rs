@@ -1,4 +1,5 @@
 use super::{markdown::Reference, paths};
+use crate::language::Language;
 use serde_json::{Value, json};
 use std::{collections::BTreeSet, fmt::Write, path::Path};
 
@@ -27,6 +28,7 @@ impl Diagnostic {
 }
 #[derive(Default)]
 pub struct Report {
+    language: Language,
     diagnostics: Vec<Diagnostic>,
     pub documents: usize,
     pub direction_documents: usize,
@@ -35,6 +37,19 @@ pub struct Report {
     pub skipped_heading_checks: usize,
 }
 impl Report {
+    fn section(&self, diagnostic: &Diagnostic) -> &'static str {
+        if self.language == Language::Ja {
+            diagnostic.section()
+        } else if diagnostic.code == "forbidden-reference" {
+            "Reference directions"
+        } else {
+            "Checking references"
+        }
+    }
+    pub fn with_language(mut self, language: Language) -> Self {
+        self.language = language;
+        self
+    }
     pub fn add(
         &mut self,
         path: &Path,
@@ -83,8 +98,8 @@ impl Report {
     pub fn json(&self) -> String {
         let diagnostics: Vec<Value> = self.diagnostics.iter().map(|d| json!({
             "kind": if d.violation() { "violation" } else { "failure" }, "code": d.code,
-            "path": d.path, "line": d.line, "column": d.column, "target": d.target, "reason": d.reason,
-            "guidance": { "command": "sdev help documents", "section": d.section() }
+            "path": d.path, "line": d.line, "column": d.column, "target": d.target, "reason": self.language.message(&d.reason),
+            "guidance": { "command": self.language.select("sdev help documents --lang en", "sdev help documents --lang ja"), "section": self.section(d) }
         })).collect();
         let report = json!({"status": self.status(), "diagnostics": diagnostics,
             "summary": { "documents": self.documents, "direction_documents": self.direction_documents,
@@ -100,35 +115,62 @@ impl Report {
             if let (Some(line), Some(column)) = (d.line, d.column) {
                 write!(output, ":{line}:{column}").unwrap();
             }
-            write!(output, " [{}] {}", d.code, escaped(&d.reason)).unwrap();
+            write!(
+                output,
+                " [{}] {}",
+                d.code,
+                escaped(&self.language.message(&d.reason))
+            )
+            .unwrap();
             if let Some(target) = &d.target {
                 write!(output, " (target: {})", escaped(target)).unwrap();
             }
             output.push('\n');
         }
-        let sections: BTreeSet<_> = self.diagnostics.iter().map(|d| d.section()).collect();
+        let sections: BTreeSet<_> = self.diagnostics.iter().map(|d| self.section(d)).collect();
         if !sections.is_empty() {
-            writeln!(
-                output,
-                "ガイド: sdev help documents（{}）",
-                sections.into_iter().collect::<Vec<_>>().join("、")
-            )
-            .unwrap();
+            let sections = sections.into_iter().collect::<Vec<_>>().join(", ");
+            let guide = self
+                .language
+                .select(
+                    &format!("Guide: sdev help documents --lang en ({sections})"),
+                    &format!("ガイド: sdev help documents --lang ja（{sections}）"),
+                )
+                .to_owned();
+            writeln!(output, "{guide}").unwrap();
         }
         let label = match self.code() {
-            0 => "検査完了、違反なし",
-            1 => "検査完了、違反あり",
-            _ => "検査未完了",
+            0 => self
+                .language
+                .select("Check complete, no violations", "検査完了、違反なし"),
+            1 => self
+                .language
+                .select("Check complete, violations found", "検査完了、違反あり"),
+            _ => self.language.select("Check incomplete", "検査未完了"),
         };
         writeln!(output, "{}: {label}", self.status()).unwrap();
-        writeln!(output, "文書 {}（方向も検査 {} / リンク切れのみ検査 {}）、内部参照 {}、外部参照 {}、見出し照合対象外 {}", self.documents, self.direction_documents, self.documents - self.direction_documents, self.internal_references, self.external_references, self.skipped_heading_checks).unwrap();
-        writeln!(
-            output,
-            "違反 {}、処理失敗 {}",
-            self.violations(),
-            self.failures()
-        )
-        .unwrap();
+        let (documents, directional, links, internal, external, skipped) = (
+            self.documents,
+            self.direction_documents,
+            self.documents - self.direction_documents,
+            self.internal_references,
+            self.external_references,
+            self.skipped_heading_checks,
+        );
+        let summary = self.language.select(
+            &format!("Documents {documents} (direction-checked {directional} / links-only {links}), internal references {internal}, external references {external}, heading checks skipped {skipped}"),
+            &format!("文書 {documents}（方向も検査 {directional} / リンク切れのみ検査 {links}）、内部参照 {internal}、外部参照 {external}、見出し照合対象外 {skipped}"),
+        ).to_owned();
+        writeln!(output, "{summary}").unwrap();
+        let (violations, failures) = (self.violations(), self.failures());
+        let summary = self
+            .language
+            .select(
+                &format!("Violations {violations}, failures {failures}"),
+                &format!("違反 {violations}、処理失敗 {failures}"),
+            )
+            .to_owned();
+        writeln!(output, "{summary}").unwrap();
         output
     }
 }

@@ -1,126 +1,126 @@
 # sdev
 
-## 概要
+[日本語](product.ja.md)
 
-sdevは、人とAIが仕様を起点にプロダクトを開発するためのフレームワークです。
-プロダクトの目的を定めるProduct、機能ごとの振る舞いを定めるRequirements、実現方法と判断理由を記すDesignを経て、コードへ具体化する進め方と、それを支えるガイドラインや道具を提供します。
+## Overview
 
-中心となる価値は、コードから要件や設計へさかのぼり、残された前提や判断理由をたどってレビューできることです。
-「この関数はなぜあるのか」「なぜこの処理や分割の仕方を選んだのか」を確認できる、コードが無から生まれない状態を目指します。
+sdev is a framework for developing products from specifications with people and AI.
+Its purpose is to develop code from documented intent, then trace code back to Requirements and Design for review of assumptions and reasons.
+Reviewers should be able to understand why a function exists and why behavior or responsibilities were divided in a particular way.
 
-## 背景と解決する課題
+## Background and problems
 
-### 背景
+### Background
 
-sdevは、新しいオープンソースプロダクトを作る際に、仕様を起点にした開発を実践するために作ります。
-複数のオープンソース開発で同じワークフローを使い、試す機会を増やし、その経験を共通のガイドラインや道具の改善へ戻して、進め方自体を育てます。
+sdev is built to practice specification-led development when creating new open-source products.
+Using the same workflow across projects creates opportunities to test it and feed experience back into common guidelines and tools.
 
-要件や設計を記述することも文章作成であり、開発と切り離された作業ではありません。
-文章の対象・目的・5W1Hを整理し、アウトラインと各部分の目的を考えてから本文を書く進め方と、目的から仕様、コードへ具体化する考え方には共通点があります。
-sdevではこの共通点を生かし、目的を整理する作業と成果物を書く作業をつなげます。
+Writing requirements and designs is itself part of development.
+Organizing an audience, purpose, context, outline, and the role of each section resembles the progression from purpose through specifications to code.
+sdev uses that connection to carry purpose clarification into the creation of deliverables.
 
-### 解決する課題
+### Problems to solve
 
-コードの処理だけを読んでも、それが必要になった理由や、選択時の前提を確認できないことがあります。
-たとえば、パスをスラッシュで分割する処理を見ても、Windowsへの対応が必要なのか、どの前提でその処理を選んだのかが残っていなければ、妥当かどうかをレビューしにくくなります。
-ここで扱う課題は、前提や理由を確認できないことであり、その処理に不具合があるという判断ではありません。
+Code alone may not establish why behavior is needed or the assumptions behind a choice.
+For example, a slash-splitting path function does not tell reviewers whether Windows support is required or which assumptions justify the approach.
+The problem here is missing assumptions and reasons, rather than a claim that the function is defective.
 
-会話に判断を残すだけでは、実装や変更の際に、何を根拠に作られたコードかを探し直す必要があります。
-また、目的・要件・設計の境界が曖昧だと、同じ条件を複数の場所に書き、変更時にどこを直すかも分かりにくくなります。
-sdevは、文書の責務を分け、目的からコードへ具体化する流れと、コードから理由をたどる関係を支えます。
+Decisions left only in conversation are hard to recover when changing or reviewing code.
+Unclear boundaries between purpose, requirements, and design also duplicate conditions and obscure where updates belong.
+sdev separates document responsibilities and supports both progressing from purpose to code and tracing code back to its reasons.
 
-## ターゲットエンドユーザー
+## Target users
 
-### 人とAIで仕様を起点にプロダクトを開発する利用者
+### People developing products from specifications with AI
 
-利用者は、なぜプロダクトや機能を作るか、誰の何を解決し、どう変えたいかを判断し、要件・設計・実装の具体化をAIと進める開発者です。
-新しいプロダクトの立ち上げ、機能の追加・変更、コードレビューで、残された前提や判断理由を確認しながら作業します。
+Users decide why a product or feature should exist, whose problem it addresses, and what should change, then work with AI to develop requirements, design, and implementation.
+They refer to recorded assumptions and reasons during new-product development, feature changes, and code review.
 
-この利用者は、複数のプロジェクトで同じ進め方を実践し、経験を共通のガイドラインや道具へ戻せることを必要とします。
-プロジェクトごとに大きく異なるルールへ自由に作り替えることを主目的にはしません。
+They need to practice the same workflow across projects and return lessons to shared guidance and tools.
+Unrestricted customization into a substantially different methodology for every project is not the main purpose.
 
-AIエージェントは、利用者との対話から判断に必要な情報を集め、ガイドラインを参照し、文書やコードを具体化する実行者です。
-特定の製品やエディターの利用を前提にはしません。
+AI agents draw information from dialogue, follow guidelines, and produce documents and code.
+No specific agent product or editor is required.
 
-## 提供価値
+## Value provided
 
-### コードから前提と判断理由をたどってレビューできる
+### Review code through its assumptions and reasons
 
-AIと開発する人に、コードから関連する要件や設計へさかのぼり、残された前提や判断理由を確認する手段を提供します。
-関数の存在理由や処理・責務の分け方を、書かれた目的や判断に照らしてレビューできるようにするためです。
-理由が残っていない箇所は不明として扱い、もっともらしい理由を後付けで推測しません。
+Give people working with AI a way to trace code back to requirements and design decisions.
+Review a function's existence, behavior, and responsibility boundaries against recorded purposes and choices.
+Treat missing reasons as unknown rather than inventing a plausible explanation after the fact.
 
-### 人の目的からAIが実現方法を具体化できる
+### Develop implementation methods from human purposes
 
-プロダクトや機能を作る人が、なぜ作るか、誰の何を解決するか、なぜ今取り組むか、どのような成果を得たいかを整理できる進め方を提供します。
-人が考えている目的を引き出し、AIが要件・設計・コードを具体化する際の前提として残すためです。
-ここでの「なぜ今」は取り組む理由を指し、期限や優先順位を決めることではありません。
+Help people clarify why to build something, whose problem to solve, why address it now, and the outcome they want.
+Draw out those purposes and retain them as input for AI-generated requirements, design, and code.
+Why now means the reason for undertaking the work, rather than deadlines or priority management.
 
-### 同じ進め方を実践し、改善へ戻せる
+### Reuse practice and improve it
 
-複数のプロダクトを開発する人に、簡単に導入し、参照・更新できる共通のガイドラインと道具を提供します。
-開発のたびに進め方を作り直す負担を減らし、実践で分かった不足や改善点を、次のプロジェクトでも使える形で蓄積するためです。
+Provide shared guidelines and tools that are easy to introduce, reference, and update across products.
+Reduce the need to reinvent working practices and preserve lessons for the next project.
 
-## 成功の定義
+## Definition of success
 
-人とAIが、Productから機能ごとのRequirements、Design、コードへと目的を具体化して開発を進められることを成功とします。
-レビューや変更の際には逆方向にたどり、コードの存在理由や実現方法を選んだ理由を、残された前提と判断から確認できる状態を目指します。
+People and AI can develop from Product through feature Requirements and Design to code.
+During review or changes, they can trace the reverse path and examine why code exists and why its methods were chosen.
 
-複数のプロダクト開発で同じワークフローを実践し、得られた経験によって共通のガイドラインや道具を改善できることも成功に含めます。
-sdev自身の開発でも同じ進め方を使います。
-個別機能の合否は、[文書と作業の入口](../../README.md)から参照する各機能の受け入れ条件で判断し、確認結果は完了報告やPR本文に残します。
+Success also includes using the same workflow across products and improving common guidelines and tools from that experience.
+sdev applies its own workflow to development.
+Judge individual features using the acceptance criteria reached from the [documentation entry point](../../README.md), keeping verification results in completion reports or PR descriptions.
 
-## プロダクト開発を進める上での指針
+## Development principles
 
-人との対話では、なぜ作るか、誰の何を解決するか、なぜ今取り組むか、得たい成果を引き出すことを重視します。
-実現方法の具体化はAIへ任せることを基本とし、人がどこまで決めるかは状況やAIの能力に応じて判断します。
-「作りたい」という目的の表明を、設計・実装までの依頼とは解釈せず、対話で目的と作業の範囲を整理します。
-文書作成だけの依頼は文書と要点の提示で区切り、実装まで任されている場合は途中でも要点を提示してレビューする機会を作ります。
-目的・範囲・利用者の振る舞いに関して未決の判断が必要なら、人へ確認します。
-すべての段階に人の承認を固定する進め方にはしません。
-期限・優先順位・タスクの管理は対象外とします。
+Use dialogue to explore why to build, who has which problem, why address it now, and desired outcomes.
+Delegate the development of implementation methods to AI by default, with the human's degree of involvement depending on the situation and the agent's capabilities.
+An expressed wish to build something begins a conversation about purpose and scope; it does not by itself authorize design and implementation.
+For document-only requests, present the document and key points, then stop. For implementation requests, present decisions during the work so the user can review them.
+Ask humans to resolve decisions about purpose, scope, or user-visible behavior when needed.
+Do not require human approval at every fixed stage.
+Deadline, priority, and task management are outside scope.
 
-まずは、残された前提と判断理由をたどれることを優先します。
-理由の記載漏れを意味まで理解して自動検出することは、第一の目標にしません。
-要件と設計、設計とコードの関係を確認する可視化や、参照の方向などのルールを検査するsdev lintを、この目的を支える道具として検討します。
-可視化は関係を確認する手段を指し、図や専用画面の実装を前提にはしません。
+First prioritize traceable assumptions and reasons.
+Automatic semantic detection of every missing explanation is not the primary goal.
+Consider document-rule checking with sdev lint and relationship visualization as tools supporting this purpose.
+Visualization means helping people understand relationships; it does not commit to diagrams or a dedicated interface.
 
-普通のMarkdownを人が読み書きできることと、文書ごとの責務が明確であることを優先します。
-文書間の関係は既存のディレクトリ構成とMarkdownリンクを出発点にし、コードとの関係も含めた具体的な記録方法は実践から判断します。
-導入と継続利用の負担を小さくし、ガイドラインを参照・更新しやすくします。
+Prioritize ordinary, readable Markdown and clear document responsibilities.
+Start relationships from directories and Markdown links, choosing more detailed records and code relationships from practice.
+Keep adoption and continued use lightweight and make guidance easy to reference and update.
 
-利用したい人が誰でも入手できる、追加の実行環境を必要としない単体の実行ファイルで配布します。
-ガイドラインとテンプレートはコマンドに同梱し、同じバージョンとして配布・更新します。
-AIはコマンドの出力から資料を読み、人はGitHub上の文書も参照できる形にします。
-配布・利用の条件を先に定め、その後にlint、可視化の順で具体化します。
+Distribute a standalone executable available to anyone who wants it, without an additional runtime.
+Embed guidelines and templates and update them with the executable as one version.
+Let agents read command output while people can also browse repository Markdown on GitHub.
+Establish distribution and usage conditions before detailing lint and visualization.
 
-文章作成とプロダクト開発には、目的から成果物へ具体化する共通の考え方を使います。
-それぞれの段階を機械的に一対一で対応させず、要件や設計そのものを書く作業にも生かします。
+Apply the shared progression from purpose to deliverable to both writing and development.
+Use it within writing requirements and design too, rather than imposing a mechanical one-to-one mapping between every writing and development stage.
 
-## SLA・SLI・SLO
+## SLA, SLI, and SLO
 
 ### SLA
 
-サービス水準の保証は設けません。
-sdevは開発の進め方を支えるものであり、運用する公開サービスの契約を扱わないためです。
+No service-level guarantee is provided.
+sdev supports a development practice rather than operating a public service with contractual guarantees.
 
-### SLI・SLO
+### SLI and SLO
 
-運用の信頼性指標と目標は設けません。
-リンクの存在や文書作成の成否は作業時に確認し、稼働率の継続計測とは分けます。
-公開サービスの運用が必要になった場合は、提供範囲を決める際に開発者が指標と目標を検討します。
+No operational reliability indicators or targets are defined.
+Check link existence and document creation during work, separately from continuous availability measurements.
+If a public service becomes necessary, developers will define indicators and targets with its scope.
 
-## 未決事項
+## Open questions
 
-文書専用のWeb公開先・入口URLは決めていません。
-ガイドとテンプレートはコマンドから参照し、配置済みMarkdownを直接読む方法も維持します。
-文書専用のWeb公開を追加する必要が生じた場合は、開発者と利用者が公開先を判断します。
+A dedicated documentation website and entry URL have not been selected.
+Use embedded guides and templates while retaining direct Markdown reading.
+If a dedicated website is needed, developers and users will decide its destination.
 
-コードと要件・設計の関係をどう記録・参照するかと、可視化の具体的な機能は決めていません。
-コードコメントに理由を残すことも候補ですが、記録場所やコード起点の参照の検査方法は決定していません。
-文書間では既存の配置とリンクを使い、初回のsdev lintは[文書リンクの検査のRequirements](features/document-lint/requirements.md)で定める範囲を扱います。
-コードとの対応付けや追加の検査が必要になる実例を得た際に、開発者と利用者が機能ごとに判断します。
+How to record and reference relationships between code, Requirements, and Design, and the specific visualization features, remain open.
+Code comments containing reasons are one option, but no recording location or code-origin reference checker has been selected.
+Use existing document placement and links; the initial linter follows the [document-link Requirements](features/document-lint/requirements.md).
+When examples show a need for code relationships or additional checks, developers and users will decide each feature.
 
-文章を書く作業とプロダクトを作る作業を、モードなどの形で統合するかは決めていません。
-共通する考え方をガイドラインで使いながら、操作の統合が必要な実例を得た際に、開発者と利用者が判断します。
-文章作成ツールへの用途拡大や、専用モードの実装は決定していません。
+Whether writing and product development should be unified through modes or operations remains undecided.
+Share ideas through guidelines and revisit operational integration when real examples require it.
+Expansion into a general writing tool or a dedicated mode has not been decided.

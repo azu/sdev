@@ -1,50 +1,52 @@
-# Requirementsを書く
+# Writing Requirements
 
-[文書の責務と更新](documents.md)、[シナリオ](scenarios.md)、[エージェントの作業原則](agent.md)、[Requirementsテンプレート](../templates/requirements.md)を読みます。
-親Productを特定して読み、なければ[Productの作成](product.md)から行います。
-対象が曖昧なら既存Product・機能の一覧を調べて候補を示します。
-テンプレートは[選び方](documents.md#テンプレートの選び方)に従って選び、上のリンクは適用するものがない場合のsdevの既定テンプレートとして使います。
+[日本語](requirements.ja.md)
 
-## 入力を整理する
+Read [Document responsibilities and updates](documents.md), [Scenarios](scenarios.md), [Agent working principles](agent.md), and the [Requirements template](../templates/requirements.md).
+Identify and read the parent Product. If absent, [write the Product](product.md) first.
+If the target is unclear, inspect existing Products and feature lists, then present candidates.
+Follow [template selection](documents.md#choosing-templates): the linked template is sdev's fallback when no applicable project template is designated.
 
-[質問で考えを具体化する](agent.md#質問で考えを具体化する)手順に従い、利用者の行動と期待する結果を対話で掘り下げます。
-典型的な利用場面を1つ具体化し、その回答をもとに正常・失敗・境界の条件を広げます。
-「自動化したい」なら、人が判断する部分や自動処理できない場合の扱いも聞き、AIの仮定だけで受け入れ条件を埋めません。
+## Understand the input
 
-この機能で実現したい行動と価値、扱う範囲と対象外を整理します。
-変更なら既存RequirementsとDesign、動作が分かるコードを読み、変更前後の差を確認します。
-利用者・用語・成功指標の意味を親Productとそろえます。
+Use [questions to make ideas concrete](agent.md#make-ideas-concrete-through-questions) to explore user actions and expected outcomes.
+Start with one concrete use case, then expand into success, failure, and boundary conditions based on the answer.
+For a request to automate work, ask which decisions remain human and what happens when automation cannot complete. Do not invent acceptance criteria from assumptions.
 
-利用者ごとのストーリーと、正常・失敗・境界の受け入れ条件を洗い出します。
-成功指標の現状値・目標値・計測方法・期間、各機能の入力・出力・条件・例外を確認します。
-定量値に根拠が必要なら調査し、未計測値を作りません。
+Clarify the actions and value this feature provides, its scope, and exclusions.
+For a change, read existing Requirements, Design, and relevant code to establish the difference in behavior.
+Align users, terminology, and success measures with the parent Product.
 
-必要なデータの役割・主な情報・関係、取得や保持の制約、個人情報の有無を確認します。
-他の情報との照合で個人を識別できるかも確認します。
-契約や費用を伴う外部依存、セキュリティとプライバシーの条件を調べます。
-型・保存先・接続方法などはDesignへ委ねます。
+Identify stories for each user and acceptance conditions covering success, failure, and boundaries.
+Clarify current and target metrics, measurement methods and periods, and each function's inputs, outputs, conditions, and exceptions.
+Research quantitative claims when needed; do not invent measurements.
 
-## 執筆する
+Identify the roles, main information, and relationships of required data, collection and retention constraints, and personal information.
+Consider identification through combination with other information too.
+Investigate external dependencies involving contracts or costs, and security and privacy conditions.
+Leave types, storage locations, and connection methods to Design.
 
-新規文書は選んだテンプレートと利用先の配置規約に従って保存します。
-指定がない場合は、sdevの既定構成の機能ディレクトリに`requirements.md`を置きます。
-sdevの既定テンプレートでは「このドキュメントについて」に機能の概要と範囲を書き、親Productへのリンクを付けます。
-利用先のテンプレートに対応する項目がある場合は、その構造で記述します。
-ユーザーストーリーには必ず独立して合否を確かめられるシナリオを付けます。
-ストーリー・成功指標・機能の見出しは項目名とし、連番を付けません。
-データと外部サービスは名前を太字にしたリストで整理します。
+## Write
 
-Productの説明や実装方法は書かず、適用する条件を論点ごとにまとめます。
-未決の要件がDesignの判断を妨げるなら解消します。
-設計に影響しない未決事項だけ、扱いと見直す条件を添えて残せます。
+Save a new document using the chosen template and the consuming project's placement rules.
+Without another rule, put `requirements.md` in the feature directory of sdev's default layout.
+In sdev's fallback template, describe the feature and scope under About this document and link to the parent Product.
+Use the consuming template's corresponding structure when one is designated.
+Every user story needs scenarios with independently verifiable outcomes.
+Name stories, metrics, and functions descriptively, without numbering their headings.
+List data and external services with their names in bold.
 
-## 読み返す
+Group applicable conditions by topic, leaving Product explanations and implementation methods to their respective documents.
+Resolve requirements that would prevent Design decisions.
+Only retain open questions that do not affect design, with their interim treatment and revisit conditions.
 
-ガイドラインとシナリオの規則で、見出しに条件と結果があるか、Thenが観測できるかを確認します。
-各機能の範囲・入力・出力・例外・データに不足や矛盾がないかを確認します。
-次にDesignを書く人が、利用者に提供する振る舞いを決め直す必要がないことを確認します。
-保存内容とリンク先を確認し、文書と要点を提示します。
-Requirementsの作成・変更だけの依頼なら、レビューを依頼するところで作業を区切ります。
-実装まで任されている場合や、利用者の判断が必要な場合の進め方は[依頼の範囲とレビュー](agent.md#依頼の範囲とレビュー)に従います。
-要件変更では同じ機能のDesignも更新します。
-Designへ進む場合は、[Designのガイドライン](design.md)を参照します。
+## Review
+
+Use the guidelines and scenario rules to check that headings include conditions and results, and Then statements are observable.
+Check scope, inputs, outputs, exceptions, and data for missing or conflicting conditions.
+The next person writing Design should not need to redefine user-visible behavior.
+Verify saved contents and links, then present the document and key points.
+When only Requirements work is requested, stop after requesting review.
+For implementation requests and decisions needing user input, follow [request scope and review](agent.md#request-scope-and-review).
+Update the same feature's Design when requirements change.
+When moving to Design, follow the [Design guidelines](design.md).

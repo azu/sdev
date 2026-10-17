@@ -1,224 +1,218 @@
-# コマンドの配布とガイドラインの参照の設計
+# Design: Command distribution and guideline access
 
-## このドキュメントについて
+[日本語](design.ja.md)
 
-[Requirements](requirements.md)と親の[Product](../../product.md)を前提に、Rust製sdev CLIと単体実行ファイルの配布を設計します。
-比較用CLIで確認した小さい実行ファイルと起動時間を判断材料に、Rustを採用します。
-配布方式の比較は過去の採用判断であり、当時の測定値を現在のCLIの性能保証として扱いません。
+## About this document
 
-### 対象読者
+This document designs the Rust sdev CLI and standalone distribution under the [Requirements](requirements.md) and parent [Product](../../product.md).
+Rust was selected using executable size and startup measurements from comparison CLIs.
+Those measurements explain a past decision; they do not guarantee the current CLI's performance.
 
-sdev CLIの実装・更新・配布を行う開発者とエージェント。
+### Intended readers
 
-### 前提知識
+Developers and agents implementing, updating, and distributing sdev.
 
-[文書の責務と更新](../../../../guidelines/documents.md)、[ガイドライン参照のRequirements](../guideline-reference/requirements.md)、[Rust開発ガイド](../../../../engineering/guidelines/rust-development.md)。
+### Prerequisites
 
-### このドキュメントで扱わないこと
+[Document responsibilities and updates](../../../../guidelines/documents.md), [guideline access requirements](../guideline-reference/requirements.md), and the [Rust development guide](../../../../engineering/guidelines/rust-development.md).
 
-lintの規則、可視化、ローカルWebサーバー、自動更新、パッケージレジストリーへの公開は扱いません。
-検証の実行手順と結果は実装・検証の作業で扱い、この文書に一時ログを蓄積しません。
+### Exclusions
 
-## 実装方針
+Lint rules, visualization, local web servers, automatic updates, and package registry publication are excluded.
+Verification procedures and results belong to implementation work, rather than temporary logs in this document.
 
-製品CLIをリポジトリ直下のCargoパッケージとし、実行ファイル名を`sdev`とします。
-Rustの選択と更新、共通の検証・CI方針は[Rust開発ガイド](../../../../engineering/guidelines/rust-development.md)の共通規約に従います。
-配布するsdevのバージョンはCargo.tomlで管理します。
-製品で使うcrateは実行ファイルへ組み込み、利用時に別ファイルのライブラリや追加の実行環境を必要としません。
+## Implementation approach
 
-`docs/guidelines/`以下のMarkdownを作業ガイド、`docs/templates/`以下のMarkdownを内蔵の既定テンプレートとして、コンパイル時に同梱します。
-それぞれを`help`と`template`のトピックへ対応付け、公開する名前・案内文・元資料の対応をカタログで管理します。
-公開する名前は作業や資料の意味に合わせて決め、ファイル名から自動生成しません。
-CLIの選択肢とガイド内の参照コマンドはこのカタログから作り、対象ディレクトリのMarkdownと登録内容が一致しない場合や、同じ操作にトピック名が重複する場合はビルドを止めます。
-資料の追加・削除では元のMarkdownと対応する登録を変更し、資料数を別に管理しません。
-`docs/products/`の仕様や`docs/engineering/`の開発規約など、対象ディレクトリ外の文書は同梱しません。
-利用者へ内部のファイル名を資料IDとして指定させず、sdev自身のProductを利用先のProductの代わりに返すこともありません。
+The root Cargo package builds the product executable, named `sdev`.
+Rust selection, updates, shared checks, and CI follow the [Rust development guide](../../../../engineering/guidelines/rust-development.md).
+Cargo.toml owns the distributed version.
+Product crates are compiled into the executable; users need no separate libraries or runtime.
 
-ガイドの意味と読む順序は既存の文書に置き、コマンドへの案内に必要な部分だけビルド時に読み替えます。
-リンクの構文と位置を[pulldown-cmark](https://github.com/pulldown-cmark/pulldown-cmark)で読み取り、同梱ガイドやテンプレートへの相対リンクを「表示名（参照コマンド）」に変換します。
-見出しを指すリンクは対応するコマンドと節名を案内します。
-入口へのリンクは全体の案内である`sdev help`へ変換し、外部URLとコード中の文字列は変更しません。
-未対応の内部リンクが追加された場合は、ビルド時にエラーにして案内先を曖昧に残しません。
-元のMarkdownは書き換えず、GitHubでのリンクを維持します。
+Compile Markdown under `docs/guidelines/` as task guides and under `docs/templates/` as built-in default templates.
+A catalog maps public operation/topic names, descriptions, and source paths. Names describe tasks and materials rather than being generated from filenames.
+Generate CLI choices and guide reference commands from this catalog. Fail the build for mismatches with the material directories or duplicate operation/topic names.
+Add or remove source Markdown and catalog registrations together; do not maintain a separate material count.
+Do not bundle specifications in `docs/products/` or development conventions in `docs/engineering/`.
+Internal filenames are not public IDs, and sdev's Product is not returned in place of the consuming project's Product.
+Register English and Japanese bodies for each public topic. Language choice follows the [localization requirements](../localization/requirements.md).
 
-テンプレートの本文は変換せず、そのまま表示します。
-ガイドは利用先の指示・規約で対象用と指定されたテンプレートを優先し、ない場合に内蔵の既定を使う進め方を案内します。
-既存仕様の変更ではその構造を尊重し、任意のMarkdownをテンプレートとして推測しません。
-資料参照の操作は利用先の自動探索・生成・上書きを行わず、ガイドと内蔵テンプレートの表示を担当します。
+Keep guide meaning and reading order in the source documents; rewrite only the references needed for command access at build time.
+Use [pulldown-cmark](https://github.com/pulldown-cmark/pulldown-cmark) to read link syntax and ranges, replacing relative links to bundled materials with their label and reference command.
+Heading links include the command and section. Entry links become `sdev help`; reference commands retain the destination language explicitly.
+Leave external URLs and code text unchanged. Fail builds for unmapped internal guide links rather than leaving ambiguous references.
+Preserve source Markdown and its links for GitHub readers.
 
-### 手動リリース
+Output templates unchanged, including their Markdown body and language navigation.
+Guides prioritize templates designated by repository instructions and use built-in defaults only when none applies.
+Respect the structure of existing specifications; do not infer templates from arbitrary Markdown.
+Material access displays guides and defaults without discovering, generating, or overwriting consuming repository files.
 
-公開は、mainを選んでバージョンを指定するworkflow_dispatchだけから開始します。
-初回は`X.Y.Z`形式の安定バージョンを受け付け、接頭辞v・事前公開・ビルド識別子は受け付けません。
-Cargo.tomlとCargo.lockの更新は先に通常の変更としてmainへ反映し、ワークフローからバージョン変更のコミットは作りません。
-起動時のコミットSHAを対象としてすべてのジョブへ渡します。mainの先頭がそのSHAから動いた場合は、公開せず新しいmainでの手動実行へ切り替えます。
+### Manual releases
 
-開始前に、指定バージョンとCargoのパッケージバージョンの一致、空でないルートのLICENSE、対象コミット、既存タグとReleaseを確認します。
-タグは`vX.Y.Z`とし、別コミットのタグ・注釈付きタグ・公開済みReleaseがあれば停止します。
-この処理が作成する軽量タグが同じコミットを指す場合は、失敗後の再実行で再利用できます。
+Publication starts only through workflow_dispatch with main and an explicit version.
+Accept stable `X.Y.Z` versions initially, without a `v` prefix, prerelease, or build metadata.
+Update Cargo.toml and Cargo.lock through normal changes on main; the workflow does not create version commits.
+Pass the starting commit SHA to every job. If main advances, stop publication and start a new manual run from current main.
 
-ビルドと検証は通常のCIと同じ再利用ワークフローを呼びます。
-対象の定義は開発用タスクへ集約し、CIの組み合わせと、公開時にそろえる配布物の一覧を同じ定義から作ります。
-Rustはリポジトリの固定設定から導入し、ワークフローに別のバージョンを複製しません。
-全対象でビルド、共通チェック、ネイティブでの配布物検証が成功した場合だけ、公開ジョブを起動します。
+Before starting, check the requested Cargo version, nonempty root LICENSE, source commit, and existing tag/Release.
+Use `vX.Y.Z`. Stop for a tag at another commit, an annotated tag, or a published Release.
+A lightweight tag created by this process at the same SHA can be reused on retry.
 
-公開ジョブは同じ実行の対象別成果物を別ディレクトリへ取得し、添付する前に対象の過不足を確認します。
-各メタデータのコミット・変更のないソース・バージョン・対象・検証済み状態、および実ファイルのサイズ・SHA-256・チェックサムを照合します。
-LICENSEは対象ソースと一致させ、共通の通知は全対象で同じ本文であることを確認します。異なる場合は一方で上書きせず停止します。
-実行ファイルとチェックサム、LICENSE、Rustとcrateの通知を公開用の一時領域へそろえ、内部の確認用JSONはReleaseへ添付しません。
-[プロジェクトへの導入のRequirements](../project-bootstrap/requirements.md)に従い、インストーラーとチェックサム、バージョン・ソースコミットの記録、証明bundleも公開対象へ加えます。
-再利用ビルドワークフローの専用ジョブで、集約したファイルに証明を付けます。
-公開ジョブは、同じ実行の証明を使って全ファイルの配布元・再利用ワークフロー・ソースと署名のコミットを照合してからタグを作成します。
+Call the same reusable build workflow as ordinary CI.
+Development tasks own target definitions; derive both the CI matrix and expected publication artifacts from them.
+Install Rust from the repository's pin without duplicating its version in workflows.
+Start publication only after builds, shared checks, and native artifact verification succeed on every target.
 
-照合後に対象SHAの軽量タグと下書きReleaseを作り、全ファイルを添付します。
-下書きの本文には対象SHAと実行IDを記録し、同じ実行の再実行だけがその下書きへ添付をやり直せます。
-GitHub上の添付名・状態・サイズ・SHA-256が公開用ファイルと一致し、タグ・下書き・mainの先頭も変わっていないことを再確認してから、下書きを公開状態へ変更します。
-公開応答と再取得した状態を確認し、最新版の表示はGitHubのバージョン順の扱いに任せます。
-同時実行は公開ワークフロー全体で直列にし、進行中の公開を新しい起動で取り消しません。
+Download each target's artifacts from the same run into separate directories and check the exact expected set.
+Compare source commit, clean-source status, version, target, verified status, file sizes, SHA-256 values, and checksums.
+Match LICENSE to the source and shared notice text across targets; stop rather than overwrite differences.
+Stage executables, checksums, LICENSE, and Rust/crate notices for publication, excluding internal verification JSON.
+Include the installer, its checksum, version/source record, and attestation bundle as required by [project bootstrap](../project-bootstrap/requirements.md).
+A dedicated job in the reusable build workflow attests the aggregated files.
+Before creating tags, the publication job verifies each file's repository, reusable workflow, source digest, and signer digest against attestations from this run.
 
-| 失敗した時点・既存状態 | 扱い |
+After comparison, create the lightweight tag and draft Release.
+Record source SHA and run ID in the draft; only retries of that run can replace its attachments.
+Before publishing, recheck attachment names, states, sizes, SHA-256 values, tag, draft, and main's head.
+Confirm the publication response and fetched state. Let GitHub determine latest-version ordering.
+Serialize the entire release workflow without canceling a release when a new run starts.
+
+| Failure or existing state | Handling |
 | --- | --- |
-| 開始前の不一致、対象のビルド・検証失敗 | タグ・Releaseを作らず停止 |
-| タグ作成後、下書き作成前 | 同じSHAのタグを再実行で再利用 |
-| 添付・照合の途中 | 下書きを残し、mainが同じSHAである間に元の実行を再実行。既存の同名添付だけを置き換えて全件を再照合 |
-| 別実行の下書き、mainの移動、未知の添付 | 自動削除・流用をせず停止。保守者が状態を確認 |
-| 公開済み、公開操作の応答不明 | 公開状態を確認する。公開済みReleaseと添付は再実行で上書きしない |
+| Initial mismatch or target build/verification failure | Stop without creating a tag or Release |
+| Tag exists after failure before draft creation | Reuse the tag at the same SHA on retry |
+| Attachment or comparison fails | Keep the draft; retry the original run while main has the same SHA, replacing only matching attachments and rechecking all files |
+| Another run's draft, moved main, or unknown attachment | Stop without deletion or reuse; maintainer inspects the state |
+| Already published or publication response unknown | Inspect public state; retries do not overwrite public Releases or files |
 
-[GitHubのトークンの説明](https://docs.github.com/en/actions/concepts/security/github_token)にあるとおり、GITHUB_TOKENで作ったタグのpushは別のワークフローを起動しません。
-このため、タグのpushを契機にせず、同一実行からビルドと公開を明示的につなぎます。
-[再利用ワークフロー](https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows)を実行中の同じコミットから参照し、[Release API](https://docs.github.com/en/rest/releases/releases)で下書き・添付・公開状態を確認します。
+As documented for [GITHUB_TOKEN](https://docs.github.com/en/actions/concepts/security/github_token), tag pushes using that token do not trigger another workflow.
+Connect builds and publication explicitly within one run rather than relying on tag pushes.
+Reference the [reusable workflow](https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows) at the same executing commit and inspect drafts, assets, and publication through the [Release API](https://docs.github.com/en/rest/releases/releases).
 
-### ソースからのローカル導入
+### Local installation from source
 
-開発者がローカルのCargoパッケージから`cargo install --path . --locked`で製品の実行ファイルを導入できるようにします。
-[Cargoの導入操作](https://doc.rust-lang.org/cargo/commands/cargo-install.html)の標準機能を使い、専用のインストーラーや製品CLIのインストール操作は追加しません。
-`--root`で隔離した導入先も選べます。実行ファイルへガイドとテンプレートを同梱する構成は、配布用ビルドと同じです。
+Allow `cargo install --path . --locked` from the local Cargo package.
+Use the standard [Cargo installation command](https://doc.rust-lang.org/cargo/commands/cargo-install.html), without adding a separate installer or product CLI installation operation for source builds.
+`--root` permits an isolated destination. Bundled guides and templates use the same build path as releases.
 
-## アーキテクチャ・シーケンス図
+## Architecture and sequence
 
 ```mermaid
 sequenceDiagram
-    participant B as ビルド処理
-    participant S as リポジトリ内の資料
-    participant C as sdev実行ファイル
-    participant A as 人・エージェント
-    B->>S: Markdownを読み取る
-    S-->>B: 元のガイドとテンプレート
-    B->>C: 資料とバージョンをコンパイル時に同梱
-    A->>C: 作業・トピック・種類・バージョンを指定
-    C-->>A: 同梱文字列を標準出力へ返す
+    participant B as Build
+    participant S as Repository materials
+    participant C as sdev executable
+    participant A as Person or agent
+    B->>S: Read Markdown
+    S-->>B: Source guides and templates
+    B->>C: Compile materials and version
+    A->>C: Select task, topic, type, or version
+    C-->>A: Write bundled text to stdout
 ```
 
-## データモデル・ER 図
+## Data model and ER diagram
 
-カタログの項目は、操作の種類、公開するトピック名、案内文、元資料の位置を持ちます。
-元資料の位置はビルド時の入力であり、公開APIにはしません。
-同梱する固定配列は、操作・トピック・案内文と出力本文を持ちます。
-バージョンはCargoのパッケージバージョンをコンパイル時に取り込みます。
-配布の確認用メタデータは、対象コミット、変更のないソースかどうか、バージョン、対象、サイズ、SHA-256、通知名、検証済み状態を持ちます。
-ビルド時は未検証とし、配布物のネイティブ検証がすべて完了してから検証済みへ更新します。
-利用者の情報を保持するデータベースがないため、ER図は使いません。
+Each catalog entry holds an operation, public topic, descriptions in both languages, and a source path.
+Source paths are build inputs, not public API.
+The bundled array contains operation, topic, language, description, and output body.
+Cargo's package version is included at compile time.
+Artifact metadata records source commit, clean-source status, version, target, size, SHA-256, notices, and verification status.
+Builds start unverified; only successful native verification marks them verified.
+There is no user database, so no ER diagram is needed.
 
-## API・インターフェース
+## API and interfaces
 
-| 操作 | 出力 |
+| Operation | Output |
 | --- | --- |
-| `sdev`、`sdev --help`、`sdev help` | できることと作業・共通トピックの案内 |
-| `sdev help product` / `requirements` / `design` | それぞれの作業ガイド |
-| `sdev help documents` | 文書の責務・配置・更新とテンプレートの選び方 |
-| `sdev help workflow` | 対話・調査・実装・検証の作業原則 |
-| `sdev help scenarios` | 受け入れ条件のシナリオのガイド |
-| `sdev template` | 内蔵の既定テンプレートの種類と利用先の指定を優先する案内 |
-| `sdev template product` / `requirements` / `design` | 選んだ既定テンプレートの元のMarkdown本文 |
-| `sdev --version` | 実行中のsdevのバージョン |
+| `sdev`, `sdev --help`, `sdev help` | Capabilities and task/shared topics |
+| `sdev help product` / `requirements` / `design` | Corresponding task guide |
+| `sdev help documents` | Document roles, placement, updates, and template selection |
+| `sdev help workflow` | Conversation, research, implementation, and verification principles |
+| `sdev help scenarios` | Acceptance scenario guide |
+| `sdev template` | Built-in default types and reminder to prefer project-designated templates |
+| `sdev template product` / `requirements` / `design` | The selected default's original Markdown |
+| `sdev --version` | Running sdev version |
 
-`-h`と`-V`もヘルプ・バージョンの別名とします。
-関連する資料は対応するヘルプ・テンプレート操作へ案内し、1つのガイドへ全資料を連結しません。
-利用先で読むべきProduct・Requirements・Designの意味は元ガイドから維持します。
-仕様を作成するディレクトリ等の利用上必要なパスは本文に残します。
+`-h` and `-V` are help and version aliases.
+`--lang en` or `--lang ja` can select a language for one command; project configuration otherwise applies, with English as the unconfigured default.
+Route related materials through their own operations rather than concatenating all materials into one guide.
+Preserve references to the consuming project's Product, Requirements, and Design and any paths needed to create its specifications.
 
-正常終了は0、不明な操作・トピック・種類・引数の不足や過剰は2、資料表示の標準出力などの入出力エラーは1とします。
-この表は資料参照とバージョン確認の操作に適用し、lintの結果と終了コードは[文書リンク検査のRequirements](../document-lint/requirements.md)に対応する設計で定めます。
-エラーは標準エラーへ書き、ガイドが不明なら`sdev help`、テンプレートなら`sdev template`で確認する方法を示します。
-資料をファイル名から取り出す操作と、通知表示のための操作は提供しません。
+Exit codes are 0 for success, 2 for unknown operations/topics/types or missing/excess arguments, and 1 for I/O failures such as stdout errors.
+These codes apply to material/version operations; lint results and statuses are defined under the [document lint requirements](../document-lint/requirements.md).
+Write errors to stderr and point to `sdev help` or `sdev template` as appropriate.
+Do not provide operations for fetching materials by filename or displaying notices.
 
-## 外部サービスとの連携方式
+## External service integration
 
-CLIの実行時に外部サービスへ接続しません。
-GitHub ReleasesにはOS・CPUとバージョンを識別できる実行ファイルを配置する方針とし、公開は保守者が手動ワークフローを開始したときだけ行います。
-[Rust開発ガイドのCI規約](../../../../engineering/guidelines/rust-development.md#ciと異なるosで確かめる)を前提に、配布機能では対象のOS・CPUで実行ファイルをビルドし、追加の実行環境への依存を確認して、チェックサムと通知を含むレビュー用成果物を保存します。
-通常のCIは成果物の保存までとし、手動リリースの実行だけがタグとReleaseを作成・公開します。
-ビルドと配布物検証は開発基盤の`xtask`から実行し、製品CLIには開発操作を追加しません。
-配布物検証タスクは、単体実行、空の作業場所とPATH、同梱本文・バージョン・チェックサム、および対象OSのライブラリ依存と最低OS条件を確認し、失敗を成功へ置き換えません。
+Material output requires no external service.
+GitHub Releases holds artifacts identified by OS, CPU, and version. Publication occurs only when a maintainer starts the manual workflow.
+Following the [Rust CI conventions](../../../../engineering/guidelines/rust-development.md#ci-and-other-operating-systems), build on each target environment, check additional runtime dependencies, and save review artifacts with checksums and notices.
+Ordinary CI stops at artifact storage; only a manual release creates tags and publishes Releases.
+Build and verification are development `xtask` operations, not product CLI commands.
+Verification checks standalone execution with an empty directory and PATH, material bodies, version, checksum, system dependencies, and minimum OS conditions. Failures remain failures.
 
-| 対象 | Rustターゲット | 初期の利用条件 |
+| Platform | Rust target | Initial conditions |
 | --- | --- | --- |
-| macOS arm64 | aarch64-apple-darwin | macOS 11以降 |
-| macOS x64 | x86_64-apple-darwin | macOS 10.12以降 |
-| Linux arm64 | aarch64-unknown-linux-gnu | glibc 2.35以降、kernel 4.1以降 |
-| Linux x64 | x86_64-unknown-linux-gnu | glibc 2.35以降、kernel 3.2以降 |
-| Windows x64 | x86_64-pc-windows-msvc | Windows 10以降 |
+| macOS arm64 | aarch64-apple-darwin | macOS 11 or later |
+| macOS x64 | x86_64-apple-darwin | macOS 10.12 or later |
+| Linux arm64 | aarch64-unknown-linux-gnu | glibc 2.35+, kernel 4.1+ |
+| Linux x64 | x86_64-unknown-linux-gnu | glibc 2.35+, kernel 3.2+ |
+| Windows x64 | x86_64-pc-windows-msvc | Windows 10 or later |
 
-OS条件は[Rustの公表条件](https://doc.rust-lang.org/stable/rustc/platform-support.html)を出発点にします。
-Linuxは実際のビルド環境をUbuntu 22.04に固定するため、[そのglibcのバージョン](https://packages.ubuntu.com/jammy-updates/libc6)に合わせ、配布時の条件を2.35以降とします。
-古いglibcやmusl環境を初回の対象に広げません。
-最低OS環境での実動作は、現在のOSでビルド・実行したことから推測しません。
+Start with [Rust platform support](https://doc.rust-lang.org/stable/rustc/platform-support.html).
+Linux builds use Ubuntu 22.04, so require [its glibc version](https://packages.ubuntu.com/jammy-updates/libc6), 2.35 or later.
+Older glibc and musl are outside initial support. Running on a current OS does not prove operation on every minimum OS.
+Set macOS minimum versions using the [deployment target](https://doc.rust-lang.org/stable/rustc/platform-support/apple-darwin.html).
+Use Windows `crt-static` per the [runtime linkage documentation](https://doc.rust-lang.org/reference/linkage.html), then check final DLL dependencies and actual execution during distribution.
 
-macOSは[deployment targetの説明](https://doc.rust-lang.org/stable/rustc/platform-support/apple-darwin.html)に従って対象ごとの最低バージョンを指定します。
-Windowsは[公式のCランタイムの説明](https://doc.rust-lang.org/reference/linkage.html)に従い`crt-static`を指定し、追加のCランタイムを要求しない構成にします。
-最終的なDLL依存と利用環境での動作は配布時に確認します。
+## Data handling
 
-## データの取り扱い設計
+Bundle repository guides and templates as fixed strings at build time.
+Transform guide references only; preserve template UTF-8 bytes and add no newline when printing bodies.
+Material changes require rebuilding a new command version.
+Material operations read project language configuration, but do not read user documents or code or collect usage data.
 
-リポジトリのガイドとテンプレートをビルド時に固定文字列として同梱します。
-ガイドの参照案内だけを変換し、テンプレートは元のUTF-8バイト列を保ちます。
-本文を出力するときに改行を追加しません。
-資料の更新はコマンドのバージョンを更新して再ビルドすることで反映します。
-資料参照の操作は利用者の文書・コードを読み取らず、利用状況も収集・保存しません。
+Ship Rust standard library notices separately as `THIRD-PARTY-NOTICES.html`.
+Generate `THIRD-PARTY-CRATES.html` from target-resolved normal dependencies and their original notice text; missing notice sources fail distribution preparation.
+Include sdev's LICENSE in the same preparation.
+These files are not runtime dependencies. Generated artifacts are ignored by Git.
 
-Rust標準ライブラリの通知は実行ファイルへ埋め込まず、配布準備で別の`THIRD-PARTY-NOTICES.html`として含めます。
-通常の依存として組み込むcrateの通知は、対象ターゲットでCargoが解決した依存とパッケージの元の通知本文から`THIRD-PARTY-CRATES.html`を生成します。
-元の通知資料がない場合は配布準備を失敗にし、通知の欠落を成功にしません。
-sdev自身のLICENSEがあれば、同じ配布準備で添付します。
-これらの通知を実行時のファイル依存にはせず、実行に必要なものは単体実行ファイルだけにします。
-生成物はGitの無視対象とします。
+## Authentication and authorization
 
-## 認証認可に関する特記事項
+Material and version output do not use credentials.
+Preparation/build jobs use contents: read; only the publication job receives contents: write.
+GitHub CLI uses Actions GITHUB_TOKEN only for publication and comparison, without an additional personal token.
+Do not persist checkout credentials or expose publication GH_TOKEN to compilation-only steps.
+Public artifact downloads need no individual authorization.
 
-CLIの資料参照とバージョン表示には認証情報を使いません。
-準備・ビルドのジョブはcontents: readとし、最後の公開ジョブだけにcontents: writeを与えます。
-GitHub CLIはActionsのGITHUB_TOKENを公開・照合の操作だけで使い、個人のアクセストークンを追加しません。
-checkoutの認証情報は保存せず、公開用のGH_TOKENをコンパイルだけのステップへ渡しません。
-公開配布物の取得は個別の利用許可を必要としない形にします。
+## Security considerations
 
-## セキュリティ上の留意事項
+Print bundled text without executing its code, HTML, or commands.
+Read only declarative project language configuration; do not load scripts from the working directory or environment.
+Ship Rust's `COPYRIGHT-library.html` unchanged from the selected toolchain.
+sdev uses the MIT License and includes its root LICENSE in distributions.
 
-資料の中のコード・HTML・コマンドを実行せず、同梱本文を出力します。
-実行時の作業ディレクトリや環境変数から設定・スクリプトを読み込みません。
-通知はビルドで使用するRustの配布に含まれる`COPYRIGHT-library.html`を内容を変えずに配布物へ添付します。
-sdev自身はMIT Licenseで公開し、ルートのLICENSEを配布物へ添付します。
+## Deployment considerations
 
-## デプロイに関する特記事項
+No special migration is needed; normal release and executable replacement apply.
+Installation, updates, license preparation, signing, and notarization procedures belong in [Distribution and updates](../../../../engineering/guidelines/releasing.md).
 
-なし。
-通常の配布物の公開と差し替えで反映でき、既存データの移行は不要です。
-取得・起動・更新の利用手順と、ライセンスの配置、署名・公証など公開前の作業は[配布と更新](../../../../engineering/guidelines/releasing.md)へまとめます。
+## Alternatives considered
 
-## 検討した代替手段
+### Bun standalone executable
 
-### Bunの単体実行ファイル
+The same TypeScript produced all five targets. Future web interfaces could use [Bun's built-in full-stack tooling](https://bun.com/docs/bundler/fullstack) for server and asset bundling.
+Its binaries were larger in the comparison, so Rust was selected for a smaller distribution.
+Speed alone did not decide the choice; the future web interface remains undecided.
 
-同じTypeScriptから5組の生成を確認でき、将来Web画面を選ぶ場合には[Bunの標準機能](https://bun.com/docs/bundler/fullstack)でサーバーと資産の変換・同梱をまとめられます。
-比較ではRustより実行ファイルが大きくなり、小さい配布ファイルが成立するRustを採用しました。
-速度だけを最優先にした判断ではなく、今後のWeb画面の方式も未決のままです。
+### scriptc standalone executable
 
-### scriptcの単体実行ファイル
+This option offered small TypeScript artifacts with Bun as a possible fallback.
+Only 0.2.8 with a bundled dynamic engine was tested; [0.3 native compilation](https://scriptc.dev/docs/dependencies) was not verified.
+Rust was chosen with this limitation recorded; scriptc is not part of product builds.
 
-TypeScriptで小さい配布ファイルを作り、困った場合にBunへ切り替える候補として比較しました。
-動作したのは0.2.8の動的エンジン同梱構成であり、[0.3系のネイティブ化](https://scriptc.dev/docs/dependencies)は未検証です。
-この制約を残したうえでRustを採用し、scriptcを製品のビルドに組み込みません。
+## Open questions
 
-## 未決事項
-
-本機能の実装に必要な設計判断は決定しています。
-公開前の作業は配布ガイドで管理し、可視化は別の機能で判断します。
+Implementation decisions for this feature are settled.
+Track pre-publication work in the distribution guide and decide visualization separately.

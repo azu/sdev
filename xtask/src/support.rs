@@ -50,6 +50,7 @@ pub fn sidecar(path: &Path, extension: &str) -> PathBuf {
 pub struct Toolchain {
     pub channel: String,
     compiler: String,
+    path: OsString,
 }
 
 impl Toolchain {
@@ -64,9 +65,21 @@ impl Toolchain {
             .ok_or("Missing toolchain channel")?;
         let compiler =
             output(Command::new("rustup").args(["which", "--toolchain", &channel, "rustc"]))?;
+        let compiler = compiler.trim().to_owned();
+        let inherited_path = env::var_os("PATH").unwrap_or_default();
+        let path = env::join_paths(
+            std::iter::once(
+                Path::new(&compiler)
+                    .parent()
+                    .ok_or("Missing Rust bin directory")?
+                    .to_owned(),
+            )
+            .chain(env::split_paths(&inherited_path)),
+        )?;
         Ok(Self {
             channel,
-            compiler: compiler.trim().to_owned(),
+            compiler,
+            path,
         })
     }
 
@@ -75,7 +88,8 @@ impl Toolchain {
         command
             .args(["run", &self.channel, "cargo"])
             .current_dir(root())
-            .env("RUSTC", &self.compiler);
+            .env("RUSTC", &self.compiler)
+            .env("PATH", &self.path);
         command
     }
 }

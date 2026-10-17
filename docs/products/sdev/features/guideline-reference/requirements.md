@@ -1,245 +1,240 @@
-# ガイドラインとテンプレートの参照
+# Referencing guidelines and templates
 
-## このドキュメントについて
+[日本語](requirements.ja.md)
 
-エージェントが作業の入口から、文書作成に必要なガイドラインとテンプレートを見つけて読めることを定めます。
-親となる[sdevのProduct](../../product.md)を前提とします。
+## About this document
 
-### スコープ
+Define how an agent finds and reads the guidelines and templates needed for document work from a task entry point.
+The parent [sdev Product](../../product.md) provides the context.
 
-- 配置済みMarkdownを使った、文書作成と変更の参照案内。
-- 作業に合う文書種別と、先に読む仕様の案内。
-- 必要な資料を読めない場合の対処の案内。
-- 依頼の範囲に応じた文書の提示、レビュー、利用者への確認の案内。
-- 質問ツールの利用と、回答を踏まえた対話の掘り下げの案内。
+### Scope
 
-### スコープ外
+- Reference guidance for creating and changing documents using repository Markdown.
+- Selection of document types and prerequisite specifications for a task.
+- Guidance when required materials cannot be read.
+- Document presentation, review, and user decisions appropriate to the request's scope.
+- Question tools and follow-up dialogue based on answers.
 
-- Web公開、公開URLの提供、バージョンを指定した配信。
-- エージェントによる対話・執筆・実装の自動実行や、指示に従うことの機械的な強制。
-- CLI、文書のlint、対応関係の可視化、既存文書の移行の本格実装。
+### Out of scope
 
-## ユーザーストーリー
+- Web publication, public URLs, or version-specific delivery.
+- Automatically conducting dialogue, writing, or implementation, or mechanically enforcing agent compliance.
+- Implementation of the CLI, document lint, relationship visualization, or document migration.
 
-### 作業に必要な資料を読む
+## User stories
 
-AIエージェントと仕様を整理して開発する人として、短い参照指示からエージェントに必要な資料を読ませたい。
-それによって、作業ごとにガイドラインやテンプレートを探して渡す負担を減らせる。
+### Read materials needed for the task
 
-**受け入れ条件:**
+As someone developing specifications with an AI agent, I want a short reference instruction to lead the agent to the right materials so I spend less effort finding and supplying them for every task.
 
-Scenario: Productを書く場合、目的を整理する資料へたどれる
+**Acceptance criteria:**
 
-- Given: エージェントが入口を参照でき、プロダクトの目的を整理する依頼を受けている。
-- When: エージェントが入口からProduct作成の案内を読む。
-- Then: エージェントは文書の責務とProductの書き方のガイドライン、Productのテンプレートを読み取れる。
+Scenario: Writing a Product, the agent can reach materials for clarifying purpose
 
-Scenario: Requirementsを書く場合、シナリオと上位文書の案内を読める
+- Given: The agent can read the entry point and is asked to organize a product's purpose.
+- When: It reads the Product-writing entry.
+- Then: It can read document responsibilities, Product-writing guidelines, and the Product template.
 
-- Given: エージェントが入口を参照でき、親Productがある機能の要件作成を依頼されている。
-- When: エージェントが入口からRequirements作成の案内を読む。
-- Then: エージェントは文書の責務・シナリオ・Requirementsの書き方のガイドライン、Requirementsのテンプレート、先に親Productを読む指示を読み取れる。
+Scenario: Writing Requirements, the agent can read scenarios and upstream guidance
 
-Scenario: Designを書く場合、要件を前提に設計する資料へたどれる
+- Given: The entry point is available and the feature has a parent Product.
+- When: The agent reads the Requirements-writing entry.
+- Then: It can read responsibility, scenario, and Requirements guidelines, the template, and instructions to read the parent Product first.
 
-- Given: エージェントが入口を参照でき、Requirementsがある機能の設計を依頼されている。
-- When: エージェントが入口からDesign作成の案内を読む。
-- Then: エージェントは文書の責務とDesignの書き方のガイドライン、Designのテンプレート、先に親Productと対応するRequirementsを読む指示を読み取れる。
+Scenario: Writing Design, the agent can reach materials grounded in Requirements
 
-### 既存の仕様を変更する前に扱いを確認する
+- Given: The entry point is available and the feature has Requirements.
+- When: The agent reads the Design-writing entry.
+- Then: It can read responsibility and Design guidelines, the template, and instructions to read the parent Product and corresponding Requirements first.
 
-AIエージェントと仕様を整理して開発する人として、変更内容に応じた文書の扱いを参照したい。
-それによって、過去の文書を複製せず、変更する箇所を判断できる。
+### Check update policy before changing specifications
 
-**受け入れ条件:**
+As someone developing specifications with AI, I want guidance appropriate to the kind of change so I can select what to update without duplicating past documents.
 
-Scenario: 既存機能の変更を行う場合、変更の種類に応じた更新方針を読める
+**Acceptance criteria:**
 
-- Given: エージェントが入口を参照でき、既存機能の変更を依頼されている。
-- When: エージェントが実装・変更の案内を読む。
-- Then: エージェントは要件変更、実装中の設計改善、実装完了後の実装方法だけの改善を区別した文書の更新方針と、過去の内容を参照する方法を読み取れる。
+Scenario: Changing an existing feature, the update policy distinguishes the type of change
 
-### 依頼した範囲で作業し、要件と設計を確認する
+- Given: The entry point is available and an existing feature needs changing.
+- When: The agent reads implementation and change guidance.
+- Then: It can distinguish requirements changes, design improvements during implementation, and method-only improvements after implementation, and learn how to read earlier versions.
 
-AIエージェントと開発する人として、依頼した範囲で作業を進めながら、作成・変更されたRequirementsとDesignを確認したい。
-それによって、要件や実現方法の認識の違いを見つけ、必要な判断へ参加できる。
+### Stay within the request and review requirements and design
 
-**受け入れ条件:**
+As someone developing with AI, I want to review changed Requirements and Design while work stays within my request so I can correct misunderstandings and participate in necessary decisions.
 
-Scenario: 「作りたい」と伝えた場合、実装までの依頼とみなさない手順を案内する
+**Acceptance criteria:**
 
-- Given: 利用者が実現したいことを伝えたが、既存の会話でも設計・実装までの依頼はしていない。
-- When: エージェントが共通の作業ガイドを読む。
-- Then: 目的と範囲を対話・調査で整理し、次に行う作業を提案することと、自動的に設計・実装へ進まないことを読み取れる。
+Scenario: An expressed wish to build something does not authorize implementation
 
-Scenario: Requirementsの作成だけを依頼した場合、文書の提示で区切る手順を案内する
+- Given: The user expresses an idea, without prior authorization to design and implement it.
+- When: The agent reads shared working guidance.
+- Then: It can learn to clarify purpose and scope through dialogue and research, propose the next task, and avoid automatically proceeding to design and implementation.
 
-- Given: 利用者がRequirementsの作成・変更だけを依頼している。
-- When: エージェントがRequirementsと共通の作業ガイドを読む。
-- Then: 文書を保存・確認して要点を提示し、レビューを依頼するところで作業を区切り、依頼をDesignや実装へ拡張しない手順を読み取れる。
+Scenario: A Requirements-only request ends with presenting the document
 
-Scenario: Designの作成だけを依頼した場合、文書の提示で区切る手順を案内する
+- Given: The user requests only Requirements creation or revision.
+- When: The agent reads Requirements and shared working guidance.
+- Then: It can learn to save, check, and present the document and key points, request review, and end the task without expanding into Design or implementation.
 
-- Given: 利用者がDesignの作成・変更だけを依頼している。
-- When: エージェントがDesignと共通の作業ガイドを読む。
-- Then: 文書を保存・確認して要点を提示し、レビューを依頼するところで作業を区切り、依頼を実装へ拡張しない手順を読み取れる。
+Scenario: A Design-only request ends with presenting the document
 
-Scenario: 実装まで依頼されている場合、要点を提示しながら進める手順を案内する
+- Given: The user requests only Design creation or revision.
+- When: The agent reads Design and shared working guidance.
+- Then: It can learn to save, check, and present the document and key points, request review, and end the task without expanding into implementation.
 
-- Given: 実装まで依頼されており、利用者が途中で確認する指定や、利用者の判断が必要な未決事項がない。
-- When: エージェントが共通の作業ガイドを読む。
-- Then: Requirements・Designの要点を途中で提示し、文書ごとの一律の承認待ちを設けずに、任された範囲で進める手順を読み取れる。
+Scenario: An implementation request permits progress while presenting key decisions
 
-Scenario: 利用者の判断が必要な未決事項がある場合、依存する作業を待つ手順を案内する
+- Given: Implementation is requested, without a specified review stop or unresolved decision needing the user.
+- When: The agent reads shared working guidance.
+- Then: It can learn to present Requirements and Design decisions during the work and continue within scope without a mandatory approval stop for every document.
 
-- Given: 目的・範囲・利用者の振る舞いについて、依頼や既存仕様から判断できない決定が必要になっている。
-- When: エージェントが共通の作業ガイドを読む。
-- Then: 選択肢と判断が必要な理由を利用者へ示し、その決定に依存する設計や実装を待つ手順を読み取れる。
+Scenario: A required user decision pauses dependent work
 
-Scenario: 利用者が途中の確認を指定している場合、その指示に従う手順を案内する
+- Given: Purpose, scope, or observable behavior requires a decision not established by the request or specifications.
+- When: The agent reads shared working guidance.
+- Then: It can learn to present choices and reasons to the user and wait before dependent design or implementation.
 
-- Given: 実装まで依頼されているが、Designのレビュー後に実装するよう指定されている。
-- When: エージェントが共通の作業ガイドを読む。
-- Then: Designを提示して利用者の指示を待ち、無応答を確認済みとみなさない手順を読み取れる。
+Scenario: A user-specified review stop is respected
 
-### 質問を通じて考えを具体化する
+- Given: Implementation is requested, but only after review of Design.
+- When: The agent reads shared working guidance.
+- Then: It can learn to present Design and wait for instructions without treating silence as approval.
 
-AIエージェントと仕様を整理する人として、質問と回答のやりとりで目的や条件を具体化したい。
-それによって、自分の意図をAIの仮定で補われず、考えが曖昧な部分も一緒に整理できる。
+### Make ideas concrete through questions
 
-**受け入れ条件:**
+As someone organizing specifications with AI, I want dialogue to clarify purpose and conditions so unclear ideas are explored without being replaced by the agent's assumptions.
 
-Scenario: 初期の説明が曖昧な場合、質問して具体化する手順を案内する
+**Acceptance criteria:**
 
-- Given: 利用者が実現したいことを伝えているが、目的・利用場面・期待する結果の意味が十分に具体化されていない。
-- When: エージェントが共通の作業ガイドと対象文書のガイドを読む。
-- Then: 不足を仮定で埋めて執筆せず、対象文書の責務に合う質問をして考えを具体化する手順を読み取れる。
+Scenario: Vague initial input leads to questions
 
-Scenario: 回答が抽象的な場合、その回答から次の質問を選ぶ手順を案内する
+- Given: The user expresses an idea whose purpose, usage, or expected results are not yet concrete.
+- When: The agent reads the shared and document-specific guidance.
+- Then: It can learn to ask questions matching the document's responsibility instead of writing from invented assumptions.
 
-- Given: 利用者の回答に、利用場面や条件が異なる複数の解釈が残っている。
-- When: エージェントが共通の作業ガイドを読む。
-- Then: 回答を踏まえて具体例・成功条件・例外へ掘り下げ、理解した内容を返しながら対話を続ける手順を読み取れる。
+Scenario: Abstract answers guide the next question
 
-Scenario: 選択肢付きの質問ツールが利用可能な場合、優先して使う手順を案内する
+- Given: An answer allows multiple interpretations of situations or conditions.
+- When: The agent reads shared working guidance.
+- Then: It can learn to explore examples, success conditions, and exceptions from that answer, reflecting its understanding as dialogue continues.
 
-- Given: 質問が必要で、利用中の環境に選択肢付きの質問ツールがある。
-- When: エージェントが共通の作業ガイドを読む。
-- Then: 質問ツールを優先し、選択肢の違い、おすすめの根拠、自由入力の扱いを示す手順を読み取れる。
+Scenario: An available question tool is preferred
 
-Scenario: 質問ツールが利用できない場合、会話本文で質問する手順を案内する
+- Given: A question is needed and a tool offers selectable answers.
+- When: The agent reads shared working guidance.
+- Then: It can learn to prefer the tool and explain differences, recommendation reasons, and free-text input.
 
-- Given: 質問が必要だが、利用中の環境やモードで質問ツールが使えない。
-- When: エージェントが共通の作業ガイドを読む。
-- Then: ツールがないことを理由に質問を省略せず、会話本文で質問する手順を読み取れる。
+Scenario: Without a question tool, questions are asked in conversation
 
-Scenario: 条件が確認済みの場合、同じ質問を繰り返さない手順を案内する
+- Given: A question is needed but the current environment or mode offers no question tool.
+- When: The agent reads shared working guidance.
+- Then: It can learn to ask in the conversation rather than skip the question.
 
-- Given: 既存の会話や資料から具体的な条件を確認でき、利用者へ判断を委ねる必要がない。
-- When: エージェントが共通の作業ガイドを読む。
-- Then: 確認済みの内容を使い、質問の回数や項目を満たすための聞き直しをしない手順を読み取れる。
+Scenario: Confirmed conditions are used without repeated questions
 
-Scenario: 非同期の質問に未回答の場合、依存する内容を確定しない手順を案内する
+- Given: Concrete conditions are established by conversation or materials and need no further user decision.
+- When: The agent reads shared working guidance.
+- Then: It can learn to use those conditions without repeating questions merely to complete a checklist or question count.
 
-- Given: 利用者の回答を必要とする質問をしており、まだ返答がない。
-- When: エージェントが共通の作業ガイドを読む。
-- Then: 無応答や既定の選択を利用者の決定とみなさず、回答に依存する文書や実装の確定を待つ手順を読み取れる。
+Scenario: An unanswered asynchronous question does not finalize dependent content
 
-### 資料を読めないときの対処を確認する
+- Given: A question requiring the user's answer is pending.
+- When: The agent reads shared working guidance.
+- Then: It can learn to wait on dependent documents or implementation without treating silence or preselection as the user's decision.
 
-AIエージェントと仕様を整理して開発する人として、必要な資料を取得できない場合の案内を参照したい。
-それによって、不足する資料を読んだものとして作業が進むことを避ける判断ができる。
+### Understand failures to read materials
 
-**受け入れ条件:**
+As someone developing specifications with AI, I want guidance when materials are unavailable so work does not proceed as if missing sources had been read.
 
-Scenario: 必要な資料を読めない場合、取得失敗時の対処を参照できる
+**Acceptance criteria:**
 
-- Given: エージェントは入口と共通ガイドラインを読めるが、作業に必要な別の資料を取得できない。
-- When: エージェントが共通ガイドラインで取得失敗時の案内を確認する。
-- Then: エージェントは未取得を利用者へ伝えること、読めたものとして補わないこと、利用可能な代わりの資料がなければ依存する判断を待つことを読み取れる。
+Scenario: Unavailable materials have readable failure guidance
 
-この条件で確認する対象は、対処の案内が読めることです。
-エージェントが常に指示どおりに動作することは、提供する仕組みの保証には含めません。
+- Given: The entry point and common guidelines are readable, but another required material cannot be retrieved.
+- When: The agent reads retrieval-failure guidance.
+- Then: It can learn to report the missing source, avoid pretending it was read, and wait on dependent decisions when no suitable alternative is available.
 
-## KPI
+This verifies the availability of guidance, rather than guaranteeing that an agent always complies with it.
 
-### 作業別の資料の到達数
+## KPIs
 
-- **現状値:** 新規機能のため比較する実績なし。
-- **目標値:** 文書作成の3種別すべてで、入口から対応するガイドラインとテンプレートを読み取れる（3/3）。
-- **計測方法:** 各種別の受け入れ条件に沿って実際のリンクをたどり、対象文書の内容を確認する。
-- **計測期間:** この機能の作成完了時と、参照先の配置を変更したとき。
+### Reachable materials by task
 
-## 機能要件
+- **Current value:** No comparable results for this new feature.
+- **Target value:** All three writing tasks reach their guidelines and templates from the entry point, 3/3.
+- **Measurement method:** Follow actual links according to each acceptance scenario and inspect the contents.
+- **Measurement period:** At feature completion and whenever reference placement changes.
 
-### 参照資料の案内
+## Functional requirements
 
-**概要:** 作業の種類に応じて、必要な資料と前提となる仕様を案内する。
+### Direct readers to reference materials
 
-**入力:** Product作成、Requirements作成、Design作成、実装・変更のいずれかの作業目的。
+**Overview:** Select required materials and prerequisite specifications from the kind of work.
 
-**出力:** その作業に対応する参照資料と読む順序。
+**Input:** A task: Product, Requirements, Design, implementation, or revision.
 
-#### 適用する条件
+**Output:** Relevant materials and their reading order.
 
-##### 案内の範囲
+#### Applicable conditions
 
-入口から共通の作業原則も参照できること。
-資料の本文は1か所に置き、入口とプロジェクトの指示はその資料を参照すること。
-「作りたい」という目的の表明と、文書作成だけの依頼、実装までの依頼を区別すること。
-文書と要点を提示し、依頼の範囲、未決の判断、利用者が指定した確認のタイミングに応じて進め方を案内すること。
-今回の対象について既に得た指示を尊重し、同じ確認を繰り返さないこと。
-利用者の考えを具体化する質問、回答に応じた掘り下げ、質問ツールの優先利用と利用できない場合の質問方法を案内すること。
-回答から確認したこととエージェントの提案を分け、未回答の内容を確定しないこと。
-利用者が配置済みMarkdownを読める環境では、専用CLIの導入や資料のビルドをせずに参照できること。
+##### Guidance coverage
 
-##### 継続して使うための条件
+The entry point also reaches shared working principles.
+Maintain each language version in one place, with entry points and project instructions referencing it.
+Distinguish an idea, a document-only request, and an implementation request.
+Explain presentation and progress according to request scope, unresolved decisions, and specified review stops.
+Honor instructions already given for the task without repeating confirmations.
+Explain questions, answer-driven follow-up, preference for question tools, and conversational alternatives.
+Distinguish confirmed answers from agent proposals and leave unanswered decisions unresolved.
+Repository Markdown remains directly readable without installing a CLI or building materials.
 
-配布する資料の中に、特定の組織の内部資料、ローカルの絶対パス、専用ツールへの依存を残さないこと。
-利用者が別のプロジェクトで指示を追加できる短い例を用意すること。
-その参照先は実際に読めるものを指定でき、未公開のURLを公開済みとして案内しないこと。
+##### Continued use
 
-#### 例外ケースでの振る舞い
+Exclude organization-private materials, local absolute paths, and dedicated-tool dependencies from distributed guidance.
+Provide a short instruction example for another project.
+Its reference must be readable; do not advertise an unpublished URL as available.
 
-##### 参照に失敗した場合
+#### Exceptional behavior
 
-取得失敗時の対処は上のシナリオを満たす案内として提供する。
-入口自体を読めない場合は、参照指示の配置先を利用者が確認する必要があり、資料を提供するだけでは自動復旧しない。
+##### Reference failures
 
-##### 作業の前提が足りない場合
+Provide guidance meeting the retrieval-failure scenario above.
+If the entry point itself is unreadable, the user must check the instruction's location; distributing documents alone does not repair it.
 
-対象ProductやRequirementsがない場合は、先に不足する上位文書を作る手順へ案内する。
-対象が複数あって特定できない場合は、既存の候補を調べてから利用者に確認する手順を示す。
+##### Missing prerequisites
 
-## データ要件
+Guide readers to create a missing parent Product or Requirements first.
+If several targets are possible, investigate existing candidates before asking the user to select one.
 
-### 必要なデータ
+## Data requirements
 
-- **ガイドライン:** 文書の役割、更新の判断、受け入れ条件の書き方、作業前の参照・確認・執筆・読み返しの進め方。
-- **テンプレート:** Product・Requirements・Designそれぞれの記入構造。
-- **参照案内:** 作業の目的と資料の対応、先に読む仕様、プロジェクトからの参照指示の例。
+### Required data
 
-### データ間の関係
+- **Guidelines:** Roles, update criteria, acceptance writing, and the practices of preparation, research, writing, and review.
+- **Templates:** Structures for Product, Requirements, and Design.
+- **Reference guidance:** Task-to-material correspondence, prerequisite specifications, and project instruction examples.
 
-作業目的ごとの案内は、ガイドラインとテンプレートを参照する。
-ガイドラインは対応する上位仕様を読むことを案内し、仕様の本文を複製しない。
+### Relationships
 
-### 個人情報
+Task guidance references guidelines and templates.
+Guidelines direct readers to upstream specifications without copying their contents.
 
-この機能で個人情報を取得・保持する必要はない。
-利用者が別のプロジェクトで作成する仕様の内容は、この機能の収集対象に含めない。
+### Personal information
 
-## 依存する外部サービス
+None is needed or retained.
+Specifications created by users in other projects are not collected by this feature.
 
-なし。
-配置済み文書の参照を対象とするため、契約・費用・サービスの選択を必要としない。
+## External service dependencies
 
-## セキュリティ上の留意事項
+None. Reading repository documents requires no service contract, cost decision, or service selection.
 
-配布資料と例に個人情報・機密情報・認証情報を含めない。
-この機能は利用者のプロジェクトの文書を外部へ送信する機能を提供しない。
+## Security considerations
 
-## 未決事項
+Exclude personal information, confidential data, and credentials from distributed materials and examples.
+This feature does not send the consuming project's documents outside the project.
 
-この機能の成立に必要な未決事項はない。
-Web公開に関する判断は[Productの未決事項](../../product.md)に委ね、この機能ではローカル参照の案内を提供する。
+## Open questions
+
+None needed for this feature.
+Web publication remains an [open Product question](../../product.md); this feature supplies local reference guidance.

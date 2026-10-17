@@ -35,7 +35,8 @@ pub fn markdown(path: &Path) -> bool {
         .is_some_and(|s| s.eq_ignore_ascii_case("md"))
 }
 pub fn kind(path: &Path) -> Kind {
-    let parts: Vec<_> = path.iter().filter_map(|p| p.to_str()).collect();
+    let normalized = document_identity(path);
+    let parts: Vec<_> = normalized.iter().filter_map(|p| p.to_str()).collect();
     let ext = path
         .extension()
         .and_then(|s| s.to_str())
@@ -78,6 +79,7 @@ pub fn kind(path: &Path) -> Kind {
         || matches!(
             parts.as_slice(),
             ["Cargo.toml"
+                | "sdev.toml"
                 | "Cargo.lock"
                 | "rust-toolchain.toml"
                 | "package.json"
@@ -96,6 +98,28 @@ pub fn kind(path: &Path) -> Kind {
     } else {
         Kind::Unknown
     }
+}
+
+pub fn document_identity(path: &Path) -> PathBuf {
+    let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+        return path.to_path_buf();
+    };
+    let Some(stem) = name.strip_suffix(".md") else {
+        return path.to_path_buf();
+    };
+    if let Some((base, language)) = stem.rsplit_once('.') {
+        let mut tags = language.split('-');
+        let primary = tags.next().unwrap();
+        if (2..=3).contains(&primary.len())
+            && primary.bytes().all(|b| b.is_ascii_lowercase())
+            && tags.all(|tag| {
+                !tag.is_empty() && tag.len() <= 8 && tag.bytes().all(|b| b.is_ascii_alphanumeric())
+            })
+        {
+            return path.with_file_name(format!("{base}.md"));
+        }
+    }
+    path.to_path_buf()
 }
 
 pub enum Target {

@@ -1,218 +1,212 @@
-# プロジェクトへの導入の設計
+# Design: Project bootstrap
 
-## このドキュメントについて
+[日本語](design.ja.md)
 
-[Requirements](requirements.md)と[sdevのProduct](../../product.md)を前提に、配布ファイルの準備と初期設定を分けて実装します。
+## About this document
 
-### 対象読者
+Under the [Requirements](requirements.md) and [sdev Product](../../product.md), separate executable installation from project initialization.
 
-導入機能を実装・変更する人とAI。
+### Intended readers
 
-### 前提知識
+People and AI implementing or changing installation.
 
-[配布のRequirements](../command-distribution/requirements.md)と[文書の責務と更新](../../../../guidelines/documents.md)を参照します。
+### Prerequisites
 
-### このドキュメントで扱わないこと
+[Distribution requirements](../command-distribution/requirements.md) and [Document responsibilities and updates](../../../../guidelines/documents.md).
 
-仕様の生成、外部公開の実行、OSの署名・公証は扱いません。
+### Exclusions
 
-## 実装方針
+Specification generation, actual external publication, and OS signing/notarization are excluded.
 
-`install.sh`はPOSIX shで実装し、OS・CPUの選択、curlでの取得、ハッシュ照合、任意の証明検証、起動確認、配置を担当します。
-Rust・Node.js・Pythonを導入用の前提に追加しません。
-macOS arm64/x64とLinux arm64/x64を既存のReleaseのファイル名へ対応付けます。
-初回のWindows導入は既存の手動取得を使います。
+## Implementation approach
 
-バージョンを指定しない場合は公開Webの`releases/latest`のリダイレクト先からタグを読み、GitHub APIを使いません。
-タグは`vX.Y.Z`の安定版だけを受け入れ、取得ファイル名は既存の配布名から組み立てます。
-curlのHTTPエラーを失敗にし、取得先と通信待ち時間を固定します。
-最新Releaseの検索、各ファイルの取得、照合・証明検証の開始を標準エラーへ表示します。標準エラーが端末につながっている場合はcurlの進捗バーも表示し、非対話の環境では段階ごとの表示にとどめます。
-シェルの設定ファイルや環境変数に認証情報を追加しません。
+Implement `install.sh` in POSIX sh for platform selection, curl downloads, hash comparison, optional attestation verification, startup checks, and installation.
+Require no Rust, Node.js, or Python.
+Map macOS arm64/x64 and Linux arm64/x64 to existing release filenames; Windows initially uses manual downloads.
 
-配置先ディレクトリが通常のディレクトリであることを確認し、その配下の一時ディレクトリへ取得します。
-既定は`./bin`とし、起動スクリプトからの取得用に`--install-dir DIR`も受け付けます。
-配置先までの既存の親ディレクトリも確認し、シンボリックリンクを経由しません。
-実行ファイルと`.sha256`を取得し、`sha256sum`または`shasum -a 256`で計算した値と、ファイル名も含めて照合します。
-取得先から渡されたパスを使って任意のファイルを照合しません。
-照合後、指定されていれば証明を検証し、その後に取得した実行ファイルの`--version`を照合します。
-すべて成功した場合だけ同じファイルシステム上で配置先の`sdev`を差し替えます。
-一時領域は成功時・失敗時・シグナル受信時に削除します。
+Without an explicit version, read the public `releases/latest` redirect rather than using GitHub API.
+Accept only stable `vX.Y.Z` tags and derive filenames from existing distribution names.
+Treat HTTP errors as failures and fix download sources and network timeouts.
+Report latest-version lookup, each file, and comparison/verification starts on stderr. Use curl's progress bar only when stderr is a terminal; otherwise report steps.
+Do not add credentials to shell configuration or environment.
 
-`init`は現在のディレクトリをプロジェクトのルートとし、AGENTS.mdと.gitignore、macOS・Linuxでは起動スクリプトを扱います。
-全対象を先に読み取り、通常ファイル・UTF-8・区切り・配置先の条件を確認してから変更を準備します。
-`--path`は既定の`bin/sdev`を変更する引数です。先頭の`./`は正規化し、絶対パス・親への移動・予約済みのAGENTS.mdや.gitignore、キャッシュ配下を拒否します。
-シェルとMarkdownで同じパスを安全に表現できるよう、構成要素には英数字・`-`・`_`・`.`だけを使います。
-スクリプトの既存の親が通常のディレクトリかを確認し、不足する親だけを作ります。
-保存は同じディレクトリの一時ファイルを作り、本文と既存の権限を反映してからrenameします。
-新しい起動スクリプトには実行権限を付けます。
-通常ファイルの差し替えには[標準ライブラリのrename](https://doc.rust-lang.org/std/fs/fn.rename.html)を使います。
-ファイルをまたぐトランザクションや同時編集の制御は追加せず、保存途中の失敗は対象を示します。
+Validate the destination and every existing parent as ordinary directories, without symlink traversal.
+Download into a temporary directory within the destination, defaulting to `./bin`; accept `--install-dir DIR` for launcher acquisition.
+Download the executable and `.sha256`; compare both the expected filename and a value computed by `sha256sum` or `shasum -a 256`.
+Do not use downloaded paths to choose arbitrary local files for hashing.
+After hashes and requested attestations pass, verify the downloaded executable's `--version`.
+Replace destination `sdev` on the same filesystem only after all checks succeed.
+Remove temporary files on success, failure, and signals.
 
-### コミットする起動スクリプト
+`init` uses the current directory as root and handles AGENTS.md, .gitignore, sdev.toml, and a macOS/Linux launcher.
+Read and prevalidate all targets before staging changes, including regular-file type, UTF-8, markers, and destination constraints.
+Language configuration and instruction language follow the [localization requirements](../localization/requirements.md).
+`--path` changes `bin/sdev`; normalize a leading `./` and reject absolute paths, parent traversal, reserved AGENTS.md/.gitignore/sdev.toml paths, and cache paths.
+Allow only ASCII letters/digits, `-`, `_`, and `.` in path components so the same path is safe in shell and Markdown.
+Check existing parents and create only missing launcher parents.
+Write a same-directory temporary file, apply text and existing permissions, and rename it. New launchers are executable.
+Use the standard library's [rename](https://doc.rust-lang.org/std/fs/fn.rename.html) for regular-file replacement.
+Do not add cross-file transactions or concurrent-edit controls; saving failures identify their target.
 
-[miseのコミット用wrapper](https://mise.jdx.dev/continuous-integration.html#other-ci-providers)を参考に、固定したバージョンを必要時に取得して実行する入口を生成します。
-sdevがPOSIX shのスクリプトを生成し、追加の管理ツールは導入しません。
-既定の配置と役割は次のとおりです。
+### A committed launcher
+
+Use [mise's committed wrapper](https://mise.jdx.dev/continuous-integration.html#other-ci-providers) as a reference for a pinned, on-demand executable entry point.
+sdev generates POSIX sh directly without introducing another manager.
+Default roles are:
 
 ```text
-bin/sdev                         # コミットする起動スクリプト
-.sdev/bin/<version>/<os>-<arch>/sdev # 取得した本体
-AGENTS.md                        # 起動スクリプトから資料を参照
+bin/sdev                            # Committed launcher
+.sdev/bin/<version>/<os>-<arch>/sdev  # Downloaded executable
+AGENTS.md                           # Material access through the launcher
+sdev.toml                           # Shared document languages
 ```
 
-起動スクリプトは生成元のsdevのバージョンと、配置先からルートまでの相対的な深さを保持します。
-絶対パスを埋め込まず、別のディレクトリへcloneしてもルートを求められるようにします。
-OS・CPUごとに本体の保存先を分け、生成元と異なる対応環境でも使えます。
-実行時は呼び出し元の作業ディレクトリを保ち、すべての引数を`exec`で本体へ渡します。
-取得処理だけをプロジェクトのルートを基準とするサブシェルで実行します。
+Store the generating sdev version and relative depth from launcher to root, without absolute paths, so another clone location works.
+Separate caches by OS/CPU so other supported platforms can use the same launcher.
+Preserve the caller's working directory and forward every argument through `exec`.
+Only acquisition runs in a subshell based at the project root.
 
-スクリプトには同じソースのインストーラーを埋め込みます。
-実行時に別のシェルスクリプトを取得・実行せず、コミットした処理からReleaseの本体・チェックサムを直接取得します。
-取得処理には固定した`--version`とキャッシュの`--install-dir`を渡し、`--init`は渡しません。
-初期設定を再帰的に実行せず、起動のたびにAGENTS.mdや.gitignoreを編集しないためです。
-取得済みの通常ファイルが実行可能なら追加の通信をせずに使います。
-初回取得には既存のチェックサム・バージョン確認・差し替え・通信制限・進捗表示を共通利用します。
-通常はチェックサムによる一致確認を行い、証明も検証する取得には`SDEV_VERIFY=1`を用意します。検証失敗を通常取得へ切り替えません。
+Embed the installer from the same source. Download executables/checksums directly without fetching and executing another shell script at runtime.
+Pass the pinned `--version` and cache `--install-dir`, never `--init`, to avoid recursive initialization and instruction edits at each invocation.
+Use an executable regular cached file without network access.
+Reuse checksum/version checks, replacement rules, timeouts, and progress reporting on first download.
+Default acquisition checks consistency; `SDEV_VERIFY=1` also verifies attestations. Verification failure never falls back.
 
-指定先に同一の生成済みスクリプトがあれば変更しません。
-別の内容があれば失敗し、削除・移動・配置先の見直しを案内します。
-初回の`install.sh --init`との接続のため、既存のファイルが起動中のsdev実行ファイルとバイト単位で一致する場合だけスクリプトへの置き換えを認めます。
-インストーラーは旧Releaseの`init`とも接続できるよう、既定の本体の配置先を`bin/sdev`に保ちます。
-新しい`init`はそこを起動スクリプトへ置き換え、本体は次回の起動時にキャッシュへ取得します。
-初回導入では本体を二度取得しますが、旧Releaseの指示が存在しない本体を参照する互換性の問題を避けます。
-すでに起動スクリプトがある場所へインストーラーで本体を上書きする操作は拒否し、新しい本体の取得には別の`--install-dir`を使います。
-旧版が追加したAGENTS.mdの指示は保持します。指定先のコマンド参照が見つからない既存のsdev部分は、手動で合わせる必要があることを示して失敗します。
-バージョン更新は新しいsdevで起動スクリプトを生成し直して差分をコミットする操作とし、実行時には自動更新しません。
-Windowsでは従来の手動配置と`init`を維持し、`--path`によるシェルスクリプトの生成は対応するUnix環境に限定します。
+Preserve an identical generated launcher. Fail for other contents with instructions to move/remove the file or reconsider its path.
+To connect initial `install.sh --init`, allow replacement only when the existing file's bytes match the running sdev executable.
+Keep the installer's default executable destination at `bin/sdev` for compatibility with older Releases' `init`.
+New `init` replaces it with a launcher, and the next invocation downloads into the cache.
+Initial installation therefore downloads twice, avoiding older instructions that point to an absent executable.
+Reject installer overwrites of existing launchers; use another `--install-dir` for the new executable.
+Preserve older AGENTS.md blocks. If an existing block lacks the chosen path, fail and request manual alignment.
+Updating means regenerating the launcher with a new sdev and committing its diff, without automatic runtime updates.
+Windows keeps manual placement and `init`; Unix shell launcher generation via `--path` is limited to supported Unix environments.
 
-## アーキテクチャ・シーケンス図
+## Architecture and sequence
 
-処理は、取得、照合、任意の証明検証、起動確認、配置、任意の初期設定の順です。
-各処理は直前の成功後にだけ進むため、図は追加しません。
+The order is download, comparison, optional attestation verification, startup check, installation, and optional initialization.
+Each step depends on success of its predecessor, so no diagram is needed.
 
-## データモデル・ER 図
+## Data model and ER diagram
 
-永続データベースは使いません。
-AGENTS.mdのsdev部分は`<!-- sdev:begin -->`と`<!-- sdev:end -->`で識別します。
-区切りが一組あり順序が正しければ、利用者の編集を含めて既存の部分を保持します。
-区切りが片方だけ、複数、または順序が逆なら失敗します。
-区切りの外の本文はバイト列として保持し、追記部分は既存にCRLFがあればCRLF、なければLFにします。
+No database is used.
+Identify the AGENTS.md block with `<!-- sdev:begin -->` and `<!-- sdev:end -->`.
+Exactly one ordered pair preserves the existing block, including user edits; missing, duplicate, or reversed markers fail.
+Preserve outside text as bytes. Appended text uses CRLF if present, otherwise LF.
 
-.gitignoreにはUnixで`/.sdev/`を追加し、指定した起動スクリプトと同一の既存の除外行だけを取り除きます。
-たとえば既定の配置では旧版の`/bin/sdev`を取り除きます。ほかの除外指定は保持し、利用先が`bin`全体を除外している場合はその規約に合わせるよう案内します。
-Windowsでは従来の`/bin/sdev`と`/bin/sdev.exe`を維持します。
-同じ除外行があれば重複させません。
-参照指示のコマンドはUnixでは指定先に`./`を付けたパス、Windowsでは`./bin/sdev.exe`とします。
-利用者の仕様ファイルの内容や名前は推測しません。
-初回に追加する指示には、「作りたい」だけで実装までの依頼とみなさないことを含めます。
-文書作成だけの依頼は提示で区切り、実装まで任されていれば途中で要点を提示し、利用者の判断が必要な場合に確認するよう短く記述します。
-詳細は共通の作業ガイドへ案内します。
-目的や条件の不明点を仮定で補わずに質問し、利用できる質問ツールを優先して、回答から次の質問を選ぶことも参照指示に含めます。
-既存の区切り内の指示は旧版も含めて保持し、更新時に必要な追記はREADMEで案内します。
+On Unix, add `/.sdev/` to .gitignore and remove only an existing exclusion exactly matching the chosen launcher, such as legacy `/bin/sdev`.
+Preserve other patterns; if the repository excludes all of `bin`, tell the user to follow its convention.
+Windows retains `/bin/sdev` and `/bin/sdev.exe`. Avoid duplicate exclusions.
+Commands use the chosen Unix path prefixed with `./`, or Windows `./bin/sdev.exe`.
+Do not infer specification names or content.
+New instructions clarify that wanting to build something alone does not authorize implementation.
+Document-only requests end with presentation; authorized implementation includes intermediate summaries and confirmation when user decisions are needed.
+Delegate details to the shared workflow guide.
+Instructions also require questions for unclear goals/conditions, preference for available question tools, and follow-up based on answers.
+Preserve existing blocks, including older versions, and document necessary additions in README.
 
-## API・インターフェース
+## API and interfaces
 
-| 操作 | 振る舞い |
+| Operation | Behavior |
 | --- | --- |
-| `sh install.sh` | 最新の安定Releaseを`./bin/sdev`へ導入 |
-| `sh install.sh --version X.Y.Z` | 指定バージョンを導入 |
-| `sh install.sh --install-dir DIR` | 本体を指定ディレクトリの`sdev`へ導入 |
-| `sh install.sh --init` | 配置後に本体の`init`を実行し、新版では起動スクリプトを生成 |
-| `sh install.sh --verify` | チェックサムに加えAttestationsを検証 |
-| `sh install.sh --verify --source-commit SHA` | 独立して確認したソースコミットにも固定して検証 |
-| `sh install.sh --verify --trusted-root FILE` | 利用者が独立して用意した信頼情報を使って証明を検証 |
-| `sdev init` | Unixでは`./bin/sdev`の起動スクリプトと参照指示・キャッシュの除外を準備 |
-| `sdev init --path ./scripts/sdev` | Unixの起動スクリプトの配置先と参照指示を変更 |
-| `sdev init --help` | 対象ファイルと使い方を表示。ファイルを変更しない |
-| `./bin/sdev ARG...` | 固定した本体を必要時に取得して引数を渡す |
-| `SDEV_VERIFY=1 ./bin/sdev ARG...` | 未取得の本体を証明検証付きで取得して実行 |
+| `sh install.sh` | Install latest stable Release into `./bin/sdev` |
+| `sh install.sh --version X.Y.Z` | Install the specified version |
+| `sh install.sh --install-dir DIR` | Install executable as `sdev` in DIR |
+| `sh install.sh --init` | Run the installed executable's init; new versions generate a launcher |
+| `sh install.sh --verify` | Verify attestations in addition to checksums |
+| `sh install.sh --verify --source-commit SHA` | Also require an independently checked source commit |
+| `sh install.sh --verify --trusted-root FILE` | Use independently prepared trust information |
+| `sdev init` | Prepare instructions, language configuration, Git exclusions, and a Unix launcher at `./bin/sdev` |
+| `sdev init --path ./scripts/sdev` | Choose Unix launcher and instruction path |
+| `sdev init --lang en --translations ja` | Initialize a shared default and translation language |
+| `sdev init --help` | Describe files and usage without writing |
+| `./bin/sdev ARG...` | Acquire the pinned executable when needed and forward arguments |
+| `SDEV_VERIFY=1 ./bin/sdev ARG...` | Verify attestations when acquiring an uncached executable |
 
-bootstrapの成功は0、引数や取得・検証・配置の失敗は非ゼロです。
-`--init`で初期設定が失敗した場合はその終了コードを返し、導入済みのバイナリーを保持します。
-`init`の引数エラーは2、処理・出力の失敗は1、成功は0です。
+Bootstrap success is 0; argument, acquisition, verification, and installation failures are nonzero.
+Failed `--init` returns its status and preserves the installed executable.
+`init` exits 2 for invalid arguments/configuration, 1 for processing/output failures, and 0 on success.
 
-## 外部サービスとの連携方式
+## External service integration
 
-GitHubの公開ReleaseをHTTPSで取得し、認証を要求する非公開配布は初回の対象にしません。
-最新Releaseが存在しない場合も通常の取得失敗として返します。
-取得には[curlの失敗判定・リダイレクト・保存先指定](https://curl.se/docs/manpage.html)を使います。
+Retrieve public GitHub Releases over HTTPS without authenticated private distribution initially.
+A missing latest Release is an ordinary download failure.
+Use [curl's failure, redirect, and output controls](https://curl.se/docs/manpage.html).
 
-再利用ビルドワークフローの専用ジョブで配布ファイルを検証・集約してから、GitHubの[attestアクション](https://github.com/actions/attest)で実行ファイルとインストーラーを含む公開対象を署名します。
-証明のbundleをReleaseへ`attestation.sigstore.json`として添付します。
-`sdev-release.txt`にはバージョンとソースコミットを記録し、このファイルにも同じ証明を付けます。
-公開処理も同じ証明を検証し、ファイル群と証明の照合に成功してからタグ・Releaseを作成します。
-署名の権限はmainの手動公開から呼ぶ専用ジョブだけに付け、通常のPRのビルドと、Releaseを書き込む公開ジョブへ付けません。
+In a dedicated reusable-build job, verify/aggregate artifacts and sign publication files, including executables and installer, with [actions/attest](https://github.com/actions/attest).
+Attach the bundle as `attestation.sigstore.json`.
+Record version/source commit in `sdev-release.txt` and attest that file too.
+The publisher verifies the same attestations before creating a tag/Release.
+Give signing permissions only to the dedicated job called by manual main publication, not ordinary PR builds or the Release-writing job.
 
-bootstrapの`--verify`は[gh attestation verify](https://cli.github.com/manual/gh_attestation_verify)へローカルbundleを渡します。
-`--hostname github.com`、`--repo azu/sdev`、再利用ビルドワークフローのパス、`--source-ref refs/heads/main`、`--deny-self-hosted-runners`を指定します。
-先に記録の証明を検証してコミットを読み、そのコミットを`--source-digest`と`--signer-digest`の両方に指定して、記録と実行ファイルを検証します。
-利用者が`--source-commit`を指定した場合は、記録のコミットがその値と一致することも確認します。
-指定がない場合のコミットは証明済みの記録を基準とし、Gitのタグから独立して取得した値とは扱いません。
-公開処理は起動時に固定したコミットを両方のdigestへ渡します。
-検証に用いるGitHub CLIは、[信頼情報の取得時に資格情報を送る問題の修正](https://github.com/cli/cli/security/advisories/GHSA-8xvp-7hj6-mcj9)を含む2.93.0以降を要求します。
-GitHub APIから証明を探索しないため、クラウドで別リポジトリのAPIにアクセスする制約を避けます。
-信頼情報の自動取得先へ通信できない環境では、利用者が独立して用意した`--custom-trusted-root`相当のファイルを渡します。
-信頼情報を同じ未検証の配布物から自動的に取得して信用する仕組みは作りません。
+Bootstrap passes the local bundle to [gh attestation verify](https://cli.github.com/manual/gh_attestation_verify).
+Specify `--hostname github.com`, `--repo azu/sdev`, the reusable build workflow path, `--source-ref refs/heads/main`, and `--deny-self-hosted-runners`.
+First verify the record, read its commit, then use that commit as both `--source-digest` and `--signer-digest` when verifying record and executable.
+If `--source-commit` is supplied, require the attested record to match it.
+Otherwise use the attested record, without claiming independent comparison against Git tags.
+The publisher supplies the starting pinned commit to both digests.
+Require GitHub CLI 2.93.0 or later, including the [trust retrieval credential disclosure fix](https://github.com/cli/cli/security/advisories/GHSA-8xvp-7hj6-mcj9).
+Avoid GitHub API attestation discovery to support cloud restrictions on other repositories' APIs.
+If automatic trust retrieval is blocked, accept independently prepared trust information equivalent to `--custom-trusted-root`.
+Do not automatically trust roots acquired from the same unverified distribution.
 
-## データの取り扱い設計
+## Data handling
 
-永続化するのは初期設定の2ファイル、Unixの起動スクリプト、必要時に取得する本体です。
-起動スクリプトと初期設定をコミットし、`.sdev/`以下の本体はGit管理しません。
-キャッシュを削除した場合は次回の起動で再取得します。
-証明とチェックサムは確認時の一時領域だけに保持します。
-既存の指示本文やパスを外部へ送信しません。
-bootstrapは`.gitignore`を変更せず、`init`の実行時にだけ除外行を追加します。
-クラウドではコミットした起動スクリプトを使い、Git管理済みの指示を毎回書き換えません。
+Persist three initialization files, the Unix launcher, and executables downloaded on demand.
+Commit instructions, configuration, and launcher, excluding `.sdev/` executables.
+Deleting the cache causes acquisition on the next invocation.
+Keep attestations/checksums only in temporary verification storage.
+Do not send existing instruction bodies or paths externally.
+Bootstrap does not edit .gitignore; only `init` adds exclusions.
+Cloud sessions use committed launchers and instructions rather than rewriting them each time.
 
-## 認証認可に関する特記事項
+## Authentication and authorization
 
-導入ではGitHubへのログイン・トークン・管理者権限を要求しません。
-公開時の証明生成にはGitHub ActionsのOIDCとattestations権限を使い、利用者へその資格情報を配布しません。
+Installation needs no GitHub login, token, or administrator rights.
+Publication uses Actions OIDC and attestations permissions without distributing those credentials to users.
 
-## セキュリティ上の留意事項
+## Security considerations
 
-シンボリックリンクへの書き込みと、検証前の実行を避けます。
-取得ファイルの起動時にshellのコードとして読み込まず、通常の実行ファイルとして起動します。
-既存の実行ファイルが動いていても、直接上書きせず検証後に差し替えます。
-生成するスクリプトにも親ディレクトリの検証を適用し、配置先の文字列をshellのコードとして評価しません。
-キャッシュも通常のディレクトリ・ファイルだけを使い、シンボリックリンクを経由して取得・実行しません。
-キャッシュは利用者の書き込み可能な実行ファイルとして信頼します。起動ごとの再検証は行わず、確認し直す場合は削除して再取得します。
+Reject writes through symlinks and execution before verification.
+Run downloaded files as executables, never source them as shell code.
+Replace after checks instead of overwriting a running executable in place.
+Validate launcher parents and never evaluate the destination string as shell code.
+Use ordinary cache directories/files without symlink traversal.
+Trust the writable local executable cache; do not reverify every invocation. Delete and reacquire to check again.
 
-チェックサムは一致だけの確認であり、同じ配布元の実行ファイルとハッシュが両方置き換えられた場合の配布元の証明にはなりません。
-起動スクリプトには全OSの期待ハッシュを埋め込みません。`init`を通信なしで実行でき、同じReleaseのビルド結果を本体へ循環して埋め込まずに済むよう、取得時の照合と任意の証明検証を使います。
-`--verify`も、すでに起動したインストーラー自身の信頼を後から証明するものではありません。
-入口のスクリプトは確認したソースを使うか、配布されたスクリプトとbundleを実行前に独立したGitHub CLIで検証します。
-ワークフローの証明はコードの無害さの保証ではありません。
+Checksums establish consistency, not provenance if both executable and hash are replaced.
+Do not embed every platform's expected hash in the launcher: offline `init` and avoiding circular build hashes require download-time comparison with optional attestations.
+`--verify` cannot retroactively establish trust in an already executed installer.
+Use reviewed source or independently verify the distributed script and bundle with GitHub CLI before execution.
+Workflow attestations do not guarantee harmless code.
 
-## デプロイに関する特記事項
+## Deployment considerations
 
-初回はReleaseへインストーラーとbundleを追加します。
-READMEにはGitHubのインストーラーをcurlで取得する導入手順を記載します。
-ソースの反映とRelease公開後に、そのURLから取得・起動できることを確認します。
-Claude Code on the webでは[Setup scriptと許可ドメイン](https://code.claude.com/docs/en/cloud-environments)を利用します。
-既定のUbuntu x86_64は既存のLinux x64配布の対象ですが、ネットワーク経路と証明の検証は実環境で別途確認します。
+Add installer and bundle to Releases.
+README documents curl retrieval from GitHub; verify download and startup after source publication and release.
+Claude Code on the web uses [Setup scripts and allowed domains](https://code.claude.com/docs/en/cloud-environments).
+Its default Ubuntu x86_64 environment matches Linux x64 distribution, but network paths and attestations require separate live checks.
 
-## 検討した代替手段
+## Alternatives considered
 
-### GitHub CLIを導入の必須条件にする
+### Require GitHub CLI for installation
 
-配布元の検証をそろえられますが、curlだけで導入したい利用者にもGitHub CLIを要求します。
-通常の取得と証明による検証を区別して提供し、検証を指定した場合は失敗時に停止します。
+This standardizes provenance verification but also imposes GitHub CLI on curl-only users.
+Offer ordinary acquisition and attestation verification separately; requested verification fails closed.
 
-### グローバルな配置とPATHの編集
+### Global installation and PATH editing
 
-複数プロジェクトで共有できますが、環境ごとに準備が必要です。
-プロジェクト内の固定パスを使い、指示から実行場所をたどれる形を選びます。
+This shares an installation across projects but requires environment setup.
+Choose a fixed project-local path reachable from instructions.
 
-### insmithでインストーラーを生成する
+### Generate the installer with insmith
 
-[insmithの紹介](https://songmu.jp/riji/entry/2026-09-28-insmith.html)と[証明を使う公開フロー](https://songmu.jp/riji/entry/2026-10-11-github-actions-artifact-attestations.html)を参照しました。
-生成物の配置や署名コミットを照合する方針は本機能にも適用できます。
-調査時のinsmithは証明をGitHub APIから取得し、タグのコミットを`git ls-remote`で取得するため、クラウドの別リポジトリへのアクセス制約に対応するローカルbundleと記録の経路を持ちません。
-今回はその経路を持つ小さなスクリプトを実装します。
-insmithが同じ経路へ対応した場合は、生成による保守へ移す候補として比較します。
+The [insmith introduction](https://songmu.jp/riji/entry/2026-09-28-insmith.html) and [attested publication flow](https://songmu.jp/riji/entry/2026-10-11-github-actions-artifact-attestations.html) informed this design.
+Artifact placement and signer commit comparison also apply here.
+At investigation time, insmith retrieved attestations through GitHub API and tag commits through `git ls-remote`, without the local bundle/record path needed for cloud cross-repository restrictions.
+Implement a small script with that path for now. Reconsider generated maintenance if insmith supports it.
 
-## 未決事項
+## Open questions
 
-実装に必要な判断はありません。
-実際の公開URLとクラウド環境での確認は、公開時に保守者が配布ガイドへ記録します。
+No implementation decisions remain.
+Maintainers record actual published URL and cloud verification in the distribution guide during publication.

@@ -1,302 +1,297 @@
-# コマンドの配布とガイドラインの参照
+# Command distribution and guideline access
 
-## このドキュメントについて
+[日本語](requirements.ja.md)
 
-利用者が公開された単体の実行ファイルを取得・更新し、AIエージェントがそのコマンドの出力から同梱のガイドラインとテンプレートを読めることを定めます。
-親となる[sdevのProduct](../../product.md)を前提とします。
-作業に合う資料、先に読む仕様、資料を読めない場合の案内は、既存の[ガイドラインとテンプレートの参照](../guideline-reference/requirements.md)に従い、この機能では再定義しません。
+## About this document
 
-### スコープ
+This feature lets users obtain and replace a published standalone executable, and lets AI agents read its bundled guidelines and templates through command output.
+It assumes the parent [sdev Product](../../product.md).
+[Guideline and template access](../guideline-reference/requirements.md) defines which materials to read, which specifications come first, and what to do when materials cannot be read. This feature does not redefine those rules.
 
-公開された実行ファイルの入手、実行中のバージョンの確認、取得と差し替えによる更新の利用手順を扱います。
-同じバージョンのコマンドと資料の配布、および同梱資料を選んでコマンド出力から読む振る舞いを扱います。
-保守者がバージョンを指定する手動のリリース操作と、ソースからのローカル導入の案内も扱います。
-初回の配布からmacOS・Linux・Windowsを対象とします。
+### Scope
 
-### スコープ外
+This feature covers obtaining a published executable, checking its version, and updating it by downloading a replacement.
+It covers distributing the command and materials together, selecting bundled materials, and reading them from command output.
+It also covers manual releases with an explicit version and local installation from source.
+The initial distribution supports macOS, Linux, and Windows.
 
-自動更新、複数バージョンを切り替える専用機能、HomebrewなどGitHub Releases以外の配布経路は初回の必須機能に含めません。
-資料だけをコマンドと別に更新する仕組み、ガイドライン一式の利用先リポジトリへの生成・コピー、対話や実装を自動で進行させる機能も対象外です。
-lintと可視化自体の振る舞いは、それぞれ別の機能で定めます。
+### Out of scope
 
-## ユーザーストーリー
+Automatic updates, dedicated version switching, and distribution channels other than GitHub Releases, such as Homebrew, are not initial requirements.
+Independent updates of materials, copying the guidelines into a consuming repository, and automatically advancing conversations or implementation are excluded.
+Lint and visualization have separate requirements.
 
-### 自分の環境に合うコマンドを入手する
+## User stories
 
-人とAIで仕様を起点にプロダクトを開発する利用者として、自分のOSで使える実行ファイルを公開された場所から入手したい。
-それによって、追加の実行環境やコンパイラーを導入せずに使い始められる。
+### Obtain a command for my environment
 
-**受け入れ条件:**
+As a person developing products with people and AI from specifications, I want a publicly available executable for my OS so I can start without installing a runtime or compiler.
 
-Scenario: 対応する環境で初めて利用する場合、追加の実行環境なしで起動できる
+**Acceptance criteria:**
 
-- Given: 利用者は対応するOS・CPU・OSバージョンの環境を使い、Node.js・Bun・Rustなどの追加の実行環境やコンパイラーを導入していない。
-- When: 利用者が案内に沿ってGitHub ReleasesからOSとバージョンに合う配布物を取得し、実行ファイルを起動する。
-- Then: コマンドの使い方を読むことができ、追加の実行環境やコンパイラーのインストールを要求されない。
+Scenario: First use in a supported environment needs no additional runtime
 
-Scenario: 対応外の環境向けの配布物を探す場合、対応範囲を確認できる
+- Given: The user has a supported OS, CPU, and OS version, without Node.js, Bun, Rust, or another additional runtime or compiler.
+- When: They follow the instructions to obtain the matching version and platform from GitHub Releases and run it.
+- Then: They can read usage without being asked to install a runtime or compiler.
 
-- Given: 利用者のCPUまたはOSバージョンは、公開された対応範囲に含まれない。
-- When: 利用者が配布物の選択案内を読む。
-- Then: 対応する環境の一覧から自分の環境が対象外と分かり、その環境でも使えるという案内を受けない。
+Scenario: A user can identify an unsupported environment
 
-Scenario: 指定したバージョンの取得先にアクセスできない場合、入手できたものとして案内されない
+- Given: The user's CPU or OS version is outside the published support range.
+- When: They read the artifact selection instructions.
+- Then: The supported environments make that exclusion clear, without promising operation on their environment.
 
-- Given: 利用者は利用手順を読めるが、選んだバージョンの配布物を取得できない。
-- When: 利用者が利用手順の取得失敗時の案内を読む。
-- Then: 取得できた実行ファイルが必要であることと、取得先および選んだOS・バージョンを確認することが分かり、未取得のコマンドを利用可能として扱わない。
+Scenario: An unavailable download is not treated as a completed installation
 
-### AIに同梱資料を読ませる
+- Given: The user can read the instructions but cannot retrieve the chosen artifact.
+- When: They read the download failure guidance.
+- Then: They learn that a downloaded executable is required and should check the source, OS, and version; the unavailable command is not treated as usable.
 
-AIと開発する人として、エージェントにコマンドの使い方から必要なガイドラインとテンプレートを選んで読ませたい。
-それによって、ガイドライン一式を利用先のリポジトリへ配置せずに、共通の進め方を参照できる。
+### Let AI read bundled materials
 
-**受け入れ条件:**
+As a person working with AI, I want an agent to select guidelines and templates from command usage so it can follow the shared workflow without placing all guidelines in my repository.
 
-Scenario: 同梱資料をまだ知らない場合、選べる資料と読み方を確認できる
+**Acceptance criteria:**
 
-- Given: エージェントはコマンドを実行できるが、資料の選び方を知らない。
-- When: エージェントがコマンドの使い方を求める。
-- Then: 出力から、作業別・共通トピックのガイドとテンプレートの種類、およびそれらを読む方法が分かり、内部のファイル名を指定する必要がない。
+Scenario: An agent can discover the available materials
 
-Scenario: 同梱資料を選んだ場合、コマンドと同じバージョンの本文を読める
+- Given: The agent can run the command but does not know how to select materials.
+- When: It requests usage.
+- Then: The output lists guides by task and shared topic, template types, and how to read them, without requiring internal filenames.
 
-- Given: 利用先リポジトリにガイドライン一式は配置されておらず、エージェントはコマンドを実行できる。
-- When: エージェントが作業名・共通トピック・テンプレートの種類から、案内に従って同梱資料を選ぶ。
-- Then: 選んだ資料の本文がテキストとして出力され、利用先リポジトリにガイドライン一式を生成・コピーせずに読める。
+Scenario: A selected material has the same version as the command
 
-Scenario: 存在しない資料を指定した場合、資料が見つからないと分かる
+- Given: The repository does not contain a copy of the guidelines, and the agent can run the command.
+- When: It selects a guide or template by the documented task, topic, or type.
+- Then: The selected body appears as text without generating or copying guidelines into the repository.
 
-- Given: 指定する資料は実行中のコマンドに同梱されていない。
-- When: エージェントがその資料の出力を求める。
-- Then: 指定した資料が存在しないことと選択肢を確認する方法が出力され、別の資料の本文を成功した結果として返さない。
+Scenario: An unknown material is reported as missing
 
-Scenario: 利用先のテンプレートを判断する場合、既定を使う前の確認事項を読める
+- Given: The requested material is not bundled with the running command.
+- When: The agent requests it.
+- Then: The output explains that it does not exist and how to list choices; another material is not returned as a successful substitute.
 
-- Given: エージェントは利用先の指示・規約と、対象用テンプレートの有無を確認する必要がある。
-- When: エージェントがテンプレートを選ぶための共通ガイドを読む。
-- Then: 対象文書に適用される指定済みテンプレートを優先し、ない場合に内蔵の既定を使う案内と、任意のMarkdownや既存仕様をテンプレートと混同しない案内を読める。
+Scenario: Template selection explains what to check before using the default
 
-Scenario: 既存の仕様を変更する場合、その構造を尊重する案内を読める
+- Given: The agent needs to check repository instructions, conventions, and any designated template.
+- When: It reads the shared template selection guide.
+- Then: The guide prioritizes templates designated for the target document, uses a built-in default when none applies, and distinguishes templates from arbitrary Markdown and existing specifications.
 
-- Given: 利用先には変更対象の仕様書があり、新規作成用テンプレートとは区別する必要がある。
-- When: エージェントが既存文書の扱いを共通ガイドで確認する。
-- Then: 既存文書の構造を尊重し、内蔵テンプレートへ機械的に書き直さない案内を読める。
+Scenario: Changes to an existing specification preserve its structure
 
-### 実行中のバージョンを確認して更新する
+- Given: A specification already exists and must be distinguished from a template for a new document.
+- When: The agent reads the shared guide on existing documents.
+- Then: It is told to respect the existing structure rather than mechanically rewrite it into the built-in template.
 
-AIと開発する人として、使っているバージョンを確認し、新しい実行ファイルへの差し替えで更新したい。
-それによって、コマンドとガイドライン・テンプレートを一緒に更新できる。
+### Check the running version and update
 
-**受け入れ条件:**
+As a person working with AI, I want to check my version and replace the executable so I can update the command, guidelines, and templates together.
 
-Scenario: バージョンを確認する場合、実行中のコマンドのバージョンが分かる
+**Acceptance criteria:**
 
-- Given: 利用者は配布された実行ファイルを起動できる。
-- When: 利用者がコマンドにバージョンの出力を求める。
-- Then: 実行中のコマンドのバージョンが出力される。
+Scenario: Version output identifies the running command
 
-Scenario: 新しいバージョンへ差し替えた場合、資料も同じバージョンへ更新される
+- Given: The user can run the distributed executable.
+- When: They request its version.
+- Then: It prints the running command's version.
 
-- Given: 利用者は旧バージョンを利用しており、新しいバージョンが公開されている。
-- When: 利用者が更新手順に沿って対応する新しい実行ファイルを取得し、旧ファイルと差し替える。
-- Then: コマンドは新しいバージョンを出力し、同梱資料の本文もそのバージョンの内容になる。
+Scenario: Replacing the executable updates materials together
 
-Scenario: 更新用ファイルを取得できない場合、差し替え前に確認する手順が分かる
+- Given: The user has an older version and a newer version is published.
+- When: They download the supported new executable and replace the old one using the update instructions.
+- Then: Version output and bundled materials both match the new version.
 
-- Given: 利用者は旧バージョンを利用できるが、更新用ファイルを取得できない。
-- When: 利用者が更新手順の取得失敗時の案内を読む。
-- Then: 新しい実行ファイルを取得できたことを確認してから差し替える手順が分かり、取得失敗を更新完了として扱わない。
+Scenario: Failed updates explain what to check before replacement
 
-### 保守者が検証した配布物を公開する
+- Given: The old version works, but the replacement cannot be downloaded.
+- When: The user reads the update failure instructions.
+- Then: They learn to confirm the new executable was obtained before replacing the old one; a failed download is not treated as a completed update.
 
-保守者として、公開するバージョンを指定して手動でリリースしたい。
-それによって、対象コミットと検証済み配布物を対応付け、すべての対象がそろった公開を行える。
+### Publish verified artifacts as a maintainer
 
-**受け入れ条件:**
+As a maintainer, I want to release an explicit version manually so all verified target artifacts correspond to the intended commit.
 
-Scenario: 手動で公開を開始する場合、指定したバージョンと対象コミットを固定する
+**Acceptance criteria:**
 
-- Given: mainに公開対象のバージョンとプロジェクトのLICENSEが反映され、同じバージョンは未公開である。
-- When: 保守者がmainを選び、同じバージョンを指定して手動リリースを開始する。
-- Then: 開始時のコミットに対応する全対象の配布物とタグが使われ、全対象の検証成功後にReleaseが公開される。
+Scenario: A manual release fixes its version and source commit
 
-Scenario: 指定バージョンや公開前提が合わない場合、公開しない
+- Given: The release version and project LICENSE are on main, and that version is unpublished.
+- When: A maintainer selects main and manually starts a release with the same version.
+- Then: All target artifacts and the tag correspond to the starting commit, and publication follows successful verification of every target.
 
-- Given: 指定バージョンとソースのバージョンが異なる、またはプロジェクトのLICENSEが未配置である。
-- When: 保守者が手動リリースを開始する。
-- Then: 不足や不一致を示して停止し、タグや公開Releaseを作成しない。
+Scenario: Invalid versions or prerequisites prevent publication
 
-Scenario: 対象の一部の検証に失敗した場合、不完全なReleaseを公開しない
+- Given: The requested version differs from the source version, or the project LICENSE is missing.
+- When: A maintainer starts the release.
+- Then: It stops with the missing or mismatched prerequisite and creates neither a tag nor a public Release.
 
-- Given: 公開対象のOS・CPUの一部でビルド・テスト・配布物検証のいずれかが失敗する。
-- When: リリース処理が検証結果を確認する。
-- Then: 公開処理へ進まず、成功した対象だけのReleaseを公開しない。
+Scenario: Failure on any target prevents a partial release
 
-Scenario: 既存のタグや公開Releaseと衝突する場合、上書きしない
+- Given: Build, tests, or artifact verification fail for at least one target OS and CPU.
+- When: The release process evaluates the results.
+- Then: It does not publish a Release containing only successful targets.
 
-- Given: 同じタグが別コミットを指している、または同じバージョンのReleaseが公開済みである。
-- When: 保守者がそのバージョンを指定する。
-- Then: 衝突を示して停止し、既存のタグ・公開Release・添付ファイルを変更しない。
+Scenario: Existing tags and public Releases are not overwritten
 
-Scenario: 添付の途中で失敗した場合、下書きを保ったまま再開できる
+- Given: The tag points to another commit, or the version already has a public Release.
+- When: The maintainer selects that version.
+- Then: The process stops with a conflict and leaves existing tags, Releases, and attachments intact.
 
-- Given: 全対象の検証後、添付または照合の途中で失敗し、この実行が作成した下書きが残っている。
-- When: 保守者が、同じコミットがmainの先頭である間に元の実行を再実行する。
-- Then: 別の公開物を作らず、同じ下書きに必要な添付をそろえ、照合に成功してから公開する。
+Scenario: Attachment failure leaves a resumable draft
 
-### ソースからローカルへ導入する
+- Given: After target verification, attachment or comparison fails and leaves a draft created by this run.
+- When: The maintainer reruns the original run while the same commit remains at the head of main.
+- Then: The process completes and checks the same draft's attachments before publishing, without creating a separate release.
 
-ソースを手元に置く開発者として、Cargoからローカルのsdevをインストールしたい。
-それによって、配布済みバイナリを待たず、自分の環境でビルドしたCLIを利用できる。
+### Install locally from source
 
-**受け入れ条件:**
+As a developer with a source checkout, I want to install sdev through Cargo so I can use a local build without waiting for a published executable.
 
-Scenario: ソースから導入する場合、コマンドと同梱資料を利用できる
+**Acceptance criteria:**
 
-- Given: ソース、固定したRust環境、ビルドに必要なOSの道具を用意している。
-- When: 開発者がローカルのCargoパッケージからインストールする。
-- Then: インストール先のsdevでバージョン・ガイド・テンプレートとlintの使い方を確認できる。
+Scenario: A local installation includes the command and materials
 
-## KPI
+- Given: The developer has the source, pinned Rust environment, and OS build tools.
+- When: They install from the local Cargo package.
+- Then: The installed sdev provides version output, guides, templates, and lint usage.
 
-### 対象OS・CPUでの初回利用の成立数
+## KPIs
 
-- **現状値:** 初回対象すべてでの確認は未完了のため未計測。
-- **目標値:** 初回対象のOS・CPUの5組すべてで、Designに定めた技術条件を満たす環境で追加の実行環境なしに起動し、同梱資料とバージョンを読める（5/5）。
-- **計測方法:** 対象のOS・CPUの組み合わせごとに、初回利用・資料参照・バージョン確認のシナリオに沿って結果を確認する。
-- **計測期間:** 初回公開前と、配布対象や同梱資料の提供方法を変更するとき。
+### Supported environments with successful first use
 
-## 機能要件
+- **Current value:** Not measured; verification across all initial targets is incomplete.
+- **Target value:** All five initial OS/CPU combinations meeting the Design's technical conditions can run without an additional runtime and display materials and version information (5/5).
+- **Measurement:** Follow first-use, material access, and version scenarios on each target.
+- **Period:** Before initial publication and whenever supported targets or material delivery change.
 
-### 実行ファイルの入手と更新の案内
+## Functional requirements
 
-**概要:** 誰でも取得できる公開の配布物と、入手・起動・更新の利用手順を提供する。
+### Instructions for obtaining and updating executables
 
-**入力:** 利用者のOS、利用したいバージョン、および公開された対応範囲に応じた環境の選択。
+**Overview:** Provide public artifacts and instructions for downloading, starting, and replacing them.
 
-**出力:** 対応する単体の実行ファイルと、その入手・起動・更新方法。
+**Input:** The user's OS, desired version, and environment selected from the published support range.
 
-#### 適用する条件
+**Output:** A supported standalone executable and its installation, usage, and update instructions.
 
-##### 配布の範囲
+#### Applicable conditions
 
-初回の入手先はGitHub Releasesとし、利用したい人が特定の個人から許可を得ずに取得できる形で公開します。
-初回からmacOS・Linux・Windowsを対象とし、配布物を選ぶ際に対応環境とバージョンを区別できるようにします。
-すべてのCPUや過去のOSバージョンで動くことは保証しません。
-初回のCPU対象はmacOS arm64/x64、Linux arm64/x64、Windows x64の5組とします。
-32ビットx86、Windows arm64、特殊なLinux環境への対応は初回必須に含めません。
-各OSの最低バージョンなど、候補ごとの技術的な動作条件はDesignに明記します。
+##### Distribution scope
 
-##### 利用と更新の負担
+GitHub Releases is the initial public source. Downloads must not require individual permission.
+Support macOS arm64/x64, Linux arm64/x64, and Windows x64 from the initial release.
+Artifact selection must distinguish environments and versions, without promising every CPU or older OS version.
+32-bit x86, Windows arm64, and specialized Linux environments are not initial requirements.
+The Design states technical conditions, including minimum OS versions.
 
-利用者にNode.js・Bun・Rustなどの追加の実行環境やコンパイラーのインストールを求めない、単体の実行ファイルを提供します。
-利用手順にはOSに応じた起動方法、コマンドの使い方とバージョンの確認方法、新しい配布物の取得と差し替えによる更新方法を含めます。
-コマンドと同梱資料を同じバージョンとして更新し、資料を別に取得・更新する操作を必須にしません。
+##### Installation and update effort
 
-主なコマンド利用者はAIエージェントであり、速く起動できることを重視しますが、ミリ秒単位の合否目標や実行ファイルのサイズ上限は設けません。
-起動速度やサイズだけを最優先にはせず、実測値と配布・拡張の実現性を合わせて実装方法を判断します。
-未実測値を目標や実績として扱わず、数値による合否判断が必要になった場合は、実測結果を踏まえて開発者と利用者が要件を見直します。
+Provide a standalone executable without requiring Node.js, Bun, Rust, or another runtime or compiler.
+Instructions include platform-specific startup, usage and version output, and replacement with a newly downloaded artifact.
+Update command and materials together without requiring a separate material download.
 
-#### 例外ケースでの振る舞い
+AI agents are the main command users, so fast startup matters, but there is no millisecond pass criterion or binary size limit.
+Choose an implementation using measured behavior, distribution feasibility, and future extension needs, rather than prioritizing speed or size alone.
+Unmeasured values are not targets or results. If numerical acceptance criteria become necessary, developers and users revisit the requirements using measurements.
 
-対応外の環境は配布物の選択案内で区別し、その環境向けの動作を保証しません。
-取得先にアクセスできない場合や選んだ配布物が見つからない場合は、取得先・OS・バージョンを確認する案内を提供します。
-更新は新しいファイルを取得できたことを確認してから差し替える手順とし、取得失敗を更新完了として案内しません。
+#### Exceptional behavior
 
-### 同梱資料とバージョンの出力
+Selection guidance identifies unsupported environments without guaranteeing operation there.
+If a source or selected artifact is unavailable, explain how to check its source, OS, and version.
+Confirm the new executable was obtained before replacing the old one; download failure is not update success.
 
-**概要:** コマンドの使い方から資料の選択方法を確認でき、選んだ資料の本文と実行中のバージョンを出力できる。
+### Output bundled materials and version information
 
-**入力:** 使い方の確認、作業名・共通トピックまたはテンプレートの種類の選択、バージョンの確認。
+**Overview:** Usage explains material selection, and the command prints the selected body or running version.
 
-**出力:** 使い方、選んだ資料の本文、または実行中のコマンドのバージョンを示すテキスト。
+**Input:** A usage request, task/shared topic/template type, or version request.
 
-#### 適用する条件
+**Output:** Usage, the selected material body, or running version as text.
 
-##### 出力する資料
+#### Applicable conditions
 
-ガイドラインとテンプレート、およびそれらを選ぶための参照案内をコマンドに同梱します。
-どの作業でどの資料を読むかは既存の参照機能の仕様に従い、作業名・共通トピックからガイドを、種類からテンプレートを読めるようにします。
-利用者がsdev内部のファイル名や資料IDを知っていることを前提にしません。
-ガイド内の関連資料は対応する参照コマンドからたどれるようにし、利用先リポジトリへのガイドライン一式の配置を前提にしません。
-ガイド出力では意味を保って資料へのリンクをコマンドの案内へ読み替えてよく、GitHubで読む元のMarkdownは維持します。
-テンプレートは元のMarkdown本文を変更せず表示する、内蔵の既定テンプレートとします。
-ガイドは、利用先の指示・規約で対象文書用と指定されたテンプレートを先に確認し、ない場合に内蔵テンプレートを読む順序を案内します。
-既存の仕様書をテンプレートと扱わず、既存文書の変更時にはその構造を尊重します。
-CLIは利用先のテンプレートの自動探索・推測・生成・上書きを行いません。
-利用先のProduct・Requirements・Designを前提にする意味を保ち、sdev自身の仕様と取り違えさせないようにします。
-人がGitHub上の文書を読む利用も維持します。
-必要なライセンス通知は配布物へ含め、通知ファイルを実行時に読むことを起動条件にはしません。
+##### Materials to output
 
-##### バージョンと操作の境界
+Bundle guidelines, templates, and selection guidance.
+Follow the existing access feature for task/topic/type selection without requiring internal filenames or IDs.
+Related materials in guides must be reachable through commands without assuming the consuming repository contains all guidelines.
+Guide output may replace material links with commands while preserving meaning and the original Markdown used on GitHub.
+Templates are built-in defaults and retain their original Markdown body.
+Guides prioritize templates designated by repository instructions, then built-in defaults; existing specifications retain their structure.
+The CLI does not discover, infer, generate, or overwrite consuming repositories' templates.
+Preserve the requirement to read the consuming project's Product, Requirements, and Design rather than substituting sdev's own specifications.
+Keep human access through GitHub documents.
+Include required legal notices in distributions, without requiring them at runtime.
+Language selection and translated materials follow the [localization requirements](../localization/requirements.md).
 
-出力する資料は実行ファイルと同じバージョンのものとし、実行中のバージョンをコマンドで確認できるようにします。
-この機能の資料参照は本文の出力までで、利用先の仕様の生成・保存や、エージェントがガイドラインに従うことの強制は扱いません。
-具体的なサブコマンド名・引数・出力の構成はDesignで定めます。
+##### Version and operation boundaries
 
-#### 例外ケースでの振る舞い
+Materials and executable share a version, available through the command.
+Material access ends at text output: it does not generate or save consuming specifications or enforce agent compliance.
+The Design defines subcommands, arguments, and output structure.
 
-同梱されていない資料や選択方法として受け付けない指定には、何を参照できなかったかと使い方を確認する方法を示します。
-存在しない資料の本文を推測したり、別の資料を求められたものとして返したりしません。
+#### Exceptional behavior
 
-### 手動リリースとローカル導入
+For an unavailable material or unsupported selection, identify what failed and how to see usage.
+Do not invent a missing body or return another material as the requested one.
 
-**概要:** 保守者が公開対象を指定し、検証と照合が完了した配布物だけを公開できる。ソースからのローカル導入も案内する。
+### Manual releases and local installation
 
-**入力:** 公開するバージョン、対象ソース、各環境の検証結果と配布物。
+**Overview:** Publish an explicit version only after verification and comparison, and document local installation from source.
 
-**出力:** 同じコミットを指すタグと、全対象の実行ファイル・チェックサム・通知・LICENSEを添付した公開Release、または公開できなかった理由。
+**Input:** Release version, source, verification results, and artifacts for every target.
 
-#### 適用する条件
+**Output:** A tag and public Release for the same commit, with all executables, checksums, notices, and LICENSE, or a reason publication could not proceed.
 
-バージョンはソースへ反映してから手動実行し、リリース処理がバージョン更新のコミットを自動生成することはしません。
-タグのpushだけで公開を開始する経路は設けません。
-全対象の成功、ソース・バージョン・添付内容の一致を確認してから公開し、公開済みの同じバージョンを上書きしません。
-プロジェクトのライセンスは保守者が選択して配置し、未配置のまま公開しません。
-ソースからのローカル導入には開発環境が必要です。配布済み実行ファイルを使う利用者への追加環境不要の条件は維持します。
+#### Applicable conditions
 
-#### 例外ケースでの振る舞い
+Commit version changes before manual execution; the release process does not create version-bump commits.
+Tag pushes alone do not initiate publication.
+Verify all targets and consistency of source, version, and attachments before publishing; do not overwrite an already published version.
+The maintainer must choose and supply the project license before publication.
+Local source installation needs a development environment; users of published executables still need no additional runtime.
 
-公開前に失敗した場合は公開を完了したと扱わず、再実行する対象と残った状態を確認できるようにします。
-別のコミットや別実行が作った下書きは、自動で再利用・削除しません。
-公開処理の応答を確認できなかった場合は、公開状態を調べてから再実行し、公開済みファイルを自動で置き換えません。
+#### Exceptional behavior
 
-## データ要件
+A pre-publication failure is not completion. Leave enough information to identify remaining state and the run to retry.
+Do not automatically reuse or delete drafts from another commit or run.
+If the publication response is unknown, inspect the public state before retrying and never automatically replace published attachments.
 
-### 必要なデータ
+## Data requirements
 
-- **配布情報:** 公開するバージョン、対応するOS・CPU・OSバージョン、取得する配布物の対応。利用者が自分の環境に合う配布物を選ぶために使う。
-- **同梱資料:** 既存の参照機能が案内するガイドライン・テンプレート・参照案内の本文と、その選択に必要な情報。
-- **リリース情報:** 指定バージョン、対象コミット、実行の識別子、検証済み配布物、タグと公開状態。再実行と既存の公開物の区別に使う。
-- **コマンドのバージョン:** 実行中のコマンドと同梱資料に共通するバージョン。
-- **利用手順:** 入手、起動、資料参照、バージョン確認、取得と差し替えによる更新、および取得できない場合の確認事項。
+### Required data
 
-### データ間の関係
+- **Distribution information:** Version, supported OS/CPU/OS versions, and matching artifacts for environment selection.
+- **Bundled materials:** Guide, template, and selection bodies from the access feature, with selection metadata.
+- **Release information:** Requested version, source commit, run ID, verified artifacts, tag, and publication state for retries and distinguishing existing releases.
+- **Command version:** The version shared by the running command and bundled materials.
+- **Usage instructions:** Download, startup, material access, version output, replacement updates, and download failure checks.
 
-1つの公開バージョンに、対応環境ごとの配布物と、そのバージョンの同梱資料が対応します。
-同じバージョンでは、OSが異なっても同じガイドラインとテンプレートを参照できるようにします。
-既存の参照機能が資料の意味と作業別の案内を担当し、この機能が取得とコマンド出力による利用を担当します。
+### Relationships
 
-### 個人情報
+Each published version has matching platform artifacts and bundled materials.
+The same version exposes the same guidelines and templates on every OS.
+The access feature owns material meaning and task selection; this feature owns obtaining and reading them through command output.
 
-この機能で利用者の個人情報や利用先リポジトリの内容を取得・保持する必要はありません。
-GitHub上の配布物や文書の閲覧は、そのサービスの利用条件に従います。
+### Personal information
 
-## 依存する外部サービス
+This feature does not need users' personal information or repository contents.
+GitHub downloads and document browsing are subject to that service's terms.
 
-- **GitHub Releases・GitHub上の文書**
-  - **関連するユーザーストーリー:** 自分の環境に合うコマンドを入手する、実行中のバージョンを確認して更新する、AIに同梱資料を読ませる。
-  - **依存する理由:** 初回の公開配布と更新用ファイルの取得先、および人が文書を読む場所として使う。同梱資料の本文出力のために外部から資料を取得する必要はない。
-  - **契約・利用上の判断:** 公開配布にGitHub Releasesを利用することは決定済み。公開時は適用されるサービスの利用条件に従い、費用や容量に関する独自の保証は設けない。
+## External service dependencies
 
-## セキュリティ上の留意事項
+- **GitHub Releases and GitHub documents**
+  - **Related user stories:** Obtain a command, check and update its version, and let AI read materials.
+  - **Reason:** Public distribution, replacement downloads, and human document access. Output of bundled materials needs no network retrieval.
+  - **Usage decision:** GitHub Releases is the chosen public channel. Follow applicable terms without independent cost or capacity guarantees.
 
-配布物・同梱資料・利用手順に個人情報・機密情報・認証情報を含めません。
-資料の参照やバージョン確認のために、利用先リポジトリの文書やコードを外部へ送信する必要はありません。
-取得先は実際に公開して確認したものだけを利用手順へ記載し、推測したURLを公開済みとして案内しません。
+## Security considerations
 
-## 未決事項
+Do not include personal, confidential, or authentication information in artifacts, materials, or instructions.
+Material and version requests do not need to send consuming repository documents or code externally.
+Only document download URLs verified after actual publication; do not present inferred URLs as published ones.
 
-なし。
-実装に必要な利用者向けの条件は決定しており、技術的な動作条件とコマンドの構成は対応する設計で具体化します。公開前の作業は[配布と更新](../../../../engineering/guidelines/releasing.md)へ記述します。
+## Open questions
+
+None. User-facing conditions are decided; the corresponding Design specifies technical conditions and command structure.
+Pre-publication operations belong in [Distribution and updates](../../../../engineering/guidelines/releasing.md).

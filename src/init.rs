@@ -97,7 +97,11 @@ impl Drop for Staged {
     }
 }
 
-fn instructions(document: &Document, command: &str) -> Result<String, String> {
+fn instructions(
+    document: &Document,
+    command: &str,
+    language: crate::language::Language,
+) -> Result<String, String> {
     let starts: Vec<_> = document.body.match_indices(BEGIN).collect();
     let ends: Vec<_> = document.body.match_indices(END).collect();
     match (starts.as_slice(), ends.as_slice()) {
@@ -117,8 +121,13 @@ fn instructions(document: &Document, command: &str) -> Result<String, String> {
             );
         }
     }
+    if language == crate::language::Language::En {
+        return Ok(document.append(&format!(
+            "{BEGIN}\n## Specifications-first development\n\nBefore creating or changing specifications, design, implementation, or verification, run `{command} help` and choose the guide for the task.\nTasks include defining product purpose, specifying feature requirements, designing an implementation, and updating documents.\n\nTreat an idea such as 'I want to build this' as a starting point for discussing purpose and scope, rather than permission to implement.\nWhen only a document is requested, present the document and its key points, then stop. When implementation is requested, present requirement and design decisions along the way.\nAsk the user about unresolved decisions affecting purpose, scope, or observable behavior.\nAsk instead of inventing purposes or constraints; prefer available question tools and follow up according to the answers.\nRead `{command} help workflow` for the full workflow.\n\nPrioritize the consuming project's instructions, conventions, and existing specifications.\nIf no template is designated for a new document, choose one from `{command} template`. Respect an existing document's structure when editing it.\n\nUse this project's Product, Requirements, and Design. Without another placement rule, put specifications under `docs/products/`.\nUse the default language and translations configured in sdev.toml. Default-language documents use `.md`; other language versions use `.<language>.md`.\nKeep language versions equivalent and update them in the same change.\n{END}\n"
+        )));
+    }
     Ok(document.append(&format!(
-        "{BEGIN}\n## 仕様を起点にした開発\n\n仕様の作成・変更、設計、実装、検証では、まず`{command} help`を実行し、表示される一覧から作業に対応するガイドを選んで読んでください。\nプロダクトの目的整理、機能の要件定義、実現方法の設計、文書の更新などが対象です。\n\n「作りたい」だけで実装までの依頼と解釈せず、まず対話で目的と範囲を整理してください。\n文書作成だけの依頼は文書と要点の提示で区切り、実装まで任されている場合は要件・設計の要点を途中で示してください。\n目的・範囲・利用者の振る舞いについて未決の判断が必要なら、利用者へ確認してください。\n目的や条件を仮定で補わず、使える質問ツールを優先して質問し、回答に応じて具体例や条件を掘り下げてください。\n詳しい進め方は`{command} help workflow`を参照してください。\n\n利用先の指示・規約と既存の仕様を優先してください。\n新規文書に適用するテンプレートの指定がなければ、`{command} template`の一覧から対応するものを選んでください。\n既存文書の変更では、その構造を尊重してください。\n\n仕様は、このプロジェクトのProduct・Requirements・Designを使います。\n配置の指定がなければ、`docs/products/`以下に作成してください。\n{END}\n"
+        "{BEGIN}\n## 仕様を起点にした開発\n\n仕様の作成・変更、設計、実装、検証では、まず`{command} help`を実行し、表示される一覧から作業に対応するガイドを選んで読んでください。\nプロダクトの目的整理、機能の要件定義、実現方法の設計、文書の更新などが対象です。\n\n「作りたい」だけで実装までの依頼と解釈せず、まず対話で目的と範囲を整理してください。\n文書作成だけの依頼は文書と要点の提示で区切り、実装まで任されている場合は要件・設計の要点を途中で示してください。\n目的・範囲・利用者の振る舞いについて未決の判断が必要なら、利用者へ確認してください。\n目的や条件を仮定で補わず、使える質問ツールを優先して質問し、回答に応じて具体例や条件を掘り下げてください。\n詳しい進め方は`{command} help workflow`を参照してください。\n\n利用先の指示・規約と既存の仕様を優先してください。\n新規文書に適用するテンプレートの指定がなければ、`{command} template`の一覧から対応するものを選んでください。\n既存文書の変更では、その構造を尊重してください。\n\n仕様は、このプロジェクトのProduct・Requirements・Designを使います。\n配置の指定がなければ、`docs/products/`以下に作成してください。\nsdev.tomlの既定言語と翻訳言語に従い、既定言語は`.md`、別言語版は`.<言語>.md`を使ってください。\n各言語版は同じ内容として、同じ変更で更新してください。\n{END}\n"
     )))
 }
 fn ignores(document: &Document, command: &str) -> String {
@@ -219,7 +228,11 @@ fn prepare_launcher(
     Ok(())
 }
 
-pub fn initialize(root: &Path, path: &str) -> Result<String, String> {
+pub fn initialize(
+    root: &Path,
+    path: &str,
+    config: &crate::language::ProjectConfig,
+) -> Result<String, String> {
     #[cfg(unix)]
     let command = format!("./{path}");
     #[cfg(windows)]
@@ -229,11 +242,18 @@ pub fn initialize(root: &Path, path: &str) -> Result<String, String> {
     };
     let agents = Document::read(root, "AGENTS.md")?;
     let gitignore = Document::read(root, ".gitignore")?;
+    let settings = Document::read(root, "sdev.toml")?;
+    let settings_body = if settings.permissions.is_some() {
+        settings.body.clone()
+    } else {
+        config.render()
+    };
     let mut bodies = vec![
-        instructions(&agents, &command)?,
+        instructions(&agents, &command, config.language)?,
         ignores(&gitignore, &command),
+        settings_body,
     ];
-    let mut documents = vec![agents, gitignore];
+    let mut documents = vec![agents, gitignore, settings];
     prepare_launcher(root, path, &mut documents, &mut bodies)?;
     // Validate all inputs and stage all writes before changing any file.
     let staged = documents
@@ -260,6 +280,6 @@ pub fn initialize(root: &Path, path: &str) -> Result<String, String> {
         "次に`{command} help`からガイドを選んでください。\n"
     ));
     #[cfg(unix)]
-    result.push_str("起動スクリプトとAGENTS.md・.gitignoreをコミットしてください。取得した本体は.sdev/に保存します。親ディレクトリ全体を除外している場合は、起動スクリプトをGit管理できるよう除外設定を確認してください。\n");
+    result.push_str("起動スクリプトとAGENTS.md・.gitignore・sdev.tomlをコミットしてください。取得した本体は.sdev/に保存します。親ディレクトリ全体を除外している場合は、起動スクリプトをGit管理できるよう除外設定を確認してください。\n");
     Ok(result)
 }

@@ -12,7 +12,7 @@ pub fn normalize_path(value: &str) -> Result<String, String> {
         })
         || matches!(
             path.split('/').next(),
-            Some(".sdev" | ".git" | "AGENTS.md" | ".gitignore")
+            Some(".sdev" | ".git" | "AGENTS.md" | ".gitignore" | "sdev.toml")
         )
     {
         return Err("--pathにはプロジェクト内の相対パスを指定してください。各名前には英数字・-・_・.を使えます。".into());

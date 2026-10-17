@@ -1,53 +1,55 @@
-# [プロダクト名]
+# [Product name]
 
-## 概要
+[日本語](product.ja.md)
 
-[何を提供するプロダクトかを一読で伝え、全体像を補足する。個別機能の条件は書かない。]
+## Overview
 
-## 背景と解決する課題
+[Explain the offering on the first reading and add context for the whole product. Leave feature conditions to Requirements.]
 
-### 背景
+## Background and problems
 
-[必要とされる背景。外部の事実は確認した情報源を示す。]
+### Background
 
-### 解決する課題
+[Why the product is needed. Cite verified sources for external facts.]
 
-[対象利用者の視点で、解決したい課題を書く。]
+### Problems to solve
 
-## ターゲットエンドユーザー
+[Describe the problems from the target users' perspective.]
 
-### [利用者の種別]
+## Target users
 
-- **特性:** [利用者の属性や行動]
-- **抱える課題:** [その利用者の課題]
-- **利用文脈:** [どんな場面で使うか]
+### [User group]
 
-## 提供価値
+- **Characteristics:** [Attributes and behavior]
+- **Problems:** [This group's problems]
+- **Usage context:** [Situations in which they use the product]
 
-### [提供価値の名前]
+## Value provided
 
-- **対象:** [価値を届ける利用者]
-- **内容:** [提供する価値]
-- **提供理由:** [なぜそれを提供するか。競合との違いを書くなら根拠も示す。]
+### [Value name]
 
-## 成功の定義
+- **Recipient:** [Who receives the value]
+- **Offering:** [What value is provided]
+- **Reason:** [Why provide it? Support any competitive comparison with evidence.]
 
-[プロダクト全体として達成したい状態。機能の受け入れ条件とは分ける。]
+## Definition of success
 
-## プロダクト開発を進める上での指針
+[The desired product-wide outcome, distinct from feature acceptance criteria.]
 
-[優先する価値と判断基準。個別機能の実装方法は書かない。]
+## Development principles
 
-## SLA・SLI・SLO
+[Priorities and decision criteria. Leave feature implementation methods to Design.]
+
+## SLA, SLI, and SLO
 
 ### SLA
 
-[利用者に保証するサービス水準。設けないならその旨と理由。]
+[Service levels guaranteed to users. If none, state that and explain why.]
 
-### SLI・SLO
+### SLI and SLO
 
-[信頼性を測る指標・目標・計測方法。設けないならその旨と理由。]
+[Reliability indicators, targets, and measurement methods. If none, state that and explain why.]
 
-## 未決事項
+## Open questions
 
-[未決の内容、決まるまでの扱い、見直すきっかけと判断する人。なければ「なし」。提案があれば決定と分けて示す。]
+[Unresolved decisions, interim treatment, revisit conditions, and who decides. Write None if there are none. Separate proposals from decisions.]

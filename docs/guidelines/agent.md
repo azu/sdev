@@ -1,104 +1,106 @@
-# エージェントの作業原則
+# Agent working principles
 
-利用者がすでに説明した目的と範囲を出発点にし、ファイルや一次資料で確認できることはエージェントが調べます。
-このガイドラインは特定のエージェントのスキル形式や質問・検索ツールに依存しません。
-[入口](../README.md)で作業に対応するガイドラインを選んでください。
+[日本語](agent.ja.md)
 
-## 書く前に確認する
+Start with the purpose and scope the user has already explained. Inspect files and primary sources to establish facts yourself.
+These guidelines do not depend on a particular agent's skill format, question tool, or search tool.
+Choose a guide for the task from the [entry point](../README.md).
 
-利用先の指示・規約を先に確認し、[テンプレートの選び方](documents.md#テンプレートの選び方)に従って、対象文書に適用されるものを選びます。
-対象のガイドラインと選んだテンプレート、前提となる上位文書、変更対象の既存文書を読みます。
-既存の仕様やコードがある場合は、関連する処理、用語、規約、類似の実装を調べます。
-存在しないものは存在しないと報告し、未確認の動作と区別します。
+## Check before writing
 
-初期入力が不足する場合は、何を作りたいかを利用者に確認します。
-目的や利用場面を仮定で補って文書を書き始めず、[質問で考えを具体化する](#質問で考えを具体化する)手順に従います。
+Read the consuming project's instructions and conventions first, then follow [template selection](documents.md#choosing-templates) to choose an applicable template.
+Read the relevant guidelines, chosen template, upstream specifications, and existing documents being changed.
+If specifications or code already exist, inspect related behavior, terms, conventions, and similar implementations.
+Report missing materials as missing, separately from behavior that has not been verified.
 
-## 質問で考えを具体化する
+If the initial input is insufficient, ask what the user wants to create.
+Do not invent a purpose or usage situation to start writing. Follow [questions to make ideas concrete](#make-ideas-concrete-through-questions).
 
-Product・Requirements・Designの作成では、対話で利用者の考えを具体化します。
-最初の説明を出発点に、誰がどの場面で困っているか、何ができればよいか、何を含めないかを聞き、回答に応じて具体的な条件へ絞ります。
-初期入力に項目名がそろっていても、意味や判断理由が曖昧な箇所は質問します。
-既存の会話・仕様・コードで確認できることは先に調べ、説明済みの内容を聞き直しません。
+## Make ideas concrete through questions
 
-一度に扱う中心の論点は1つにし、関連する質問も1〜3問に絞ります。
-回答を受けて理解を更新し、その答えで新しく分かった点や残った曖昧さから、次の質問を選びます。
-「使いやすくしたい」なら今困る操作や改善後の場面を聞くなど、抽象的な回答は具体例・成功条件・例外へ掘り下げます。
-最初の質問一覧を順に消化するだけで終えず、話題を移すときには、それまでに分かったことを短く返します。
+Develop the user's ideas through dialogue when creating Product, Requirements, and Design.
+Starting from their explanation, ask who struggles in which situation, what should become possible, and what is excluded. Narrow these into concrete conditions from their answers.
+Even when the initial input lists every field, ask about unclear meanings and reasons.
+Investigate what the conversation, existing specifications, and code already establish; do not ask the user to repeat it.
 
-利用可能な選択肢付きの質問ツールがあれば優先して使います。
-たとえばAskUserQuestionやrequest_user_inputに相当する機能です。
-その環境で使えない場合は、同じ内容を会話本文で質問します。
-ツール名や利用モードが違うことを理由に、質問自体を省略しません。
+Focus on one main issue at a time and limit related questions to one to three.
+Update your understanding after each answer, then choose the next question from what became clear or remains uncertain.
+For a wish to improve usability, ask about a difficult operation or an improved situation, then explore examples, success conditions, and exceptions.
+Do not merely exhaust an initial questionnaire. Briefly reflect what you have learned before changing topics.
 
-選択肢は、利用者の言葉と確認した資料から作り、選んだ場合に何が変わるかを短く説明します。
-おすすめを示す場合は根拠を添え、提案した選択肢や既定の選択を、利用者の決定として扱いません。
-選択肢に収まらない考えは自由入力で聞き、まだ決められない場合は具体例や比較材料を示して一緒に整理します。
+Prefer an available question tool with selectable answers.
+Examples include AskUserQuestion or request_user_input equivalents.
+If no such tool is available, ask the same question in the conversation.
+Differences in tool names or execution modes are not reasons to skip questions.
 
-利用者の回答を必要とする質問をしたら、返答を受けてからその内容に依存する文書や実装を確定します。
-非同期の質問ツールでは、待っている間に回答に依存しない調査を進めても、無応答を同意やおすすめの選択とみなしません。
-一通り整理できたら、利用者の回答から確認したこと、自分の提案、残る論点を分けて要約し、認識の違いを直せるようにします。
+Build choices from the user's words and verified materials, explaining what changes with each choice.
+Give reasons for recommendations, and do not treat a proposed or preselected choice as the user's decision.
+Allow free text for ideas outside the choices. If the user cannot decide yet, offer examples or comparisons and work through them together.
 
-質問の回数を増やすことは目的にしません。
-既に具体的な条件が確認できている場合は同じ質問を繰り返さず、任された実装方法や容易に変えられる配置・命名は調査した根拠を添えて決めます。
-質問の範囲は作成する文書の責務に合わせ、次の作業の開始条件は[依頼の範囲とレビュー](#依頼の範囲とレビュー)に従います。
+When a question requires the user's answer, wait for it before finalizing dependent documents or implementation.
+With asynchronous tools, continue independent research while waiting, but never interpret silence as agreement or selection of the recommendation.
+After resolving the main issues, summarize confirmed answers, your proposals, and remaining decisions separately so misunderstandings can be corrected.
 
-## 調査と判断
+The number of questions is not a goal.
+Do not repeat questions whose conditions are already concrete. Decide delegated implementation methods and easily changed names or placement from research, with reasons.
+Match questions to the document's responsibility. Follow [request scope and review](#request-scope-and-review) for starting the next task.
 
-既存の資料で確認できる内容を先に調べ、外部仕様や比較が判断に必要ならWebで一次資料を確認します。
-新たなライブラリやサービスを選ぶ場合は、用途・保守状況・既存構成との相性を比べます。
-URLは開いて内容を確認し、主張の近くに出典を示します。
-取得できなかった資料について、読んだものとして要件や設計を補いません。
-利用可能なローカル文書がある場合はそれを読み、なければ不足を伝えて依存する判断を待ちます。
+## Research and decisions
 
-要点が集まったら、目的・範囲・決定事項を短く整理します。
-新しい目的や範囲の決定が必要なら確認を求め、依頼で十分に定まっている場合は執筆へ進みます。
-未決事項を文章の補完で決定済みにしません。
-未決の残し方と変更の扱いは[文書の責務と更新](documents.md)に従います。
+Inspect existing materials first. Use primary sources on the web when external specifications or comparisons affect a decision.
+When adding a library or service, investigate its purpose, maintenance, and compatibility with the current system.
+Open URLs to verify their contents and cite them near the claims they support.
+Do not fill in requirements or designs as though you read an unavailable source.
+Read available local materials; if required materials are missing, explain the gap and wait on dependent decisions.
 
-## 書いた後に確認する
+Once the main facts are established, briefly summarize purpose, scope, and decisions.
+Ask when a new purpose or scope decision is needed; start writing when the request is sufficiently specific.
+Do not turn unresolved questions into decisions by filling in prose.
+Follow [Document responsibilities and updates](documents.md) for handling open questions and changes.
 
-ファイルへ保存し、実際の内容を読み返します。
-空のファイルや書き込み失敗を確認したら修正します。
-ガイドラインとテンプレートで、文書の責務、見出し、判断の根拠、対象外、未決事項を確認します。
+## Check after writing
 
-リンク先の存在と内容を確認し、上位文書のコピーや矛盾を除きます。
-検証した内容と未検証の内容を分け、作成物・確認結果・残る判断を短く報告します。
-検証結果は完了報告やPR本文に残します。
+Save files and reread their actual contents.
+Fix empty files or failed writes.
+Check responsibilities, headings, reasons, exclusions, and open questions against the guidelines and template.
 
-## 依頼の範囲とレビュー
+Verify link targets and remove copied upstream text or contradictions.
+Briefly report deliverables, verification, and remaining decisions, distinguishing verified and unverified results.
+Keep verification results in completion reports or PR descriptions.
 
-「作りたい」は実現したいことの表明として扱い、それだけで設計・実装まで任されたとは解釈しません。
-まず対話と調査で目的・対象利用者・扱う範囲を整理し、「まずRequirementsをまとめる」など次に行う作業を提案します。
-既存の会話で依頼の範囲が定まっている場合は、それを使い、同じことを聞き直しません。
+## Request scope and review
 
-RequirementsやDesignの作成・変更だけを依頼された場合は、対象文書を保存・確認し、文書と要点を提示してレビューを依頼するところで作業を区切ります。
-文書作成の依頼を、次の文書の作成や実装の開始指示へ読み替えません。
-修正を求められた場合も、対象文書を更新して再び提示します。
+Treat a statement such as I want to build this as an expression of intent, not authorization to design and implement everything.
+First clarify purpose, users, and scope through dialogue and research, then propose the next task, such as drafting Requirements.
+Reuse scope established by the conversation instead of asking again.
 
-実装まで依頼されている場合は、Requirements・Designの要点を途中で提示し、任された範囲で進めます。
-文書を作成・変更するたびに一律の承認待ちを設けません。
-保存した文書へのリンク、今回決めたこと・変えたこと、主な判断理由、残る論点を短く示し、利用者が途中でもレビューできるようにします。
+When only the creation or revision of Requirements or Design is requested, save and check that document, present its key points, and request review before ending that task.
+Do not reinterpret a document request as an instruction to write the next document or start implementation.
+When revisions are requested, update the document and present it again.
 
-目的・範囲・利用者の振る舞いについて、依頼や既存仕様から判断できない決定が必要になった場合は、選択肢と判断が必要な理由を示して利用者へ確認します。
-その決定に依存する設計や実装は、返答を受けてから進めます。
-エージェント自身の読み返しやlintの成功で、利用者の判断を置き換えません。
+When implementation is requested too, present Requirements and Design decisions during the work and continue within the delegated scope.
+Do not impose an approval wait after every document change.
+Link saved documents and briefly identify decisions, changes, reasons, and remaining questions so the user can review during the work.
 
-「Designをレビューしてから実装する」など、利用者が途中で確認するよう指定した場合は、その指示に従って待ちます。
-無応答を確認済みとみなさず、既に得た進行指示について同じ確認を繰り返しません。
+If purpose, scope, or user-visible behavior requires a decision that the request and specifications do not establish, explain the choices and why the user needs to decide.
+Wait for the answer before dependent design or implementation.
+Your own review or a passing linter does not replace the user's judgment.
 
-## 実装と検証
+If the user explicitly asks to review Design before implementation, wait as instructed.
+Silence is not approval, and previously granted permission does not need to be requested again.
 
-実装前に対象Product・Requirements・Designを読み、不足する仕様があれば先に作成します。
-[依頼の範囲とレビュー](#依頼の範囲とレビュー)に従い、実装まで依頼されていることと、利用者の判断が必要な未決事項が残っていないことを確認します。
-変更する場合は、文書の更新方針に従って仕様と実装を直します。
-要件を変えずに実装方法を改善する場合も、設計方針や判断理由が変わるならDesignを更新します。
-実装中に要件や設計を変更した場合も、要点を提示します。
-新たに利用者の判断が必要なら、その決定に依存する作業を待ちます。
+## Implementation and verification
 
-Requirementsの各シナリオに対して、Thenを観測できる方法で正常系・失敗・境界の条件を確認します。
-テストコードが必要な変更では適切なテストを実行し、文書の機能なら実際の読み取りとリンクの確認で確かめます。
-確認できたこと・失敗したこと・未確認のことを分けて報告します。
+Read the target Product, Requirements, and Design before implementation, creating missing specifications first.
+Following [request scope and review](#request-scope-and-review), verify that implementation is requested and no unresolved user decision blocks it.
+When making changes, update specifications and implementation according to the document update policy.
+Even without a requirements change, update Design when its approach or reasons change.
+Present the main points when changing requirements or design during implementation too.
+If a new user decision is needed, wait on work that depends on it.
 
-文書の検証では、リンク先の存在、RequirementsとDesignの一対一の対応、親Productの参照、テンプレートの固定見出しを確認します。
-入口から必要な資料へたどれるか、特定の環境のパスや外部の未配置文書に依存していないかも確認します。
+For each Requirements scenario, verify observable Then results for success, failure, and boundary conditions.
+Run appropriate tests when code needs tests; verify document features through actual reading and link checks.
+Report verified results, failures, and unverified conditions separately.
+
+For documents, check existing targets, the one-to-one Requirements–Design relationship, parent Product references, and fixed template headings.
+Check that materials are reachable from the entry point without depending on a particular machine's paths or unavailable external documents.

@@ -1,282 +1,275 @@
-# Markdownのリンク切れと文書の参照方向の検査
+# Check Markdown links and document reference directions
 
-## このドキュメントについて
+[日本語](requirements.ja.md)
 
-[sdevのProduct](../../product.md)に属する、Markdownの内部リンクを検査する製品lintのRequirementsです。
-初回は設定ファイルを設けず、sdevの標準配置に基づく対象と文書種別の判定、ファイル・見出しのリンク切れ、確定した参照方向を検査します。
-検査結果は人とAIが読める形で返し、規則違反と処理失敗を区別してCIの合否にも使えるようにします。
+## About this document
 
-### スコープ
+These Requirements define product lint for local Markdown links under the [sdev Product](../../product.md).
+The initial implementation uses standard placement to select and classify documents, check files/headings, and enforce agreed reference directions, without lint configuration.
+Results must be readable by people and AI and distinguish violations from processing failures for CI.
 
-人とAIが仕様を作成・変更する際に、Markdownの内部リンクのリンク切れと、文書の種類に応じた参照方向を確認できることを扱います。
-対象はプロジェクトのルートにあるREADME.md・AGENTS.mdと、`docs/`以下のMarkdownです。
-文書の種類はsdevの標準配置で判定し、利用者が対象や種別を設定する仕組みは初回に設けません。
-ここでの内部リンクは、Markdownからローカルのファイルや文書内の見出しを指すリンクを指します。
-別ファイルへのリンクと、同じ文書内を含む見出しへのリンクを初回から検査します。
-見出しのアンカーはGitHubで表示されるMarkdownの見出しリンクと同じ扱いを目指します。
+### Scope
 
-初回に適用する参照方向は次の表のとおりです。
+Check internal Markdown links and reference directions when people and AI create or change specifications.
+Targets are root README.md/AGENTS.md and their language variants, plus Markdown under `docs/`.
+Classify by standard placement, without user-defined target or type configuration initially.
+Internal links mean local file and heading references, including headings in the same document.
+Aim to match GitHub's Markdown heading links.
 
-| 参照元 ＼ 参照先 | Product | Requirements | Design | ガイドライン | 実装ファイル |
+Apply this initial direction table:
+
+| Source / Destination | Product | Requirements | Design | Guidelines | Implementation |
 | --- | --- | --- | --- | --- | --- |
-| Product | ○ | ○ | × | ○ | × |
-| Requirements | ○ | ○ | × | ○ | × |
-| Design | ○ | ○ | × | ○ | × |
+| Product | Allowed | Allowed | Forbidden | Allowed | Forbidden |
+| Requirements | Allowed | Allowed | Forbidden | Allowed | Forbidden |
+| Design | Allowed | Allowed | Forbidden | Allowed | Forbidden |
 
-○は許可、×は禁止です。
-ProductからRequirementsへの参照と、別プロダクトを含むRequirements同士の参照も許可します。
-Design行のDesign列は別文書への参照を指します。この禁止には、共通基盤や別プロダクトのDesignも含みます。
-同じDesign内の見出しへのリンクは別Designへの依存ではなく、見出しのリンク切れを検査します。
-ガイドラインを参照元とする方向規則は追加せず、Markdownとしてリンク切れだけを検査します。
-コード・コードコメントを参照元とする検査は初回の対象外です。
+Allow Product-to-Requirements and Requirements-to-Requirements across products.
+The Design column forbids references to other Designs, including shared platform and other product Designs.
+Headings in the same Design and navigation to a translation of that same Design are not dependencies on another Design; still check file and heading existence.
+Apply identical rules to localized filenames as specified by the [localization requirements](../localization/requirements.md).
+Guidelines as sources receive link checks only, without additional direction rules.
+Code and code comments as sources are excluded initially.
 
-共通の規則は[文書の責務と更新](../../../../guidelines/documents.md#文書の参照方向)で管理し、このRequirementsには本機能が適用する同じ表を掲載しています。
-規則を変更するときは両方の表と説明を一緒に更新し、食い違いを残したままDesignや実装へ進みません。
+[Document reference directions](../../../../guidelines/documents.md#reference-directions) owns the shared rule. This table repeats the same rule for this feature.
+Update both tables and explanations together; resolve differences before proceeding to Design or implementation.
 
-### スコープ外
+### Out of scope
 
-外部HTTPリンク先への通信による確認、コードやコードコメントのリンクの解析、理由の欠落の意味的な判断、可視化、自動修復、文書生成は初回の対象に含めません。
-コードから要件・設計の理由をたどる考え方を廃止するものではありません。
-開発用のClippyや整形の検査とは別の製品機能として扱います。
-設定ファイルや独自配置へのカスタマイズは初回に提供しません。
-将来の設定対応は候補であり、今回の必須要件や未決事項にはしません。
+External HTTP requests, parsing code/comment links, judging whether rationale is semantically missing, visualization, automatic repair, and document generation are excluded initially.
+This does not discard the principle of tracing code to requirements/design rationale.
+Product lint is separate from development Clippy and formatting checks.
+No lint configuration or custom document placement is provided initially. Future customization is a candidate, not an initial requirement or open question.
 
-## ユーザーストーリー
+## User stories
 
-### リンク切れを見つける
+### Find broken links
 
-仕様を作成・変更する人とAIとして、Markdownの内部リンクの参照先を確認したい。
-それによって、資料を読む途中で必要な参照先へ進めない箇所を見つけられる。
+As a person or AI changing specifications, I want to check internal destinations so I can find references that prevent readers from reaching needed materials.
 
-**受け入れ条件:**
+**Acceptance criteria:**
 
-Scenario: 存在しないファイルへのリンクがある場合、該当する参照を確認できる
+Scenario: A missing local file is identified
 
-- Given: 検査対象のMarkdownに、存在しないローカルファイルを指すリンクがある。
-- When: 利用者が対象文書のlintを実行する。
-- Then: 参照元と参照先、およびリンク先のファイルが存在しないことが結果に示される。
+- Given: A target Markdown document links to a nonexistent local file.
+- When: Lint runs.
+- Then: Results identify source, destination, and the missing file.
 
-Scenario: 許可された方向の参照先が存在する場合、そのリンクを違反として扱わない
+Scenario: An existing target in an allowed direction passes
 
-- Given: 検査対象のRequirementsから親Productへのリンクがあり、参照先が存在する。
-- When: 利用者が対象文書のlintを実行する。
-- Then: そのリンクについて、ファイルのリンク切れや参照方向の違反は報告されない。
+- Given: Requirements link to an existing parent Product.
+- When: Lint runs.
+- Then: That link has neither a missing-file nor a direction violation.
 
-Scenario: 見出しへのリンクが切れている場合、該当する見出しの参照を確認できる
+Scenario: A missing heading is identified
 
-- Given: 検査対象のMarkdownに、存在する別文書の存在しない見出しを指すリンクがある。
-- When: 利用者が対象文書のlintを実行する。
-- Then: 参照元・参照先と、リンク先の見出しが存在しないことが結果に示される。
+- Given: A target document links to a nonexistent heading in another existing document.
+- When: Lint runs.
+- Then: Results identify source, destination, and the missing heading.
 
-Scenario: 同じDesign内の見出しへリンクする場合、別Designへの依存と扱わない
+Scenario: A heading within the same Design is not another Design dependency
 
-- Given: 検査対象のDesignに、同じ文書内の存在する見出しへのリンクがある。
-- When: 利用者が対象文書のlintを実行する。
-- Then: そのリンクを別Designへの参照として違反にせず、見出しのリンク切れも報告しない。
+- Given: A Design links to an existing heading in itself.
+- When: Lint runs.
+- Then: Neither a forbidden Design dependency nor a missing heading is reported.
 
-### 参照方向の違反を見つける
+### Find reference direction violations
 
-仕様を作成・変更する人とAIとして、文書の責務に反する方向のリンクを確認したい。
-それによって、設計や実装の変更で上位文書まで変更が連鎖する参照を見直せる。
+As a person or AI changing specifications, I want links that conflict with document responsibilities identified so I can remove dependencies that propagate implementation/design changes upward.
 
-**受け入れ条件:**
+**Acceptance criteria:**
 
-Scenario: RequirementsからDesignへのリンクがある場合、禁止された方向と分かる
+Scenario: Requirements cannot reference Design
 
-- Given: 検査対象のRequirementsに、存在するDesignへのリンクがある。
-- When: 利用者が対象文書のlintを実行する。
-- Then: RequirementsからDesignへの参照が禁止されていることと、該当する参照元・参照先が結果に示される。
+- Given: Requirements link to an existing Design.
+- When: Lint runs.
+- Then: Results identify source/destination and the forbidden direction.
 
-Scenario: 共通基盤のDesignへリンクする場合、参照方向の違反を報告する
+Scenario: A shared platform Design is still another Design
 
-- Given: 検査対象のDesignに、別プロダクトの共通開発基盤のDesignへのリンクがある。
-- When: 利用者が対象文書のlintを実行する。
-- Then: Designから別のDesignへの参照として、該当するリンクの違反が示される。
+- Given: A Design links to another product's shared development platform Design.
+- When: Lint runs.
+- Then: That link is reported as a forbidden Design-to-Design reference.
 
-Scenario: 同じプロダクトの別Designへのリンクがある場合、禁止された方向と分かる
+Scenario: Another feature's Design in the same product is forbidden
 
-- Given: 検査対象のDesignに、同じプロダクトの別機能のDesignへのリンクがある。
-- When: 利用者が対象文書のlintを実行する。
-- Then: Designから別のDesignへの参照として、該当するリンクの違反が示される。
+- Given: A Design links to another feature's Design in the same product.
+- When: Lint runs.
+- Then: That link is reported as a forbidden Design-to-Design reference.
 
-Scenario: Designから実装ファイルへのリンクがある場合、禁止された方向と分かる
+Scenario: Design cannot reference implementation
 
-- Given: 検査対象のDesignに、存在する実装ファイルへのリンクがある。
-- When: 利用者が対象文書のlintを実行する。
-- Then: Designから実装ファイルへの参照が禁止されていることと、該当する参照元・参照先が結果に示される。
+- Given: A Design links to an existing implementation file.
+- When: Lint runs.
+- Then: Results identify source/destination and the forbidden direction.
 
-Scenario: Designから許可された文書へのリンクがある場合、方向の違反にしない
+Scenario: Design can reference its allowed document types
 
-- Given: 検査対象のDesignに、存在する対応Requirements・親Product・ガイドラインへのリンクがある。
-- When: 利用者が対象文書のlintを実行する。
-- Then: それらのリンクを参照方向の違反として報告しない。
+- Given: A Design links to existing corresponding Requirements, parent Product, and guidelines.
+- When: Lint runs.
+- Then: Those links have no direction violations.
 
-Scenario: Requirementsから別プロダクトのRequirementsへリンクする場合、方向の違反にしない
+Scenario: Requirements can reference another product's Requirements
 
-- Given: 検査対象のRequirementsに、存在する別プロダクトのRequirementsへのリンクがある。
-- When: 利用者が対象文書のlintを実行する。
-- Then: そのリンクをRequirements同士の参照として許可し、参照方向の違反を報告しない。
+- Given: Requirements link to existing Requirements of another product.
+- When: Lint runs.
+- Then: The Requirements-to-Requirements reference is allowed.
 
-Scenario: 許可されたProductからRequirementsへの参照でも、リンク切れは検査する
+Scenario: An allowed Product-to-Requirements direction still checks existence
 
-- Given: 検査対象のProductに、存在しないRequirementsへのリンクがある。
-- When: 利用者が対象文書のlintを実行する。
-- Then: 参照方向の違反とは報告せず、参照先ファイルのリンク切れを報告する。
+- Given: A Product links to missing Requirements.
+- When: Lint runs.
+- Then: Report a missing target, without a direction violation.
 
-Scenario: ProductからProduct・Requirements・ガイドラインへリンクする場合、参照を許可する
+Scenario: Product can reference Product, Requirements, and guidelines
 
-- Given: 検査対象のProductに、存在するProduct・Requirements・ガイドラインへのリンクがある。
-- When: 利用者が対象文書のlintを実行する。
-- Then: それらのリンクについて、参照方向の違反は報告されない。
+- Given: A Product links to existing documents of those types.
+- When: Lint runs.
+- Then: Those links have no direction violations.
 
-Scenario: ProductからDesignや実装ファイルへリンクする場合、禁止された方向と分かる
+Scenario: Product cannot reference Design or implementation
 
-- Given: 検査対象のProductに、存在するDesign・実装ファイルへのリンクがある。
-- When: 利用者が対象文書のlintを実行する。
-- Then: それぞれの禁止された参照方向と、該当する参照元・参照先が結果に示される。
+- Given: A Product links to an existing Design and implementation file.
+- When: Lint runs.
+- Then: Each forbidden direction is reported with source and destination.
 
-Scenario: Requirementsからガイドラインへリンクする場合、方向の違反にしない
+Scenario: Requirements can reference guidelines
 
-- Given: 検査対象のRequirementsに、存在するガイドラインへのリンクがある。
-- When: 利用者が対象文書のlintを実行する。
-- Then: そのリンクを参照方向の違反として報告しない。
+- Given: Requirements link to existing guidelines.
+- When: Lint runs.
+- Then: No direction violation is reported.
 
-Scenario: Requirementsから実装ファイルへリンクする場合、禁止された方向と分かる
+Scenario: Requirements cannot reference implementation
 
-- Given: 検査対象のRequirementsに、存在する実装ファイルへのリンクがある。
-- When: 利用者が対象文書のlintを実行する。
-- Then: 禁止された参照方向と、該当する参照元・参照先が結果に示される。
+- Given: Requirements link to an existing implementation file.
+- When: Lint runs.
+- Then: Results identify source/destination and the forbidden direction.
 
-Scenario: コードコメントにリンクがある場合、初回の検査対象にしない
+Scenario: Code comment links are not initial lint targets
 
-- Given: 対象プロジェクトの実装ファイルのコメントに、文書へのリンクがある。
-- When: 利用者がMarkdownを対象とするlintを実行する。
-- Then: そのコメントのリンクは検査されず、検査済みとも案内されない。
+- Given: An implementation comment links to a document.
+- When: Markdown lint runs.
+- Then: That comment's link is neither checked nor described as checked.
 
-### 検査の完了と処理失敗を区別する
+### Distinguish completed checks from processing failures
 
-仕様を検証する人とAIとして、違反がない結果と、検査を完了できなかった結果を区別したい。
-それによって、未検査の文書を問題がないものと扱わず、CIでも結果を判断できる。
+As a person or AI verifying specifications, I want incomplete checks distinguished from clean results so unread documents do not pass and CI can judge the result.
 
-**受け入れ条件:**
+**Acceptance criteria:**
 
-Scenario: 対象の検査を完了して違反がない場合、成功と分かる
+Scenario: Completed checks without violations succeed
 
-- Given: 検査対象の文書を読み取ることができ、内部リンクと参照方向に違反がない。
-- When: 利用者がlintを実行する。
-- Then: 対象の検査を完了し違反がないことを、人とAIおよびCIから判別できる結果が返る。
+- Given: Target documents are readable and have no internal link or direction violations.
+- When: Lint runs.
+- Then: People, AI, and CI can identify completed checks with no violations.
 
-Scenario: 対象の文書を読めない場合、規則違反と異なる処理失敗と分かる
+Scenario: Unreadable documents produce processing failures
 
-- Given: 検査対象の文書を読み取ることができない。
-- When: 利用者がlintを実行する。
-- Then: 読めなかった文書と理由を示し、検査を完了できなかったことを、規則違反や成功と区別できる結果が返る。
+- Given: A target document cannot be read.
+- When: Lint runs.
+- Then: Results identify the document/reason and distinguish incomplete checks from violations or success.
 
-Scenario: 違反と処理失敗が混在する場合、検出した違反を失わず未完了と分かる
+Scenario: Mixed violations and failures preserve both
 
-- Given: 検査対象に、リンク切れがある文書と、読み取れない文書が含まれる。
-- When: 利用者がlintを実行する。
-- Then: 検出したリンク切れと処理失敗がそれぞれ示され、全対象の検査は完了していないと判別できる。
+- Given: Targets include a broken link and an unreadable document.
+- When: Lint runs.
+- Then: Both are reported, and the overall result indicates incomplete checks.
 
-## KPI
+## KPIs
 
-### 確定したリンク規則を結果から確認できること
+### Results expose the agreed link rules
 
-- **現状値:** 未実装・未計測。
-- **目標値:** 確定した許可・禁止の関係とリンク切れについて、受け入れ条件を満たす。固定のファイル数やリンク数は目標にしない。
-- **計測方法:** 確定した条件に沿った文書を検査し、参照元・参照先と判定結果を確認する。
-- **計測期間:** 初回実装時と、検査規則や対象の扱いを変更するとき。
+- **Current value:** Not implemented or measured at specification time.
+- **Target value:** Acceptance criteria for agreed allowed/forbidden relationships and broken links pass, without fixed file/link counts.
+- **Measurement:** Check documents representing those conditions and inspect source, destination, and verdict.
+- **Period:** Initial implementation and changes to rules or target handling.
 
-## 機能要件
+## Functional requirements
 
-### Markdownの内部リンクの検査
+### Check internal Markdown links
 
-**概要:** 検査対象の内部リンクについて、リンク切れと確定した参照方向の違反を利用者へ示します。
+**Overview:** Show broken links and agreed direction violations for internal links in selected documents.
 
-**入力:** sdevの標準配置にあるMarkdownと、その内部リンク。
+**Input:** Markdown in standard sdev placement and its internal links.
 
-**出力:** 該当する参照元・参照先と、リンク切れまたは禁止された参照方向の検査結果。
+**Output:** Relevant sources, destinations, and broken-link or forbidden-direction results.
 
-#### 適用する条件
+#### Applicable conditions
 
-##### 標準配置による対象の判定
+##### Select targets by standard placement
 
-初回は設定ファイルなしで動作し、[標準の文書配置](../../../../guidelines/documents.md#配置と文書間の関係)の既定パターンで検査対象と文書種別を判定します。
-Product・Requirements・Design・ガイドラインの対応や対象の除外を、利用者が独自に設定する機能は初回に追加しません。
-既定パターンの具体化はDesignで行い、固定の文書数やリンク数を対象の定義にしません。
+Use the default patterns in [standard document placement](../../../../guidelines/documents.md#placement-and-document-relationships) without lint configuration.
+Do not add user-defined type mappings or exclusions initially.
+The Design specifies patterns; fixed document or link counts do not define scope.
+Project language configuration does not change these lint rules.
 
-##### リンク切れと参照方向の区別
+##### Separate existence from reference direction
 
-参照先の存在と、そこへリンクしてよいかを別の条件として扱います。
-ファイルが存在することだけを理由に、禁止された参照方向を許可しません。
-許可・禁止の関係は、このRequirementsの「スコープ」に掲載した表を適用します。
-この表は共通ガイドラインの規則と同期し、独立した別の規則として変更しません。
-表の範囲はすべて決定済みであり、未規定のマスはありません。
+Whether a target exists and whether it may be referenced are independent conditions.
+Existence alone does not permit a forbidden reference.
+Apply the complete table in Scope and keep it synchronized with the shared guideline rather than changing it independently.
+There are no undecided cells.
 
-##### 見出しへのリンク
+##### Heading links
 
-同じ文書内と別文書内の見出しを検査し、参照先の文書が存在しても見出しがなければリンク切れとして示します。
-[GitHub公式の見出しリンクの説明](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#section-links)を基準とし、同じアンカーやハッシュURLで同じ見出しを指せる扱いを目指します。
-重複見出しや記号などの具体的な照合規則は、公式資料を確認してDesignで具体化します。
-同じDesign内の見出しへのリンクを、禁止された別Designへの参照と混同しません。
+Check headings in the same and other documents; an existing file with a missing heading is a broken link.
+Use [GitHub's section link documentation](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#section-links) as the reference for equivalent anchors/hash URLs.
+The Design specifies duplicates, punctuation, and matching from official material.
+Do not confuse a heading in the same Design with a reference to another Design.
 
-##### 表の適用範囲
+##### Table applicability
 
-この表が扱うのは参照方向の可否です。
-参照の必須性や依存の表現方法は、この機能の検査対象に含めません。
-ガイドラインを参照元とする方向の規則は初回の表に追加せず、Markdownのリンク切れの検査を行います。
-既定パターンで種別を判定できる一般文書と、参照方向の判定に必要な種別を特定できなかった対象を区別します。
-判定に必要な情報が足りず検査を完了できない場合は、その対象と理由を示します。
+The table governs direction only, not mandatory references or dependency notation.
+Guidelines as sources receive link checks without new direction rules.
+Distinguish ordinary documents recognized by patterns from targets whose required direction classification is unknown.
+When insufficient information prevents checking, identify the target and reason.
 
-##### 検査結果とガイドラインへの案内
+##### Results and guideline navigation
 
-結果には問題となる文書の位置とリンク先、理由を示し、該当するガイドラインへ進めるようにします。
-[Living Documentationの記事](https://efcl.info/2017/05/12/living-documentation-ddd/)にある、lintの結果から必要な規約へ案内する考え方を参考にしています。
-成功・規則違反・処理失敗を区別し、人とAIが結果を読み、CIが合否に利用できるようにします。
-案内の形式、コマンド名、出力形式、数値の終了コードはDesignで具体化します。
+Show source location, destination, and reason, with a route to the relevant guideline.
+The [Living Documentation article](https://efcl.info/2017/05/12/living-documentation-ddd/) informs the practice of routing lint results to the required convention.
+Distinguish success, violations, and processing failures for people, AI, and CI.
+The Design specifies command names, output formats, navigation, and numerical exit codes.
 
-#### 例外ケースでの振る舞い
+#### Exceptional behavior
 
-文書や参照先を読めず検査できない場合は、確認できなかった対象と理由を示し、処理失敗として返します。
-参照先が存在しないことを確認できた場合のリンク切れと、存在を確認できなかった場合を取り違えません。
-確認できた文書の検査は続け、判明した違反と処理失敗の両方を結果へ残します。
-表の対象外の参照元について、独自の禁止方向を追加しません。
+If a document or destination cannot be checked, report its location/reason as a processing failure.
+Distinguish confirmed absence from inability to determine existence.
+Continue independent readable targets and retain both violations and failures.
+Do not invent forbidden directions for sources outside the table.
 
-## データ要件
+## Data requirements
 
-### 必要なデータ
+### Required data
 
-- **検査対象文書:** 内部リンクを記述したMarkdownと、参照元の文書種別を判断するための情報。
-- **参照先:** リンクで指定されたファイルや文書内の見出しと、参照方向を判断するための情報。
-- **参照規則:** 文書種別の組み合わせごとの、確定した許可・禁止。
-- **検査結果:** 問題となる参照元・参照先と、判定理由または確認できなかった事実。
+- **Target documents:** Markdown links and information needed to classify sources.
+- **Destinations:** Linked files/headings and information needed to classify direction.
+- **Reference rules:** Agreed permissions for each document type pair.
+- **Results:** Source/destination and verdict or the fact that checking was impossible.
 
-### データ間の関係
+### Relationships
 
-検査対象文書のリンクが参照先を指し、参照元と参照先の種別を規則に照らして判定します。
-リンク先の存在確認と参照方向の判定結果を、問題となるリンクへ対応付けます。
-専用の保存先や履歴管理を利用要件として追加しません。
+Links connect sources to destinations, with both types evaluated against rules.
+Associate existence and direction results with each relevant link.
+Require no dedicated persistent store or history.
 
-### 個人情報
+### Personal information
 
-文書の本文やファイル名には個人情報が含まれる可能性があります。
-個人の識別や行動の収集を目的にしません。
-結果は参照元の位置・リンク先・理由を示し、文書本文全体を表示する必要はありません。
+Bodies and filenames may contain personal information; collecting identities or behavior is not a goal.
+Show locations, destinations, and reasons without printing entire document bodies.
 
-## 依存する外部サービス
+## External service dependencies
 
-なし。
-初回はローカルMarkdownの内部リンクを対象とし、外部サイトへの通信による検査を含めません。
-参考記事は検査の実行に必要な接続先ではありません。
+None. Initial lint checks local internal Markdown links without external requests.
+Reference articles are not runtime connections.
 
-## セキュリティ上の留意事項
+## Security considerations
 
-文書やリンク先に書かれたコード・コマンドを実行する機能は追加しません。
-文書の修復や生成は初回の対象外とし、検査のための変更を利用者の文書に加えません。
-対象は標準配置で定め、結果には診断に必要な位置・リンク先・理由を示します。
+Never execute code or commands from documents or destinations.
+Do not modify documents for checking; repair and generation are excluded initially.
+Use standard placement and report only diagnostic locations, destinations, and reasons.
 
-## 未決事項
+## Open questions
 
-なし。
-初回の対象、参照方向、検査結果の区別は決定しています。
-CLIと終了コード、Markdown・見出し・パスの具体的な処理はDesignで定めます。
+None. Initial targets, direction rules, and result distinctions are settled.
+The Design specifies CLI, exit codes, Markdown, headings, and path handling.

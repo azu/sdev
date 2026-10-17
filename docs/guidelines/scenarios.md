@@ -1,46 +1,48 @@
-# 受け入れ条件のシナリオ
+# Acceptance scenarios
 
-受け入れ条件は、どんな前提で何をすると何が起きるかを、検証できるシナリオとして書きます。
-[文書の責務と更新](documents.md)を前提に、Requirementsの各ユーザーストーリーへ付けます。
+[日本語](scenarios.ja.md)
 
-## 形式
+Write acceptance criteria as verifiable scenarios describing what happens when an action is taken under given conditions.
+Attach them to every Requirements user story, following [Document responsibilities and updates](documents.md).
+
+## Format
 
 ```markdown
-Scenario: 必要な文書を読めない場合、参照できなかった文書を報告する
+Scenario: When a required document cannot be read, report the unavailable reference
 
-- Given: 作業に必要なガイドラインの参照先を読み取れない。
-- When: エージェントがガイドラインを取得する。
-- Then: エージェントは取得できなかった参照先と失敗した事実を利用者に伝え、文書を読めたものとして仕様を作成しない。
+- Given: A guideline needed for the work cannot be read at its reference location.
+- When: The agent attempts to retrieve the guideline.
+- Then: It reports the unavailable reference and failure to the user, and does not write specifications as if it had read the document.
 ```
 
-これは書き方の例であり、すべての機能に同じ失敗処理を要求するものではありません。
+This illustrates the writing format; it does not require the same failure handling in every feature.
 
-## 見出しと前提・操作・結果
+## Headings, preconditions, actions, and results
 
-見出しは「〜の場合、〜する」「〜の場合、〜できない」のように、条件と期待結果を含めます。
-「文書が見つからない」のように前提だけで終えません。
+Include both a condition and its expected result in each heading, such as When X, do Y or When X, Y is unavailable.
+A heading giving only a precondition, such as Document not found, is incomplete.
 
-Givenには操作の前に成立している状態を、Whenには利用者やシステムが行う操作を1つ書きます。
-1つの目的の一連の操作はまとめられますが、別の目的の操作は分けます。
-「取得に成功する」のような結果をWhenに書きません。
+Given describes the state before the action; When describes one action by a user or system.
+A sequence serving one purpose can be grouped, but separate actions with different purposes.
+Do not put an outcome such as Retrieval succeeds in When.
 
-Thenには、文書の内容、返される値、作成・変更の有無、表示されるエラーなど、観測できる結果を書きます。
-「適切に処理する」「拒否する」「完了とする」だけでは、何が起きるか判断できません。
-たとえば「登録を拒否する」ではなく「文書を作成せず、重複する名前を示すエラーを返す」と書きます。
+Then describes observable results: document contents, returned values, created or changed files, or displayed errors.
+Statements such as Handle appropriately, Reject, or Complete do not establish what happens.
+For example, specify that no document is created and an error names the duplicate, rather than merely rejecting registration.
 
-## ケースの分け方
+## Separate cases
 
-結果が異なるケースは別のシナリオにします。
-初回利用、作成済みの文書がある場合、参照できない場合などを、1つのThenへ詰め込みません。
-正常系に加え、失敗や境界のケースが必要かを洗い出します。
+Use separate scenarios when results differ.
+Do not pack initial use, existing documents, and unavailable references into one Then.
+Consider failure and boundary cases alongside the successful case.
 
-操作と結果の対象を明記します。
-たとえば「テンプレートを読む」「テンプレートから文書を作る」「作った文書を保存する」は別の操作です。
-ファイルが読めることと、ガイドラインに従った文書ができることも区別します。
+Name the targets of actions and results.
+Reading a template, creating a document from it, and saving that document are different actions.
+Distinguish being able to read a file from producing a document that follows its guidelines.
 
-## 実現方法との境界
+## Boundary with implementation methods
 
-シナリオは利用者から見える振る舞いを定めます。
-画面の構成、API、保存方法はDesignへ委ね、特定の実装方法を受け入れ条件に混ぜません。
-実装後は、シナリオをもとに合否を確認します。
-確認方法はテストに限らず、文書の読み取りや型検査など、条件に合うものを選びます。
+Scenarios define behavior visible to users.
+Leave screen structure, APIs, and storage methods to Design, avoiding implementation-specific acceptance criteria.
+After implementation, assess the result against these scenarios.
+Choose verification methods fitting the condition, including document review and type checks where useful, rather than tests alone.

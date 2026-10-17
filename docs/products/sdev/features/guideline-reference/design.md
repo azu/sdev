@@ -1,159 +1,153 @@
-# ガイドラインとテンプレートの参照の設計
+# Guideline and template reference design
 
-## このドキュメントについて
+[日本語](design.ja.md)
 
-[ガイドラインとテンプレートの参照のRequirements](requirements.md)を、静的なMarkdownとリンクで実現する設計です。
-親となる[sdevのProduct](../../product.md)を前提とし、要件の内容はRequirementsを参照します。
-この機能は配置済みMarkdownを直接読む経路を扱います。
-CLIからの参照と実行ファイルの配布は、[コマンド配布のRequirements](../command-distribution/requirements.md)に対応する機能で扱います。
+## About this document
 
-### 対象読者
+Implement the [guideline and template reference Requirements](requirements.md) with static Markdown and links.
+The [sdev Product](../../product.md) gives the parent context; refer to Requirements for behavior.
+This feature supports reading repository Markdown directly.
+CLI reference and executable distribution belong to the feature defined by [command distribution Requirements](../command-distribution/requirements.md).
 
-文書の配置・案内を実装し、変更する開発者とエージェント。
+### Audience
 
-### 前提知識
+Developers and agents implementing or changing document placement and navigation.
 
-Markdownファイルを読む方法と、[文書の責務・配置規約](../../../../guidelines/documents.md)。
+### Prerequisites
 
-### このドキュメントで扱わないこと
+Reading Markdown and following [document responsibilities and placement](../../../../guidelines/documents.md).
 
-要件の決定、Web配信の設計、CLIや文書を解析する処理の設計。
-検証は[実装と検証のガイドライン](../../../../guidelines/agent.md#実装と検証)に従って行い、結果は完了報告やPR本文に残す。
+### Outside this document
 
-## 実装方針
+Deciding requirements, web delivery, and CLI or document-parser design.
+Follow [implementation and verification](../../../../guidelines/agent.md#implementation-and-verification), recording results in completion reports or PR descriptions.
 
-実行コードを追加せず、入口・ガイドライン・テンプレートをMarkdownファイルとして配置します。
-配置済みMarkdownを直接読む場合は、[文書と作業の入口](../../../../README.md)の作業別の表から必要な文書へ進みます。
-sdev自身の[AGENTS.md](../../../../../AGENTS.md)は、作業開始時に`cargo build --locked --package sdev --bin sdev`でこのチェックアウトをビルドし、`./target/debug/sdev help`からガイドを読むよう指示します。
-対象のProduct・Requirements・Designはこの入口から確認し、作業の進め方はガイドへ委ねます。
-実際の配置は前提知識に示した配置規約に従います。
+## Implementation approach
 
-| 部分 | 責務 |
+Place entry points, guidelines, and templates as Markdown files without adding execution code for direct reference.
+Use the task table in the [documentation entry point](../../../../README.md) to select documents.
+sdev's own [AGENTS.md](../../../../../AGENTS.md) instructs agents to build this checkout with `cargo build --locked --package sdev --bin sdev`, then read guides through `./target/debug/sdev help`.
+Find target Product, Requirements, and Design from the entry point; delegate working practices to guidelines.
+Follow the placement conventions identified in prerequisites.
+
+| Part | Responsibility |
 | --- | --- |
-| プロジェクトの参照指示 | 入口を読む契機を示す。ルールの本文を複製しない |
-| 入口 | 作業の目的から、読む文書と上位仕様を選ぶ案内を提供する |
-| ガイドライン | 文書の責務と判断基準、調査・確認・執筆・読み返しの進め方を提供する |
-| テンプレート | 記入する構造を提供する |
+| Project instructions | Establish when to read the entry point, without duplicating rules |
+| Entry point | Map task purposes to documents and upstream specifications |
+| Guidelines | Responsibilities, judgment, research, preparation, writing, and review |
+| Templates | Structure for writing |
 
-参照先は相対Markdownリンクで直接ファイルを指します。
-同じ内容を別の配信用ファイルへ生成する処理は設けません。
-相対リンクはローカルでの配置を移しても同じ構成で使え、GitHub上でもファイル間の参照に利用できます。
-GitHubでの相対リンクの扱いは[公式のMarkdown説明](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#relative-links)で確認しています。
-これは公開先をGitHubに決めるものではありません。
+Relative Markdown links point directly to files.
+Do not generate another delivery copy of the same language version.
+Relative links remain usable when relocating the same tree and when browsing files on GitHub.
+GitHub's [official Markdown guidance](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#relative-links) explains relative links; this does not select GitHub as the only publication destination.
 
-参照失敗は利用するエージェントの読み取り操作で判明します。
-共通ガイドラインに取得失敗時の案内を置き、入口から参照します。
-sdev側に取得の再試行、文書内容の推測、指示の強制を行う処理は設けません。
+The agent's reading operation reveals retrieval failures.
+Put failure guidance in common guidelines and reference it from the entry point.
+Do not add sdev-side retries, guessed document contents, or enforcement of instructions.
 
-依頼の解釈と提示する要点、利用者の判断が必要な場合の進め方は、共通の作業ガイドの「依頼の範囲とレビュー」にまとめます。
-「作りたい」という目的の表明から実装まで任されたと解釈せず、対話で目的と範囲を整理する手順を示します。
-Requirements・Designのガイドは、文書作成だけの依頼なら提示で区切り、実装までの依頼なら要点を途中で提示して進めるよう同じ節へ案内します。
-実装前にも同じ節を参照します。
-レビュー状況の管理ファイルや実行を制御する仕組みは追加せず、会話での利用者の指示を使います。
+Keep request interpretation, presentation, and necessary user decisions in Request scope and review in the shared working guide.
+Explain that an idea alone does not authorize implementation: clarify purpose and scope through dialogue.
+Requirements and Design guides link to that section for document-only stopping points and implementation progress updates.
+Implementation preparation references the same section.
+Use conversational user instructions without adding review-state files or an execution controller.
 
-質問の組み立て方、回答に応じた掘り下げ、質問ツールの選び方と回答を待つ扱いは、共通の作業ガイドの「質問で考えを具体化する」に置きます。
-Product・Requirements・Designのガイドから同じ節へリンクし、それぞれの文書に合う質問の論点を示します。
-ツールの呼び出しは利用するエージェントが担当し、利用できない環境では会話本文で質問します。
-特定の質問ツールをsdevの実行時依存として追加しません。
+Keep question construction, answer-driven follow-up, tool selection, and waiting behavior in Make ideas concrete through questions.
+Product, Requirements, and Design guides link to it and add questions fitting each document's responsibility.
+The agent calls tools, falling back to conversational questions when unavailable.
+No particular question tool becomes an sdev runtime dependency.
 
-## アーキテクチャ・シーケンス図
+## Architecture and sequence diagrams
 
-文書は内容とリンクを保持し、取得と進行はエージェントが担当します。
-以下の図は読み取りの順序を示すもので、sdevに実行エンジンがあることを表しません。
+Documents hold content and references; the agent retrieves them and manages progress.
+This diagram illustrates reading order, not an sdev execution engine.
 
 ```mermaid
 sequenceDiagram
-    participant U as 利用者
-    participant A as エージェント
-    participant I as プロジェクトの指示と入口
-    participant D as 参照資料
-    U->>A: 仕様の作成や変更を依頼
-    A->>I: 参照指示に従って入口を読む
-    I-->>A: 作業別の参照先と前提となる仕様
-    A->>D: ガイドラインとテンプレートを読む
-    D-->>A: 判断基準と記入構造
-    A->>D: 対象Productと必要なRequirementsを読む
-    D-->>A: 作業の前提
-    A-->>U: 必要な判断の確認や成果物の報告
+    participant U as User
+    participant A as Agent
+    participant I as Project instructions and entry
+    participant D as Materials
+    U->>A: Request specification creation or revision
+    A->>I: Read the entry following instructions
+    I-->>A: Task references and prerequisite specifications
+    A->>D: Read guidelines and templates
+    D-->>A: Decision criteria and writing structure
+    A->>D: Read target Product and necessary Requirements
+    D-->>A: Working assumptions
+    A-->>U: Ask for required decisions or report deliverables
 ```
 
-Productの新規作成で上位仕様がない場合は、依頼を入力とします。
-既存文書の変更では対象の既存文書も読みます。
+For a new Product without upstream specifications, use the request as input.
+When revising documents, also read the existing target.
 
-## データモデル・ER 図
+## Data model and ER diagrams
 
-データはUTF-8のMarkdown本文です。
-文書の見出しと本文に記述し、リンクは通常の`[表示名](相対パス)`の形にします。
-機能や文書の識別のための専用ID、追加の属性を記述するメタデータ、別の関係一覧ファイルは導入しません。
+Use UTF-8 Markdown bodies, headings, and ordinary `[label](relative-path)` links.
+Do not introduce dedicated feature IDs, attribute metadata, or a separate relationship registry.
+Language versions express the same document as specified by localization requirements.
 
-入口の1つの作業行が、1つ以上のガイドラインと対応するテンプレートを参照します。
-Product・Requirements・Designの関係は、配置規約のディレクトリとMarkdownリンクで表します。
-独立したデータベースやエンティティを持たないため、ER図は使いません。
+Each task row references one or more guidelines and its template.
+Directory layout and Markdown links express Product, Requirements, and Design relationships.
+No independent database or entities need an ER diagram.
 
-## API・インターフェース
+## APIs and interfaces
 
-接点は[文書と作業の入口](../../../../README.md)と、そこからリンクするMarkdown本文です。
-エージェントはファイルを読む手段で本文を取得し、ファイルを基準に相対リンクを解決します。
-入口に対する入力は作業目的、出力は対応する資料への案内であり、HTTP APIやCLIコマンドは追加しません。
+Interfaces are the [documentation entry point](../../../../README.md) and linked Markdown bodies.
+Agents read files and resolve relative links against their locations.
+Task purpose is the entry's input; matching references are its output. This feature adds no HTTP API or CLI command.
 
-別のプロジェクトへ導入するための指示例は、[README](../../../../../README.md)に置きます。
-ローカル配置先は利用者が置き換える欄として示し、特定環境の絶対パスは埋め込みません。
-公開URLの指示例は、実際の配信先を用意して確認できるまで追加しません。
+Keep consuming-project instruction examples in the [README](../../../../../README.md) and in generated initialization instructions.
+Use replaceable locations rather than absolute personal paths.
+Add public URL examples only when actual delivery exists and has been verified.
 
-## 外部サービスとの連携方式
+## External service integration
 
-なし。
-利用時の読み取りはローカルファイルを対象とし、ネットワーク接続・認証・外部ライブラリを必要としません。
-設計の根拠として示したWeb資料の参照は、文書機能を動かすための依存ではありません。
+None. Local reading needs no network, authentication, or external library.
+Web sources supporting design reasons are not operational dependencies of the document feature.
 
-## データの取り扱い設計
+## Data handling
 
-ガイドライン・テンプレート・参照案内はリポジトリ内で編集し、同じファイルを読み取ります。
-利用側でテンプレートから作成した仕様は、利用側のプロジェクトへ保存します。
-プロジェクトの仕様を収集・複製する保存先や、アクセス計測の仕組みは設けません。
+Edit and read the same repository guideline, template, and reference files.
+Specifications produced from templates belong in the consuming project.
+Do not collect, copy, or measure access to those project specifications.
 
-文書の変更・削除と過去の参照にはGitを使います。
-データベース、キャッシュ、保存期限を管理する処理は持ちません。
-削除や移動を行うときは、その文書を指すリンクも更新します。
+Use Git for changes, deletion, and historical references.
+No database, cache, or retention process is introduced.
+Update incoming links when deleting or moving a document.
 
-## 認証認可に関する特記事項
+## Authentication and authorization notes
 
-なし。
-ファイルの読み書きは利用する環境のファイル権限に従い、独自のアカウントや認証情報を持ちません。
+None. Follow existing filesystem permissions without separate accounts or credentials.
 
-## セキュリティ上の留意事項
+## Security considerations
 
-参照例には架空の業務情報や認証値を埋め込まず、置き換える欄を説明として記述します。
-特定の環境のパスや内部文書への参照を配布資料に残しません。
-外部への送信処理や、利用者の文書を自動変更する処理は追加しません。
+Describe replaceable fields rather than inventing business information or credentials for examples.
+Exclude personal paths and internal references from distributed materials.
+Add no external transmission or automatic changes to consuming-project documents through this reference feature.
 
-## デプロイに関する特記事項
+## Deployment notes
 
-なし。
-ローカルのMarkdownの配置で利用でき、ビルドやサーバーへの反映処理を設けません。
+None. Repository Markdown can be used directly without a build or server deployment for this reference path.
 
-## 検討した代替手段
+## Alternatives considered
 
-### CLIで資料を取得・表示する
+### Retrieve and display materials with a CLI
 
-参照をコマンドにまとめられる利点があります。
-一方、文書を読むだけの段階で実行環境とインストール手順が必要になります。
-配置済みMarkdownの参照は通常のファイル読み取りで要件を満たせるため、この機能にCLIは追加しません。
-実行ファイルへ資料を同梱する経路は、配布機能で設計します。
+A CLI centralizes references but adds installation merely to read documents.
+Ordinary file reading meets this feature's requirements; executable-embedded materials are designed by the distribution feature.
 
-### Webサイトを構築してから資料を提供する
+### Build a website before providing materials
 
-ローカル配置をせずURLで参照できる利点があります。
-一方、公開先とバージョンの扱いを決め、配信経路を確認する作業が必要です。
-仕様を使ってsdev自身を開発するための最小構成には不要なので、Web公開は別の機能として判断します。
+A website avoids local placement but requires decisions about hosting and versions plus delivery verification.
+It is unnecessary for the minimum documentation used to develop sdev itself. Treat web publication as another feature.
 
-### 特定のエージェント専用のスキルとして配布する
+### Distribute an agent-specific skill
 
-起動方法とツール操作を揃えられる利点があります。
-一方、利用するエージェントの形式やツールに手順が依存します。
-普段使うエージェントがMarkdownを読んで進める使い方に合わせ、通常の文書として手順を提供します。
+A skill can standardize entry and tool operations but ties procedures to an agent's format and tools.
+Provide ordinary Markdown for the user's usual agent to read.
 
-## 未決事項
+## Open questions
 
-この設計の実装を妨げる未決事項はありません。
-Web配信や解析機能に関する判断は、[Product](../../product.md)に記載した見直し条件に従います。
+None blocking this design.
+Revisit web delivery and analysis features under the conditions stated in the [Product](../../product.md).

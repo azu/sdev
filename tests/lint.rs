@@ -93,7 +93,7 @@ fn defaults_and_json_check_markdown_without_writes_or_runtime_path() {
     assert!(
         String::from_utf8(default.stdout)
             .unwrap()
-            .contains("pass: 検査完了、違反なし")
+            .contains("pass: Check complete, no violations")
     );
     assert_eq!(fs::read(p.0.join("docs/guide.md")).unwrap(), before);
     assert_eq!(fs::read_dir(&p.0).unwrap().count(), 4);
@@ -122,8 +122,8 @@ fn full_direction_matrix_including_cross_product_and_same_document() {
         assert_eq!(report["summary"]["failures"], 0);
         for diag in report["diagnostics"].as_array().unwrap() {
             assert_eq!(diag["path"], source);
-            assert_eq!(diag["guidance"]["command"], "sdev help documents");
-            assert_eq!(diag["guidance"]["section"], "文書の参照方向");
+            assert_eq!(diag["guidance"]["command"], "sdev help documents --lang en");
+            assert_eq!(diag["guidance"]["section"], "Reference directions");
         }
     }
 }
@@ -260,7 +260,7 @@ fn incomplete_keeps_violations_and_reports_unknown_existing_types_and_invalid_ut
     assert!(text.stderr.is_empty());
     let text = String::from_utf8(text.stdout).unwrap();
     assert!(text.contains("docs/bad.md [invalid-utf8]"));
-    assert!(text.contains("incomplete: 検査未完了"));
+    assert!(text.contains("incomplete: Check incomplete"));
 }
 
 #[test]
@@ -412,4 +412,79 @@ fn text_diagnostics_escape_control_characters_and_json_retains_them() {
     let text = String::from_utf8(result.stdout).unwrap();
     assert!(!text.contains('\u{1b}'));
     assert!(text.contains("\\u{1b}"));
+}
+
+#[test]
+fn language_variants_keep_roles_and_only_same_design_navigation_is_allowed() {
+    let p = Project::new();
+    p.write("README.ja.md", "[guide](docs/guide.ja.md#案内)\n");
+    p.write("AGENTS.en.md", "[guide](docs/guide.ja.md)\n");
+    p.write("other.ja.md", "[out-of-scope](absent.md)\n");
+    p.write("docs/guide.ja.md", "# 案内\n");
+    p.write("src/main.rs", "fn main() {}\n");
+    p.write(
+        "docs/products/a/product.ja.md",
+        "[requirements](features/f/requirements.ja.md)\n[design](features/f/design.ja.md)\n",
+    );
+    p.write(
+        "docs/products/a/features/f/requirements.ja.md",
+        "[product](../../product.ja.md)\n[design](design.ja.md)\n[implementation](/src/main.rs)\n",
+    );
+    p.write(DESIGN, "# Overview\n[Japanese](design.ja.md#概要)\n");
+    p.write("docs/products/a/features/f/design.ja.md", "# 概要\n[English](design.md#overview)\n[missing-heading](design.md#absent)\n[other](../other/design.ja.md)\n");
+    p.write("docs/products/a/features/other/design.ja.md", "# Other\n");
+    let report = p.report(1);
+    assert_eq!(report["summary"]["documents"], 8);
+    assert_eq!(report["summary"]["direction_documents"], 5);
+    let diagnostics = report["diagnostics"].as_array().unwrap();
+    assert_eq!(
+        diagnostics
+            .iter()
+            .filter(|d| d["code"] == "forbidden-reference")
+            .count(),
+        4
+    );
+    assert_eq!(
+        diagnostics
+            .iter()
+            .filter(|d| d["code"] == "missing-heading")
+            .count(),
+        1
+    );
+    assert_eq!(diagnostics.len(), 5);
+}
+
+#[test]
+fn missing_translation_of_the_same_design_is_only_a_broken_link() {
+    let p = Project::new();
+    p.write(DESIGN, "# Design\n[Japanese](design.ja.md#概要)\n");
+    let report = p.report(1);
+    assert_eq!(codes(&report), ["missing-target"]);
+}
+
+#[test]
+fn localized_entry_directories_do_not_expand_root_discovery() {
+    let p = Project::new();
+    p.write("docs/guide.md", "# Guide\n");
+    p.write("README.ja.md/nested.md", "[not selected](absent.md)\n");
+    let report = p.report(2);
+    assert_eq!(codes(&report), ["discovery-failed"]);
+    assert_eq!(report["diagnostics"][0]["path"], "README.ja.md");
+    assert_eq!(report["summary"]["documents"], 1);
+}
+
+#[cfg(unix)]
+#[test]
+fn translation_named_symlink_to_another_design_does_not_bypass_direction_rules() {
+    let p = Project::new();
+    p.write(DESIGN, "# Source\n[Japanese](design.ja.md#other)\n");
+    p.write("docs/products/a/features/other/design.md", "# Other\n");
+    std::os::unix::fs::symlink(
+        "../other/design.md",
+        p.0.join("docs/products/a/features/f/design.ja.md"),
+    )
+    .unwrap();
+    let report = p.report(2);
+    assert!(codes(&report).contains(&"forbidden-reference"));
+    assert!(codes(&report).contains(&"discovery-failed"));
 }
