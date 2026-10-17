@@ -11,28 +11,84 @@ use std::{
 #[path = "../../src/catalog.rs"]
 mod catalog;
 
-struct Target {
-    label: &'static str,
+pub struct Target {
+    pub name: &'static str,
+    pub label: &'static str,
+    pub runner: &'static str,
     os: &'static str,
     arch: &'static str,
     minimum: Option<&'static str>,
 }
-
-fn configuration(name: &str) -> Result<Target> {
-    let (label, os, arch, minimum) = match name {
-        "aarch64-apple-darwin" => ("macos-arm64", "macos", "aarch64", Some("11.0")),
-        "x86_64-apple-darwin" => ("macos-x64", "macos", "x86_64", Some("10.12")),
-        "aarch64-unknown-linux-gnu" => ("linux-arm64", "linux", "aarch64", None),
-        "x86_64-unknown-linux-gnu" => ("linux-x64", "linux", "x86_64", None),
-        "x86_64-pc-windows-msvc" => ("windows-x64", "windows", "x86_64", None),
-        _ => return Err(format!("Unsupported target: {name}").into()),
-    };
-    Ok(Target {
-        label,
-        os,
-        arch,
-        minimum,
-    })
+pub const TARGETS: &[Target] = &[
+    Target {
+        name: "aarch64-apple-darwin",
+        label: "macos-arm64",
+        runner: "macos-15",
+        os: "macos",
+        arch: "aarch64",
+        minimum: Some("11.0"),
+    },
+    Target {
+        name: "x86_64-apple-darwin",
+        label: "macos-x64",
+        runner: "macos-15-intel",
+        os: "macos",
+        arch: "x86_64",
+        minimum: Some("10.12"),
+    },
+    Target {
+        name: "aarch64-unknown-linux-gnu",
+        label: "linux-arm64",
+        runner: "ubuntu-22.04-arm",
+        os: "linux",
+        arch: "aarch64",
+        minimum: None,
+    },
+    Target {
+        name: "x86_64-unknown-linux-gnu",
+        label: "linux-x64",
+        runner: "ubuntu-22.04",
+        os: "linux",
+        arch: "x86_64",
+        minimum: None,
+    },
+    Target {
+        name: "x86_64-pc-windows-msvc",
+        label: "windows-x64",
+        runner: "windows-2025",
+        os: "windows",
+        arch: "x86_64",
+        minimum: None,
+    },
+];
+fn configuration(name: &str) -> Result<&'static Target> {
+    TARGETS
+        .iter()
+        .find(|target| target.name == name)
+        .ok_or_else(|| format!("Unsupported target: {name}").into())
+}
+pub fn matrix() {
+    let include: Vec<_> = TARGETS
+        .iter()
+        .map(|target| json!({"target": target.name, "runner": target.runner}))
+        .collect();
+    println!("{}", json!({"include": include}));
+}
+pub fn asset_name(version: &str, target: &Target) -> String {
+    format!(
+        "sdev-v{version}-{}{}",
+        target.label,
+        if target.os == "windows" { ".exe" } else { "" }
+    )
+}
+pub fn source_commit() -> Result<String> {
+    Ok(support::output(
+        Command::new("git")
+            .args(["rev-parse", "HEAD"])
+            .current_dir(root()),
+    )?
+    .trim()
+    .to_owned())
 }
 
 pub fn target(name: &str) -> Result<()> {
@@ -92,7 +148,7 @@ pub fn build(name: &str) -> Result<()> {
     .join(name)
     .join("release")
     .join(format!("sdev{extension}"));
-    let asset = format!("sdev-v{version}-{}{extension}", target.label);
+    let asset = asset_name(version, target);
     let relative = format!("dist/{asset}");
     let artifact = root().join(&relative);
     fs::create_dir_all(artifact.parent().unwrap())?;
@@ -122,7 +178,7 @@ pub fn build(name: &str) -> Result<()> {
             artifact.parent().unwrap().join("LICENSE"),
         )?;
     }
-    let info = json!({"version":version,"target":name,"binary":relative,"bytes":bytes.len(),"sha256":digest,"published":false,"notices":notices,"crate_notices":crate_notices});
+    let info = json!({"version":version,"target":name,"binary":relative,"bytes":bytes.len(),"sha256":digest,"published":false,"notices":notices,"crate_notices":crate_notices,"source_commit":source_commit()?,"source_clean":support::output(Command::new("git").args(["status", "--porcelain"]).current_dir(root()))?.trim().is_empty(),"verified":false});
     fs::write(
         support::sidecar(&artifact, ".json"),
         format!("{}\n", serde_json::to_string_pretty(&info)?),
@@ -266,7 +322,16 @@ pub fn verify(path: &Path) -> Result<()> {
     {
         return Err("Missing lint violation".into());
     }
-    library_checks(&binary, &target)?;
+    library_checks(&binary, target)?;
+    if metadata["source_commit"] != source_commit()? {
+        return Err("Artifact source commit mismatch".into());
+    }
+    let mut metadata = metadata;
+    metadata["verified"] = json!(true);
+    fs::write(
+        support::sidecar(&binary, ".json"),
+        format!("{}\n", serde_json::to_string_pretty(&metadata)?),
+    )?;
     println!(
         "Verified {}: native execution, exact templates, guide routing, empty PATH/cwd, checksum, system libraries",
         binary.display()

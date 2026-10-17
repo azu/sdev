@@ -5,42 +5,59 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      source_sha:
+        description: Immutable source commit selected by the caller
+        required: true
+        type: string
+      artifact_prefix:
+        description: Artifact namespace for the caller's run
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: sdev-build-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: sdev-build-${{ github.workflow }}-${{ github.ref }}-${{ inputs.artifact_prefix || 'review' }}
+  cancel-in-progress: ${{ inputs.artifact_prefix == '' }}
 
 jobs:
+  matrix:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    outputs:
+      targets: ${{ steps.matrix.outputs.targets }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.source_sha || github.sha }}
+          persist-credentials: false
+      - name: Install the repository's pinned toolchain and components
+        run: rustup show active-toolchain
+      - name: Read the distribution targets
+        id: matrix
+        run: printf 'targets=%s\n' "$(cargo xtask release-matrix)" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: matrix
     name: ${{ matrix.target }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - runner: macos-15
-            target: aarch64-apple-darwin
-          - runner: macos-15-intel
-            target: x86_64-apple-darwin
-          - runner: ubuntu-22.04-arm
-            target: aarch64-unknown-linux-gnu
-          - runner: ubuntu-22.04
-            target: x86_64-unknown-linux-gnu
-          - runner: windows-2025
-            target: x86_64-pc-windows-msvc
+      matrix: ${{ fromJSON(needs.matrix.outputs.targets) }}
     defaults:
       run:
         shell: bash
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
+          ref: ${{ inputs.source_sha || github.sha }}
           persist-credentials: false
-      - name: Install the pinned Rust toolchain
-        run: rustup toolchain install 1.96.0 --profile minimal --component rustfmt --component clippy
+      - name: Install the repository's pinned toolchain and components
+        run: rustup show active-toolchain
       - name: Build the release executable
         id: build
         env:
@@ -54,10 +71,11 @@ jobs:
         env:
           BINARY: ${{ steps.build.outputs.binary }}
         run: cargo xtask verify-release "$BINARY"
-      - name: Save review artifacts
+      - name: Save verified artifacts
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: ${{ steps.build.outputs.asset }}
+          name: ${{ inputs.artifact_prefix }}${{ steps.build.outputs.asset }}
           path: dist/*
           if-no-files-found: error
+          overwrite: true
           retention-days: 14

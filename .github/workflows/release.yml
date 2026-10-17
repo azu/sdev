@@ -1,0 +1,77 @@
+name: Release sdev
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Cargo.tomlと同じ安定バージョン（例: 0.1.0、vなし）'
+        required: true
+        type: string
+
+permissions: {}
+
+# Serialize releases without cancelling one that may already be uploading assets.
+concurrency:
+  group: sdev-release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      source_sha: ${{ steps.source.outputs.sha }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Install the repository's pinned toolchain and components
+        run: rustup show active-toolchain
+      - name: Validate version, license, source and existing release state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: cargo xtask release-preflight "$VERSION"
+      - name: Pin the selected source
+        id: source
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: printf 'sha=%s\n' "$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: prepare
+    permissions:
+      contents: read
+    uses: $/.github/workflows/build.yml
+    with:
+      source_sha: ${{ needs.prepare.outputs.source_sha }}
+      artifact_prefix: release-${{ github.run_id }}-
+
+  publish:
+    needs: [prepare, build]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
+          persist-credentials: false
+      - name: Install the repository's pinned toolchain and components
+        run: rustup show active-toolchain
+      - name: Build the publishing task without release credentials
+        run: cargo build --locked --package xtask
+      - name: Download only this run's verified distribution artifacts
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          pattern: release-${{ github.run_id }}-*
+          path: release-artifacts
+      - name: Check all assets, create the tag and publish the complete draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: cargo xtask publish-release "$VERSION" release-artifacts

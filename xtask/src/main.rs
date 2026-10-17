@@ -1,4 +1,5 @@
 mod notices;
+mod publishing;
 mod release;
 mod support;
 
@@ -11,10 +12,16 @@ fn run() -> Result<()> {
     match args.as_slice() {
         [] | ["--help" | "-h"] => {
             println!(
-                "cargo xtask check [--target TARGET]\ncargo xtask build-release --target TARGET\ncargo xtask verify-release BINARY"
+                "cargo xtask check [--target TARGET]\ncargo xtask build-release --target TARGET\ncargo xtask verify-release BINARY\ncargo xtask release-matrix\ncargo xtask release-preflight VERSION\ncargo xtask publish-release VERSION ARTIFACTS"
             );
             Ok(())
         }
+        ["release-matrix"] => {
+            release::matrix();
+            Ok(())
+        }
+        ["release-preflight", version] => publishing::preflight(version),
+        ["publish-release", version, artifacts] => publishing::run(version, Path::new(artifacts)),
         ["check"] => check(None),
         ["check", "--target", target] => check(Some(target)),
         ["build-release", "--target", target] => release::build(target),
