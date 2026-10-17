@@ -1,8 +1,0 @@
-node_modules/
-dist/
-generated.ts
-.scriptc/
-results/
-__pycache__/
-bundled.json
-rust/target/

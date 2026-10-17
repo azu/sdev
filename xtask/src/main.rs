@@ -1,4 +1,3 @@
-mod benchmark;
 mod release;
 mod support;
 
@@ -11,7 +10,7 @@ fn run() -> Result<()> {
     match args.as_slice() {
         [] | ["--help" | "-h"] => {
             println!(
-                "cargo xtask check [--target TARGET]\ncargo xtask build-release --target TARGET\ncargo xtask verify-release BINARY\ncargo xtask measure [--rust]"
+                "cargo xtask check [--target TARGET]\ncargo xtask build-release --target TARGET\ncargo xtask verify-release BINARY"
             );
             Ok(())
         }
@@ -19,8 +18,6 @@ fn run() -> Result<()> {
         ["check", "--target", target] => check(Some(target)),
         ["build-release", "--target", target] => release::build(target),
         ["verify-release", binary] => release::verify(Path::new(binary)),
-        ["measure"] => benchmark::measure(false),
-        ["measure", "--rust"] => benchmark::measure(true),
         _ => Err("Unknown task or arguments; use cargo xtask --help".into()),
     }
 }
