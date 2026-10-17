@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.96"
 description = "Specifications-first development with people and AI"
+license = "MIT"
 publish = false
 
 [workspace]
