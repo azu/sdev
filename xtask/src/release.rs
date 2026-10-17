@@ -111,13 +111,18 @@ pub fn build(name: &str) -> Result<()> {
         )),
         artifact.parent().unwrap().join(notices),
     )?;
+    let crate_notices = "THIRD-PARTY-CRATES.html";
+    fs::write(
+        artifact.parent().unwrap().join(crate_notices),
+        crate::notices::crates(name)?,
+    )?;
     if root().join("LICENSE").is_file() {
         fs::copy(
             root().join("LICENSE"),
             artifact.parent().unwrap().join("LICENSE"),
         )?;
     }
-    let info = json!({"version":version,"target":name,"binary":relative,"bytes":bytes.len(),"sha256":digest,"published":false,"notices":notices});
+    let info = json!({"version":version,"target":name,"binary":relative,"bytes":bytes.len(),"sha256":digest,"published":false,"notices":notices,"crate_notices":crate_notices});
     fs::write(
         support::sidecar(&artifact, ".json"),
         format!("{}\n", serde_json::to_string_pretty(&info)?),
@@ -230,8 +235,36 @@ pub fn verify(path: &Path) -> Result<()> {
     {
         return Err("Rust notices mismatch".into());
     }
+    if metadata["crate_notices"] != "THIRD-PARTY-CRATES.html"
+        || fs::read_to_string(binary.parent().unwrap().join("THIRD-PARTY-CRATES.html"))?
+            != crate::notices::crates(target_name)?
+    {
+        return Err("Crate notices mismatch".into());
+    }
+    let absent = invoke(&binary, &directory.0, &["lint", "--format", "json"], 2)?;
+    let absent: Value = serde_json::from_slice(&absent.stdout)?;
+    if absent["status"] != "incomplete" {
+        return Err("Missing lint discovery failure".into());
+    }
     if fs::read_dir(&directory.0)?.next().is_some() {
         return Err("CLI created files".into());
+    }
+    fs::create_dir(directory.0.join("docs"))?;
+    fs::write(
+        directory.0.join("docs/guide.md"),
+        "# Guide\n[self](#guide)\n",
+    )?;
+    let pass = invoke(&binary, &directory.0, &["lint", "--format", "json"], 0)?;
+    let pass: Value = serde_json::from_slice(&pass.stdout)?;
+    if pass["status"] != "pass" || pass["summary"]["internal_references"] != 1 {
+        return Err("Isolated lint failed".into());
+    }
+    fs::write(directory.0.join("docs/guide.md"), "[missing](missing.md)\n")?;
+    let violations = invoke(&binary, &directory.0, &["lint"], 1)?;
+    if !violations.stderr.is_empty()
+        || !String::from_utf8(violations.stdout)?.contains("[missing-target]")
+    {
+        return Err("Missing lint violation".into());
     }
     library_checks(&binary, &target)?;
     println!(

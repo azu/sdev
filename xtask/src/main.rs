@@ -1,3 +1,4 @@
+mod notices;
 mod release;
 mod support;
 
@@ -37,6 +38,13 @@ fn check(target: Option<&str>) -> Result<()> {
         }
         support::run(&mut command)?;
     }
+    let mut lint = toolchain.cargo();
+    lint.args(["run", "--locked", "--package", "sdev"]);
+    if let Some(target) = target {
+        lint.args(["--target", target]);
+    }
+    lint.args(["--", "lint"]);
+    support::run(&mut lint)?;
     Ok(())
 }
 

@@ -222,7 +222,6 @@ fn obsolete_and_experiment_operations_and_extra_arguments_are_rejected() {
         &["docs", "list"][..],
         &["docs", "get", "entry"][..],
         &["licenses"][..],
-        &["lint"][..],
         &["check", "document.md"][..],
         &["profile", "document.md"][..],
         &["--version", "extra"][..],
