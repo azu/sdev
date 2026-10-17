@@ -1,6 +1,6 @@
 # Requirementsを書く
 
-[文書の責務と更新](../guidelines/documents.md)、[シナリオ](../guidelines/scenarios.md)、[作業原則](README.md)、[Requirementsテンプレート](../templates/requirements.md)を読みます。
+[文書の責務と更新](documents.md)、[シナリオ](scenarios.md)、[エージェントの作業原則](agent.md)、[Requirementsテンプレート](../templates/requirements.md)を読みます。
 親Productを特定して読み、なければ[Productの作成](product.md)から行います。
 対象が曖昧なら既存Product・機能の一覧を調べて候補を示します。
 

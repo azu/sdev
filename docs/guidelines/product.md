@@ -1,6 +1,6 @@
 # Productを書く
 
-[文書の責務と更新](../guidelines/documents.md)、[作業原則](README.md)、[Productテンプレート](../templates/product.md)を読みます。
+[文書の責務と更新](documents.md)、[エージェントの作業原則](agent.md)、[Productテンプレート](../templates/product.md)を読みます。
 対象はプロダクト全体です。
 個別機能の条件はRequirementsへ委ねます。
 
