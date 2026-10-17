@@ -12,13 +12,14 @@ The same project-local command should work on a person's machine and in Claude C
 Provide a bootstrap installer for published macOS/Linux executables and `init` instructions in AGENTS.md.
 Bootstrap can install only the executable or continue with initial setup.
 On macOS/Linux, `init` also generates a launcher that can be committed and shared, at a configurable path, so clones use the same version.
+Add explicit project updates through `sdev update`; rerunning the installer at an existing generated launcher performs the same update.
 Always compare checksums and optionally verify provenance with GitHub Artifact Attestations when requested.
 Language configuration and translated instructions follow the [localization requirements](../localization/requirements.md).
 
 ### Out of scope
 
 Do not create specification bodies or empty specification directories, copy all guidelines, or automatically add agent-specific settings or hooks.
-Windows bootstrap, OS signing/notarization, custom package management, and self-updates are excluded.
+Windows bootstrap, OS signing/notarization, background updates, and replacing package-manager or global installations are excluded.
 Windows can use existing executable downloads and `init`.
 
 ## User stories
@@ -155,6 +156,42 @@ Scenario: First-download failure never runs an unverified executable
 - When: The launcher runs.
 - Then: It exits nonzero without installing or running the unverified executable and preserves the committed launcher and instructions.
 
+### Update the version shared by the project
+
+As a developer, I want to update the committed launcher through sdev or the installer, so I can share new materials without manually moving files or rewriting project instructions.
+
+**Acceptance criteria:**
+
+Scenario: Updating a generated launcher preserves the project setup
+
+- Given: The project has an unmodified generated launcher at its default or custom path.
+- When: The user runs `sdev update`, optionally selecting a published version.
+- Then: The launcher selects that version, or the latest stable release when omitted. Its path, AGENTS.md, .gitignore, language configuration, and specifications remain unchanged, and the result identifies the version and the file to commit.
+
+Scenario: Rerunning installation updates an older launcher
+
+- Given: The destination is an unmodified generated launcher, including a version without the update command.
+- When: The user reruns the installer, with or without `--init`.
+- Then: The same entry point is updated without requiring a manual move or replacing it with a standalone binary.
+
+Scenario: Updating to the current version leaves the launcher unchanged
+
+- Given: The generated launcher already selects the requested version.
+- When: The update verifies the selected release.
+- Then: It reports that the version is current and preserves the launcher's bytes and permissions.
+
+Scenario: A changed or unsafe launcher cannot be overwritten
+
+- Given: The target is edited, is another file, traverses a symlink, or changes while the update is prepared.
+- When: The user requests an update.
+- Then: The command stops with a reason and preserves the existing launcher and project documents.
+
+Scenario: A failed update leaves the previous version usable
+
+- Given: The previous launcher works.
+- When: Downloading, requested verification, startup, or preparing the replacement fails.
+- Then: The launcher still selects the previous version, and an unverified candidate is not run or installed as its executable.
+
 ## KPIs
 
 ### Installation without a language runtime
@@ -188,6 +225,28 @@ If subsequent `init` fails, return that failure and retain the installed executa
 Stop if retrieval or verification fails.
 Explain that checksums do not establish provenance and attestations do not guarantee harmless software.
 Treat installer trust separately: executing an unverified script is not an attestation-verified installation of that script.
+
+### Update the project launcher
+
+**Overview:** Explicitly change the version shared through a generated macOS/Linux launcher.
+
+**Input:** `sdev update`, optional `--version X.Y.Z` and `--path PATH`, and the same provenance options as installation.
+
+**Output:** A verified executable in the project cache and an updated launcher, with old/new versions and a reminder to review and commit the launcher.
+
+#### Applicable conditions
+
+Run at the project root. A generated launcher supplies its configured relative path to the command; direct invocation defaults to `bin/sdev` and accepts an explicit project-relative path.
+Rerunning installation at an existing launcher uses the same update, including for versions predating this command.
+Compare the original launcher with its published version's generated content before allowing replacement; a header alone is insufficient.
+Check the new executable and prepare its launcher before switching. Preserve the previous launcher on failure and preserve all project documents.
+Use the existing checksum and optional attestation policy, without downgrading a requested verification after a failure.
+Updating to the current version preserves the launcher; selecting an older supported published version is explicit through `--version`.
+
+#### Exceptional behavior
+
+Reject missing, edited, unsafe, or concurrently changed launcher targets. Do not turn another file into a launcher through update.
+Leave unsupported Windows and global installations to their existing installation method.
 
 ### Initialize the project
 

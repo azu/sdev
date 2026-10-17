@@ -57,7 +57,7 @@ curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev
 ```
 
 Existing unrelated files and edited launchers are preserved.
-For changing an initialized location or updating versions, see [Releasing and updating](docs/engineering/guidelines/releasing.md).
+For changing an initialized location, see [Releasing and updating](docs/engineering/guidelines/releasing.md).
 
 ### Windows
 
@@ -71,6 +71,22 @@ Initialize and read a guide from PowerShell:
 
 Windows uses the installed executable directly.
 See [distribution targets and selection](docs/engineering/guidelines/releasing.md#platforms-and-artifact-selection) for OS requirements and manual installation.
+
+## Update
+
+Run from the project root to update the version shared by its launcher:
+
+```sh
+./bin/sdev update
+```
+
+Use `--version X.Y.Z` to select a release, or `--verify` to check its provenance.
+The command keeps the launcher path and project documents. Review and commit the updated launcher.
+It stops if the launcher has been edited or verification fails.
+
+For versions without `update`, rerun the installation command above. An existing generated launcher is updated in place, including when `--init` is passed.
+A custom launcher can be selected with `sh install.sh --update --path ./scripts/sdev` using a reviewed installer.
+Updates run when requested; ordinary guide commands continue to use the committed version.
 
 ## Choose project languages
 

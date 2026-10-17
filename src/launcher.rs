@@ -84,7 +84,7 @@ sdev_launch() {{
         fi
         [ -x "$install_dir/sdev" ] || fail 'Cached sdev is not executable; remove it and retry'
     ) >&2 || exit 1
-    exec "$sdev_root/$sdev_cache/sdev" "$@"
+    SDEV_LAUNCHER_PATH="{path}" exec "$sdev_root/$sdev_cache/sdev" "$@"
 }}
 sdev_launch "$@"
 "#

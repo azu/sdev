@@ -75,6 +75,7 @@ fn help_selects_guides_by_work_without_exposing_a_file_api() {
             "sdev help design",
             "sdev template",
             "sdev --version",
+            "sdev update",
             "利用先のProduct",
         ] {
             assert!(help.contains(expected));
@@ -82,6 +83,40 @@ fn help_selects_guides_by_work_without_exposing_a_file_api() {
         for removed in ["docs get", "entry", "licenses", "docs/guidelines/"] {
             assert!(!help.contains(removed));
         }
+    }
+}
+
+#[test]
+fn update_help_and_invalid_options_do_not_write_files() {
+    let help = success(&["update", "--help"]);
+    assert!(
+        help.contains("sdev update")
+            && help.contains("--version X.Y.Z")
+            && help.contains("--verify")
+    );
+    for args in [
+        &["update", "--unknown"][..],
+        &["update", "--version"][..],
+        &["update", "--version", "v1.2.3"][..],
+        &["update", "--version", "01.2.3"][..],
+        &["update", "--version", "1.2.3", "--version", "1.2.4"][..],
+        &["update", "--trusted-root", "root.jsonl"][..],
+        &["update", "--verify", "--source-commit", "no"][..],
+        &["update", "--path", ""][..],
+    ] {
+        let result = invoke(args);
+        assert_eq!(result.status.code(), Some(2), "{args:?}: {result:?}");
+    }
+    #[cfg(unix)]
+    for path in [
+        "../sdev",
+        "/tmp/sdev",
+        ".sdev/sdev",
+        "sdev.toml",
+        "scripts/../sdev",
+    ] {
+        let result = invoke(&["update", "--path", path]);
+        assert_eq!(result.status.code(), Some(2), "{path}: {result:?}");
     }
 }
 

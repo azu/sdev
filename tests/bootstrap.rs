@@ -20,6 +20,7 @@ struct Fixture {
     root: PathBuf,
     base: String,
     requests: Arc<Mutex<Vec<String>>>,
+    files: Arc<Mutex<BTreeMap<String, Vec<u8>>>>,
     stop: Arc<AtomicBool>,
     server: Option<JoinHandle<()>>,
 }
@@ -84,6 +85,8 @@ impl Fixture {
             format!("/releases/download/v{version}/sdev-release.txt"),
             format!("version={version}\nsource_commit={}\n", "a".repeat(40)).into_bytes(),
         );
+        let files = Arc::new(Mutex::new(files));
+        let server_files = Arc::clone(&files);
         let server_stop = Arc::clone(&stop);
         let server_requests = Arc::clone(&requests);
         let redirect = format!("{base}/tag/v{version}");
@@ -116,7 +119,7 @@ impl Fixture {
                     ("302 Found", Vec::new(), format!("Location: {redirect}\r\n"))
                 } else if path == format!("/releases/tag/v{version}") {
                     ("200 OK", Vec::new(), String::new())
-                } else if let Some(body) = files.get(&path) {
+                } else if let Some(body) = server_files.lock().unwrap().get(&path) {
                     ("200 OK", body.clone(), String::new())
                 } else {
                     ("404 Not Found", b"missing".to_vec(), String::new())
@@ -142,6 +145,7 @@ impl Fixture {
             root,
             base,
             requests,
+            files,
             stop,
             server: Some(server),
         }
@@ -159,6 +163,16 @@ impl Fixture {
         self.command().args(args).output().unwrap()
     }
     fn launcher(&self, path: &str) -> PathBuf {
+        let project = self.canonical_launcher(path);
+        let script = project.join(path);
+        let body = fs::read_to_string(&script)
+            .unwrap()
+            .replace("https://github.com/azu/sdev/releases", &self.base)
+            .replace("--proto '=https' --proto-redir '=https' --tlsv1.2 ", "");
+        fs::write(script, body).unwrap();
+        project
+    }
+    fn canonical_launcher(&self, path: &str) -> PathBuf {
         let project = self.root.join("project");
         fs::create_dir(&project).unwrap();
         let result = Command::new(env!("CARGO_BIN_EXE_sdev"))
@@ -167,13 +181,85 @@ impl Fixture {
             .output()
             .unwrap();
         assert!(result.status.success(), "{result:?}");
-        let script = project.join(path);
-        let body = fs::read_to_string(&script)
-            .unwrap()
-            .replace("https://github.com/azu/sdev/releases", &self.base)
-            .replace("--proto '=https' --proto-redir '=https' --tlsv1.2 ", "");
-        fs::write(script, body).unwrap();
         project
+    }
+    fn old_launcher(&self, path: &str) -> PathBuf {
+        let project = self.canonical_launcher(path);
+        let body = fs::read_to_string(project.join(path))
+            .unwrap()
+            .replace(env!("CARGO_PKG_VERSION"), "0.2.0");
+        fs::write(project.join(path), &body).unwrap();
+        fs::write(self.root.join("old-launcher"), body).unwrap();
+        let binary = b"#!/bin/sh\ncase \"$1\" in\n--version) printf 'sdev 0.2.0\\n' ;;\ninit) shift; [ \"$1\" = --path ] || exit 1; mkdir -p \"$(dirname -- \"$2\")\"; cp \"$TEST_OLD_LAUNCHER\" \"$2\"; chmod +x \"$2\" ;;\n*) exec \"$TEST_CURRENT_BIN\" \"$@\" ;;\nesac\n";
+        self.publish("0.2.0", binary);
+        project
+    }
+    fn publish(&self, version: &str, bytes: &[u8]) {
+        let source = self.root.join("release-source");
+        fs::write(&source, bytes).unwrap();
+        let hash = Command::new("shasum")
+            .args(["-a", "256"])
+            .arg(source)
+            .output()
+            .unwrap();
+        assert!(hash.status.success());
+        let digest = String::from_utf8(hash.stdout)
+            .unwrap()
+            .split_whitespace()
+            .next()
+            .unwrap()
+            .to_owned();
+        let mut files = self.files.lock().unwrap();
+        for platform in ["macos", "linux"] {
+            for arch in ["arm64", "x64"] {
+                let asset = format!("sdev-v{version}-{platform}-{arch}");
+                files.insert(
+                    format!("/releases/download/v{version}/{asset}"),
+                    bytes.to_vec(),
+                );
+                files.insert(
+                    format!("/releases/download/v{version}/{asset}.sha256"),
+                    format!("{digest}  {asset}\n").into_bytes(),
+                );
+            }
+        }
+        files.insert(
+            format!("/releases/download/v{version}/attestation.sigstore.json"),
+            b"test verifier fixture".to_vec(),
+        );
+        files.insert(
+            format!("/releases/download/v{version}/sdev-release.txt"),
+            format!("version={version}\nsource_commit={}\n", "a".repeat(40)).into_bytes(),
+        );
+    }
+    fn update_environment(&self, command: &mut Command) {
+        let tools = self.root.join("tools");
+        fs::create_dir_all(&tools).unwrap();
+        let curl = Command::new("sh")
+            .args(["-c", "command -v curl"])
+            .output()
+            .unwrap();
+        assert!(curl.status.success());
+        let real_curl = String::from_utf8(curl.stdout).unwrap();
+        let wrapper = tools.join("curl");
+        fs::write(&wrapper, "#!/bin/sh\nset -eu\nremaining=$#\nwhile [ \"$remaining\" -gt 0 ]; do\n arg=$1; shift; remaining=$((remaining-1))\n case \"$arg\" in\n  --proto|--proto-redir) shift; remaining=$((remaining-1)) ;;\n  --tlsv1.2) ;;\n  https://github.com/azu/sdev/releases*) set -- \"$@\" \"$TEST_RELEASES${arg#https://github.com/azu/sdev/releases}\" ;;\n  *) set -- \"$@\" \"$arg\" ;;\n esac\ndone\nresult=$(\"$TEST_REAL_CURL\" \"$@\") || exit $?\nprintf '%s' \"$result\" | sed \"s#$TEST_RELEASES#https://github.com/azu/sdev/releases#g\"\n").unwrap();
+        fs::set_permissions(wrapper, fs::Permissions::from_mode(0o755)).unwrap();
+        command
+            .env(
+                "PATH",
+                env::join_paths(
+                    std::iter::once(tools).chain(env::split_paths(&env::var_os("PATH").unwrap())),
+                )
+                .unwrap(),
+            )
+            .env("TEST_RELEASES", &self.base)
+            .env("TEST_REAL_CURL", real_curl.trim())
+            .env("TEST_OLD_LAUNCHER", self.root.join("old-launcher"))
+            .env("TEST_CURRENT_BIN", env!("CARGO_BIN_EXE_sdev"))
+            .env("NO_PROXY", "127.0.0.1")
+            .env("no_proxy", "127.0.0.1")
+            .env_remove("SDEV_VERIFY")
+            .env_remove("SDEV_LAUNCHER_PATH");
     }
     fn verifier(&self, version: &str, success: bool) -> Command {
         let tools = self.root.join("tools");
@@ -225,6 +311,280 @@ fn cache_path() -> PathBuf {
         ".sdev/bin/{}/{platform}-{arch}/sdev",
         env!("CARGO_PKG_VERSION")
     ))
+}
+
+fn setup_snapshot(project: &std::path::Path) -> Vec<(PathBuf, Vec<u8>)> {
+    ["AGENTS.md", ".gitignore", "sdev.toml"]
+        .into_iter()
+        .map(|name| (project.join(name), fs::read(project.join(name)).unwrap()))
+        .collect()
+}
+fn assert_preserved(snapshot: &[(PathBuf, Vec<u8>)]) {
+    for (path, bytes) in snapshot {
+        assert_eq!(fs::read(path).unwrap(), *bytes, "{}", path.display());
+    }
+}
+fn assert_update_clean(project: &std::path::Path, parent: &str) {
+    assert!(!project.join(".sdev/update.lock").exists());
+    for directory in [project.join(".sdev"), project.join(parent)] {
+        if directory.is_dir() {
+            for entry in fs::read_dir(directory).unwrap() {
+                assert!(
+                    !entry
+                        .unwrap()
+                        .file_name()
+                        .to_string_lossy()
+                        .starts_with(".sdev-update.")
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn project_update_keeps_custom_path_settings_permissions_and_offline_use() {
+    let fixture = Fixture::new(false);
+    let project = fixture.old_launcher("tools/scripts/sdev");
+    fs::write(
+        project.join("sdev.toml"),
+        "# keep these bytes\r\nlanguage = \"ja\"\r\ntranslations = [\"en\"]\r\n",
+    )
+    .unwrap();
+    let snapshot = setup_snapshot(&project);
+    let launcher = project.join("tools/scripts/sdev");
+    fs::set_permissions(&launcher, fs::Permissions::from_mode(0o551)).unwrap();
+    let mut command = Command::new(&launcher);
+    command.arg("update").current_dir(&project);
+    fixture.update_environment(&mut command);
+    let output = command.output().unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let report = String::from_utf8(output.stdout).unwrap();
+    assert!(
+        report.contains("0.2.0")
+            && report.contains(env!("CARGO_PKG_VERSION"))
+            && report.contains("tools/scripts/sdev")
+    );
+    assert_preserved(&snapshot);
+    assert_eq!(
+        fs::metadata(&launcher).unwrap().permissions().mode() & 0o777,
+        0o551
+    );
+    assert!(project.join(cache_path()).is_file());
+    assert_update_clean(&project, "tools/scripts");
+    let output = Command::new(&launcher)
+        .arg("--version")
+        .current_dir(&project)
+        .env("HTTP_PROXY", "http://127.0.0.1:9")
+        .env("HTTPS_PROXY", "http://127.0.0.1:9")
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        format!("sdev {}\n", env!("CARGO_PKG_VERSION"))
+    );
+}
+
+#[test]
+fn reinstall_updates_a_genuine_old_launcher_and_same_version_is_unchanged() {
+    let fixture = Fixture::new(false);
+    let project = fixture.old_launcher("bin/sdev");
+    let snapshot = setup_snapshot(&project);
+    let mut command = fixture.command();
+    command
+        .current_dir(&project)
+        .args(["--version", env!("CARGO_PKG_VERSION"), "--init"]);
+    fixture.update_environment(&mut command);
+    let output = command.output().unwrap();
+    assert!(output.status.success(), "{output:?}");
+    assert_preserved(&snapshot);
+    let launcher = project.join("bin/sdev");
+    let body = fs::read(&launcher).unwrap();
+    assert!(
+        String::from_utf8_lossy(&body)
+            .contains(&format!("generated by sdev {}", env!("CARGO_PKG_VERSION")))
+    );
+    let before = fs::metadata(&launcher).unwrap().modified().unwrap();
+    let mut command = fixture.command();
+    command
+        .current_dir(&project)
+        .args(["--version", env!("CARGO_PKG_VERSION")]);
+    fixture.update_environment(&mut command);
+    let output = command.output().unwrap();
+    assert!(output.status.success(), "{output:?}");
+    assert!(
+        String::from_utf8(output.stdout)
+            .unwrap()
+            .contains("already selected")
+    );
+    assert_eq!(fs::read(&launcher).unwrap(), body);
+    assert_eq!(fs::metadata(&launcher).unwrap().modified().unwrap(), before);
+    assert_preserved(&snapshot);
+    assert_update_clean(&project, "bin");
+}
+
+#[test]
+fn updates_reject_edited_launchers_before_acquiring_the_new_version() {
+    let fixture = Fixture::new(false);
+    let project = fixture.old_launcher("bin/sdev");
+    let launcher = project.join("bin/sdev");
+    let mut body = fs::read(&launcher).unwrap();
+    body.extend_from_slice(b"\n# user edit\n");
+    fs::write(&launcher, &body).unwrap();
+    let snapshot = setup_snapshot(&project);
+    let mut command = Command::new(env!("CARGO_BIN_EXE_sdev"));
+    command
+        .current_dir(&project)
+        .args(["update", "--version", env!("CARGO_PKG_VERSION")]);
+    fixture.update_environment(&mut command);
+    let output = command.output().unwrap();
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    assert!(String::from_utf8_lossy(&output.stderr).contains("Launcher has been edited"));
+    assert_eq!(fs::read(launcher).unwrap(), body);
+    assert_preserved(&snapshot);
+    assert!(
+        !fixture
+            .requests
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|path| path.contains(&format!("/download/v{}/", env!("CARGO_PKG_VERSION"))))
+    );
+    assert_update_clean(&project, "bin");
+}
+
+#[test]
+fn a_damaged_update_preserves_the_old_launcher_without_publishing_a_new_cache() {
+    let fixture = Fixture::new(true);
+    let project = fixture.old_launcher("bin/sdev");
+    let body = fs::read(project.join("bin/sdev")).unwrap();
+    let snapshot = setup_snapshot(&project);
+    let mut command = fixture.command();
+    command
+        .current_dir(&project)
+        .args(["--version", env!("CARGO_PKG_VERSION"), "--init"]);
+    fixture.update_environment(&mut command);
+    let output = command.output().unwrap();
+    assert!(!output.status.success(), "{output:?}");
+    assert!(String::from_utf8_lossy(&output.stderr).contains("checksum mismatch"));
+    assert_eq!(fs::read(project.join("bin/sdev")).unwrap(), body);
+    assert!(!project.join(cache_path()).exists());
+    assert_preserved(&snapshot);
+    assert_update_clean(&project, "bin");
+}
+
+#[test]
+fn requested_update_attestation_never_falls_back_and_is_used_for_both_versions() {
+    let fixture = Fixture::new(false);
+    let project = fixture.old_launcher("bin/sdev");
+    let body = fs::read(project.join("bin/sdev")).unwrap();
+    for success in [false, true] {
+        let environment = fixture.verifier("2.100.0", success);
+        let mut command = Command::new(env!("CARGO_BIN_EXE_sdev"));
+        for (key, value) in environment.get_envs() {
+            command.env(key, value.unwrap());
+        }
+        fixture.update_environment(&mut command);
+        command
+            .current_dir(&project)
+            .args([
+                "update",
+                "--version",
+                env!("CARGO_PKG_VERSION"),
+                "--source-commit",
+                &"a".repeat(40),
+            ])
+            .env("SDEV_VERIFY", "1");
+        let output = command.output().unwrap();
+        assert_eq!(output.status.success(), success, "{output:?}");
+        if !success {
+            assert_eq!(fs::read(project.join("bin/sdev")).unwrap(), body);
+            assert!(!project.join(cache_path()).exists());
+        }
+        assert_update_clean(&project, "bin");
+    }
+    let log = fs::read_to_string(fixture.root.join("gh.log")).unwrap();
+    assert!(
+        log.contains("sdev-v0.2.0-")
+            && log.contains(&format!("sdev-v{}-", env!("CARGO_PKG_VERSION")))
+    );
+    assert!(
+        log.contains("--source-digest\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n--signer-digest")
+    );
+}
+
+#[test]
+fn update_rejects_symlink_cache_and_an_existing_update_lock() {
+    let fixture = Fixture::new(false);
+    let project = fixture.old_launcher("bin/sdev");
+    let body = fs::read(project.join("bin/sdev")).unwrap();
+    let outside = fixture.root.join("outside");
+    fs::create_dir(&outside).unwrap();
+    symlink(&outside, project.join(".sdev")).unwrap();
+    let mut command = Command::new(env!("CARGO_BIN_EXE_sdev"));
+    command
+        .current_dir(&project)
+        .args(["update", "--version", env!("CARGO_PKG_VERSION")]);
+    fixture.update_environment(&mut command);
+    assert!(!command.output().unwrap().status.success());
+    assert!(fs::read_dir(&outside).unwrap().next().is_none());
+    fs::remove_file(project.join(".sdev")).unwrap();
+    fs::create_dir_all(project.join(".sdev/update.lock")).unwrap();
+    let output = command.output().unwrap();
+    assert!(!output.status.success(), "{output:?}");
+    assert!(String::from_utf8_lossy(&output.stderr).contains("Update is locked"));
+    assert!(project.join(".sdev/update.lock").is_dir());
+    assert_eq!(fs::read(project.join("bin/sdev")).unwrap(), body);
+    assert!(fixture.requests.lock().unwrap().is_empty());
+}
+
+#[test]
+fn failure_to_generate_a_new_launcher_keeps_the_previous_entry_point() {
+    let fixture = Fixture::new(false);
+    let project = fixture.old_launcher("bin/sdev");
+    let body = fs::read(project.join("bin/sdev")).unwrap();
+    let binary = format!(
+        "#!/bin/sh\nif [ \"$1\" = --version ]; then printf 'sdev {}\\n'; else exit 7; fi\n",
+        env!("CARGO_PKG_VERSION")
+    );
+    fixture.publish(env!("CARGO_PKG_VERSION"), binary.as_bytes());
+    let snapshot = setup_snapshot(&project);
+    let mut command = fixture.command();
+    command
+        .current_dir(&project)
+        .args(["--version", env!("CARGO_PKG_VERSION")]);
+    fixture.update_environment(&mut command);
+    let output = command.output().unwrap();
+    assert!(!output.status.success(), "{output:?}");
+    assert!(String::from_utf8_lossy(&output.stderr).contains("Could not prepare the new launcher"));
+    assert_eq!(fs::read(project.join("bin/sdev")).unwrap(), body);
+    assert!(!project.join(cache_path()).exists());
+    assert_preserved(&snapshot);
+    assert_update_clean(&project, "bin");
+}
+
+#[test]
+fn a_launcher_edited_during_download_is_not_replaced() {
+    let fixture = Fixture::new(false);
+    let project = fixture.old_launcher("bin/sdev");
+    let body = fs::read(project.join("bin/sdev")).unwrap();
+    let mut command = Command::new(env!("CARGO_BIN_EXE_sdev"));
+    command
+        .current_dir(&project)
+        .args(["update", "--version", env!("CARGO_PKG_VERSION")]);
+    fixture.update_environment(&mut command);
+    command.env("TEST_CHANGED_LAUNCHER", project.join("bin/sdev"));
+    let wrapper = fixture.root.join("tools/curl");
+    let script = fs::read_to_string(&wrapper).unwrap().replace("result=$(", &format!("case \"$arg\" in */download/v{}/*) printf '\\n# concurrent edit\\n' >> \"$TEST_CHANGED_LAUNCHER\" ;; esac\nresult=$(", env!("CARGO_PKG_VERSION")));
+    fs::write(wrapper, script).unwrap();
+    let output = command.output().unwrap();
+    assert!(!output.status.success(), "{output:?}");
+    assert!(String::from_utf8_lossy(&output.stderr).contains("Launcher changed during update"));
+    let after = fs::read(project.join("bin/sdev")).unwrap();
+    assert!(after.starts_with(&body));
+    assert!(String::from_utf8_lossy(&after).contains("# concurrent edit"));
+    assert!(!project.join(cache_path()).exists());
+    assert_update_clean(&project, "bin");
 }
 
 #[test]

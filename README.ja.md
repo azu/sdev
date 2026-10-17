@@ -58,7 +58,7 @@ curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev
 ```
 
 既存の別ファイルや編集済みの起動スクリプトは上書きしません。
-初期設定済みの配置先変更やバージョン更新は、[配布と更新](docs/engineering/guidelines/releasing.ja.md)を参照してください。
+初期設定済みの配置先変更は、[配布と更新](docs/engineering/guidelines/releasing.ja.md)を参照してください。
 
 ### Windows
 
@@ -72,6 +72,23 @@ PowerShellで初期設定し、ガイドを表示します。
 
 Windowsでは起動スクリプトを生成せず、配置した実行ファイルを使います。
 対応するOSの条件と手動の導入手順は、[配布対象と選択](docs/engineering/guidelines/releasing.ja.md#配布対象と選択)を参照してください。
+
+## 更新する
+
+プロジェクトのルートで、起動スクリプトが共有するバージョンを更新します。
+
+```sh
+./bin/sdev update
+```
+
+`--version X.Y.Z`で公開済みの版を選び、`--verify`で配布元の証明も検証できます。
+配置先とプロジェクトの文書は保持します。更新したスクリプトは差分を確認してコミットしてください。
+スクリプトが編集済みの場合や、検証に失敗した場合は停止します。
+
+`update`のない旧版では、上の導入コマンドを再実行します。
+生成済み起動スクリプトがあれば、`--init`付きでも同じ場所で更新します。
+別の配置先には、内容を確認したインストーラーで`sh install.sh --update --path ./scripts/sdev`を使えます。
+通常のガイド参照ではコミットされた版を使い、更新を指示したときだけ版を変えます。
 
 ## プロジェクトの言語を選ぶ
 

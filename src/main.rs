@@ -3,6 +3,7 @@ mod language;
 #[cfg(unix)]
 mod launcher;
 mod lint;
+mod update;
 
 use language::{Language, ProjectConfig};
 use std::{
@@ -63,8 +64,8 @@ fn overview(writer: &mut impl Write, operation: &str, language: Language) -> Res
     }
     if operation == "help" {
         output(writer, language.select(
-            "\n  sdev init                  Set up project instructions, languages, and a launcher\n  sdev lint                  Check document links and reference directions\n  sdev template              List templates\n  sdev --version             Show version\n\nUse the consuming project's Product → Requirements → Design, not sdev's own specifications.\nSelect a language with --lang en|ja. Configure project defaults in sdev.toml.\n",
-            "\n  sdev init                  プロジェクトの参照指示・言語・起動方法を準備\n  sdev lint                  文書のリンク切れと参照方向を検査\n  sdev template              テンプレートの種類を確認\n  sdev --version             バージョン\n\n利用先のProduct → 機能のRequirements → Designを前提に進めます。\nsdev自身の仕様ではなく、作業するプロジェクトの文書を参照してください。\n--lang en|jaで言語を選択できます。プロジェクトの既定はsdev.tomlに設定します。\n"))?;
+            "\n  sdev init                  Set up project instructions, languages, and a launcher\n  sdev update                Update the project launcher\n  sdev lint                  Check document links and reference directions\n  sdev template              List templates\n  sdev --version             Show version\n\nUse the consuming project's Product → Requirements → Design, not sdev's own specifications.\nSelect a language with --lang en|ja. Configure project defaults in sdev.toml.\n",
+            "\n  sdev init                  プロジェクトの参照指示・言語・起動方法を準備\n  sdev update                プロジェクトの起動スクリプトを更新\n  sdev lint                  文書のリンク切れと参照方向を検査\n  sdev template              テンプレートの種類を確認\n  sdev --version             バージョン\n\n利用先のProduct → 機能のRequirements → Designを前提に進めます。\nsdev自身の仕様ではなく、作業するプロジェクトの文書を参照してください。\n--lang en|jaで言語を選択できます。プロジェクトの既定はsdev.tomlに設定します。\n"))?;
     }
     Ok(())
 }
@@ -144,6 +145,7 @@ fn run(args: &[String], writer: &mut impl Write) -> Result<u8, CliError> {
     let result = match values.as_slice() {
         ["lint", rest @ ..] => lint_command(rest, writer, language),
         ["init", rest @ ..] => init_command(rest, writer, language, explicit, config.as_ref()),
+        ["update", rest @ ..] => update_command(rest, writer, language),
         [] | ["--help" | "-h" | "help"] | ["help", "--help" | "-h"] => {
             overview(writer, "help", language).map(|()| 0)
         }
@@ -161,6 +163,22 @@ fn run(args: &[String], writer: &mut impl Write) -> Result<u8, CliError> {
         error.message = language.message(&error.message);
         error
     })
+}
+fn update_command(
+    args: &[&str],
+    writer: &mut impl Write,
+    language: Language,
+) -> Result<u8, CliError> {
+    if args == ["--help"] || args == ["-h"] {
+        output(writer, language.select(
+            "sdev update [--version X.Y.Z] [--path PATH] [--verify] [--source-commit SHA] [--trusted-root FILE]\n\nRun at the project root. Update its generated macOS/Linux launcher to the latest stable or specified release.\nThe launcher supplies its own path; direct invocation defaults to ./bin/sdev. Use --path for another project-relative location.\nPreserve AGENTS.md, .gitignore, sdev.toml, specifications, and edited launchers. Review and commit the updated launcher.\nChecksums are always checked. --verify or SDEV_VERIFY=1 also verifies provenance; verification failures never fall back.\n--source-commit and --trusted-root require verification. Other installation methods must use their own updater.\nExit codes: 0 success / 1 update or output failure / 2 invalid arguments or configuration\n",
+            "sdev update [--version X.Y.Z] [--path PATH] [--verify] [--source-commit SHA] [--trusted-root FILE]\n\nプロジェクトのルートで実行し、macOS・Linuxの生成済み起動スクリプトを最新安定版または指定版へ更新します。\n起動スクリプトの配置先を引き継ぎます。本体の直接実行では./bin/sdevを既定とし、別の相対配置先には--pathを使います。\nAGENTS.md・.gitignore・sdev.toml・仕様・編集済みスクリプトは保持します。更新したスクリプトは差分を確認してコミットしてください。\nチェックサムを毎回確認します。--verifyまたはSDEV_VERIFY=1では証明も検証し、失敗時に検証を弱めません。\n--source-commitと--trusted-rootには証明検証が必要です。ほかの導入方法では、その方法で更新してください。\n終了コード: 0 成功 / 1 更新・出力失敗 / 2 引数・設定の誤り\n"))?;
+        return Ok(0);
+    }
+    let arguments = update::arguments(args).map_err(invalid)?;
+    let report =
+        update::run(&arguments, language).map_err(|message| CliError { status: 1, message })?;
+    output(writer, &report).map(|()| 0)
 }
 fn init_command(
     args: &[&str],

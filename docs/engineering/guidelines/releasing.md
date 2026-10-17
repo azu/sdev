@@ -148,14 +148,30 @@ GitHub readers should select documents at the tag matching the command version.
 
 ## Update
 
-Check `sdev --version`, then obtain the new version for your environment.
-Save it separately, check its version, and only then replace the current executable. Check `sdev --version` again afterward.
-No separate material download is needed.
+For a generated macOS/Linux launcher, run from the project root:
 
-If retrieval or startup fails, keep the old executable and check source, OS, CPU, and version.
-There is no automatic update or dedicated version-switching operation.
-For a project launcher, obtain and check the new executable elsewhere, move the old launcher aside, and regenerate it using the same `init --path`.
-Review and commit the script diff so clones use that version. Existing AGENTS.md instructions remain preserved.
+```sh
+./bin/sdev update
+```
+
+Without a version, select the latest stable Release. Use `--version X.Y.Z` for a specific published version and `--path ./scripts/sdev` when invoking a standalone binary for a custom launcher.
+When called through a generated launcher, update uses that launcher's path.
+Checksums and startup checks are mandatory. `--verify` or `SDEV_VERIFY=1` additionally checks attestations; `--source-commit` and `--trusted-root` have the same meaning as during installation.
+
+The update checks the old generated contents and prepares the new executable and launcher before switching.
+It preserves edited launchers, AGENTS.md, .gitignore, sdev.toml, and specifications.
+If acquisition, verification, or preparation fails, the old launcher remains usable.
+A release already selected is reported without rewriting the script.
+If `.sdev/update.lock` remains after a hard termination, check that no update is running before removing that lock directory.
+
+Older versions without `update` can rerun the reviewed installer, including the original `--init` command.
+An existing generated launcher enters the same update flow. Use `sh install.sh --update --path ./scripts/sdev` for a custom location.
+Review and commit the script's diff so other clones use the selected version. Downloaded cache files remain ignored.
+Ordinary invocations do not update in the background.
+
+For a standalone executable on Windows or another installation method, download the matching new binary separately, check its version and checksum, and then replace the old file using that method.
+Keep the old executable until the new one has been obtained and checked. Do not replace package-manager installations through project update.
+Changing the launcher location remains a separate `init --path` operation: review and move the original launcher and align existing instructions before initializing the new path.
 
 ## Prepare distribution artifacts as a developer
 
