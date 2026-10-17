@@ -1,0 +1,19 @@
+[package]
+name = "sdev-distribution-rust-comparison"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+pulldown-cmark = { version = "=0.13.4", default-features = false }
+serde_json = "=1.0.145"
+percent-encoding = "=2.3.2"
+
+[build-dependencies]
+serde_json = "=1.0.145"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
