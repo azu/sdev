@@ -79,10 +79,23 @@ sdev lint --help
 GitHub Releasesからバージョンと対象環境を選んで取得し、新しい実行ファイルへの差し替えでコマンドと資料を一緒に更新する方針です。
 初期対象はmacOS arm64/x64、Linux arm64/x64、Windows x64です。
 OS条件、入手・起動・更新、公開前の確認は[配布と更新](docs/engineering/guidelines/releasing.md)を参照してください。
-公開リリースはこの変更では実行しておらず、未確認のダウンロードURLは案内していません。
+公開はActionsのRelease sdevをmainから手動実行し、Cargo.tomlと同じバージョンを指定します。
+全対象の検証が成功してからタグとReleaseを作成・公開します。ライセンス選択などの前提、再実行の扱いは配布ガイドで確認してください。
 
 CLIと配布準備の仕様は[Requirements](docs/products/sdev/features/command-distribution/requirements.md)と[Design](docs/products/sdev/features/command-distribution/design.md)に記述しています。
 必要なライセンス通知は配布物に別添します。sdev自身のライセンスは公開前の未決事項です。
+
+## ソースからローカルへインストールする
+
+リポジトリのルートで実行します。ビルドには固定されたRustとOSの開発用ツールが必要です。
+
+```sh
+cargo install --path . --locked
+sdev --version
+```
+
+導入先を分ける場合は`--root ./target/local-install`を指定できます。
+詳しい手順は[ローカル導入](docs/engineering/guidelines/releasing.md#ソースからローカルへ導入する)を参照してください。
 
 ## 開発する
 
