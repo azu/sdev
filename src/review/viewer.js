@@ -1,4 +1,5 @@
 import { FileDiff, parseDiffFromFile } from "@pierre/diffs";
+import { prepareDiagrams, renderDiagrams } from "./mermaid.js";
 import backIcon from "./assets/back.svg";
 import forwardIcon from "./assets/forward.svg";
 import documentIcon from "./assets/document.svg";
@@ -505,13 +506,13 @@ function renderPane(role) {
   } else if (!isDiff) {
     const content = el("div", "markdown"); content.innerHTML = file[`${state.sides[role]}_html`] ?? ""; // Only Rust's safe Markdown renderer creates this field.
     function select(event) {
-      if (event.target.closest("button, input, textarea, select, .inline-thread, .comment-anchor")) return;
+      if (event.target.closest("button, input, textarea, select, summary, .inline-thread, .comment-anchor")) return;
       const block = event.target.closest("[data-line]");
       if (block) selectLine(file, Number(block.dataset.line), state.sides[role], { reviewBlock:block }, block.dataset.quote);
     }
     content.onclick = select;
     content.onkeydown = (event) => {
-      if (event.target.closest("button, input, textarea, select, .inline-thread, .comment-anchor")) return;
+      if (event.target.closest("button, input, textarea, select, summary, .inline-thread, .comment-anchor")) return;
       const block = event.target.closest("[data-line]"); if (!block) return;
       const ref = { path: file.path, line: Number(block.dataset.line), side: state.sides[role] };
       if (block.dataset.quote) ref.quote = block.dataset.quote;
@@ -519,6 +520,7 @@ function renderPane(role) {
       startTypingComment(event, { reference: ref, item: selected?.id ?? null }, content);
     };
     prepareTableRows(content);
+    prepareDiagrams(content, data.language);
     const tableAnchors = new Map();
     for (const block of content.querySelectorAll("[data-line]")) {
       const anchor = commentAnchor({ reference: { path: file.path, line: Number(block.dataset.line), side: state.sides[role] }, item: state.item });
@@ -868,6 +870,7 @@ function render() {
   if (state.scan) renderScan();
   renderComments();
   renderPreviousComments();
+  void renderDiagrams(app, data.language);
   requestAnimationFrame(() => {window.scrollTo({ top: state.pageScroll ?? 0, left: 0, behavior: "instant" });updateOutlinePosition();});
 }
 function api(path, payload) {

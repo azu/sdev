@@ -37,3 +37,5 @@ html{height:auto;min-height:100%;overflow-y:auto}body{height:auto;min-height:100
 .overview .pane-scroll{flex:1 1 auto;min-height:0;max-height:none;overflow:auto;overscroll-behavior:contain}
 @media(max-width:1000px){.stack.overview{flex-direction:column}.overview .pane{width:100%;flex:none}}
 .overview .markdown [data-line]{scroll-margin-top:12px}
+
+.mermaid-block{margin:18px 0;border:1px solid var(--border);border-radius:8px;padding:12px;background:white;min-width:0}.mermaid-diagram{overflow-x:auto;min-height:40px}.mermaid-diagram>svg{display:block;max-width:100%;height:auto;margin:auto}.mermaid-source{margin-top:10px;font-size:12px}.mermaid-source>summary{cursor:pointer;color:#65758b}.mermaid-source>pre{margin-bottom:0}.mermaid-status{font-size:12px;padding:8px}

@@ -3,4 +3,4 @@
 licenses/rust-1.96.0-COPYRIGHT-library.html -whitespace
 # Rebuild with scripts/build-review.mjs; keep reviews focused on its sources.
 src/review/viewer.bundle.js linguist-generated=true -diff
-src/review/THIRD-PARTY-NOTICES.txt linguist-generated=true
+src/review/THIRD-PARTY-NOTICES.txt linguist-generated=true -whitespace

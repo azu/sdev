@@ -66,6 +66,18 @@ Scenario: When specifications contain a table, select a row and read its counter
 - When: The reviewer clicks a row or moves to it with J/K
 - Then: Query the selected row with its column labels and support relationships in either direction. Display related tables with headers and their row/column structure, emphasizing a corresponding row when one can be identified. Comments retain the row quotation and source location. Place details and comments after the table without disturbing its cells. Identify partial tables when input limits omit rows.
 
+Scenario: When a specification contains a Mermaid diagram, read the diagram and its source
+
+- Given: Requirements or Design contains a fenced code block labeled `mermaid`
+- When: The reviewer opens that document in standalone HTML or server mode
+- Then: Display the diagram without downloading a renderer or sending diagram text to an external service. Keep its source available in a disclosure. Selecting the diagram or moving to it with J/K permits a comment anchored to the original code block and source lines. Saved working-tree changes update the diagram with the document.
+
+Scenario: When a Mermaid diagram cannot be rendered, keep the source readable
+
+- Given: A Mermaid code block has invalid syntax or exceeds rendering limits
+- When: The reviewer opens that document
+- Then: Show a rendering failure and the original source while keeping the rest of the document and comments usable. Ordinary code blocks remain code. Diagram content cannot run scripts or activate links.
+
 Scenario: When a requirement has a concrete realization, read that Design
 
 - Given: Candidates include the same topic, restatements, and Design passages describing a concrete mechanism

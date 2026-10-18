@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFile } from "node:fs/promises";
 import { Window } from "happy-dom";
+import { prepareDiagrams, renderDiagrams } from "../src/review/mermaid.js";
 
 const bundle = await readFile(new URL("../src/review/viewer.bundle.js", import.meta.url), "utf8");
 const snapshot = {
@@ -59,6 +60,57 @@ async function exportedNotes(p, format = "JSON") {
   const value = await exported.text(); return format === "JSON" ? JSON.parse(value) : value;
 }
 function hover(p, node) { node.dispatchEvent(new p.window.MouseEvent("mouseenter")); }
+
+test("Mermaid figures retain source targets, render sequentially, and ignore detached results", async () => {
+  const window = new Window();
+  const root = window.document.createElement("div"); window.document.body.append(root);
+  root.innerHTML = '<pre data-line="4" data-line-end="7" tabindex="0"><code class="language-mermaid">flowchart LR\n A--&gt;B\n</code></pre><pre data-line="9"><code>const value = 1;</code></pre>';
+  prepareDiagrams(root, "ja"); prepareDiagrams(root, "ja");
+  const figure = root.querySelector("figure");
+  assert.equal(root.querySelectorAll("figure").length, 1);
+  assert.equal(figure.dataset.quote, "flowchart LR A-->B");
+  assert.equal(figure.dataset.line, "4"); assert.equal(figure.dataset.lineEnd, "7");
+  assert.equal(root.querySelector('pre[data-line="9"]').textContent, "const value = 1;");
+  assert.equal(figure.querySelector("pre").hasAttribute("data-line"), false);
+  let finish, started;
+  const entered = new Promise((resolve) => { started = resolve; });
+  const drawn = renderDiagrams(root, "ja", async () => ({ render: (id, source) => {
+    assert.match(id, /^sdev-diagram-/); assert.equal(source, "flowchart LR\n A-->B\n"); started();
+    return new Promise((resolve) => { finish = resolve; });
+  } }));
+  await entered;
+  figure.remove(); finish({ svg: '<svg><text>Old result</text></svg>' }); await drawn;
+  assert.equal(figure.querySelector("svg"), null);
+  root.append(figure); figure.dataset.diagramState = "pending";
+  await renderDiagrams(root, "ja", async () => ({ render: async () => ({ svg: '<svg><a href="https://example.com"><text>New result</text></a></svg>' }) }));
+  assert.equal(figure.dataset.diagramState, "ready");
+  assert.equal(figure.querySelector("svg text").textContent, "New result");
+  assert.equal(figure.querySelector("a"), null);
+  assert.equal(figure.querySelector(".mermaid-source").open, false);
+  assert.equal(figure.dataset.quote, "flowchart LR A-->B");
+  await window.happyDOM.abort();
+});
+
+test("failed or oversized Mermaid keeps literal source and does not stop the next diagram", async () => {
+  const window = new Window(); const root = window.document.createElement("div"); window.document.body.append(root);
+  for (const [index, source] of ['bad <script>alert(1)</script>', 'a'.repeat(50_001), 'flowchart LR; A-->B'].entries()) {
+    const pre = window.document.createElement("pre"); pre.dataset.line = String(index + 1);
+    const code = window.document.createElement("code"); code.className = "language-mermaid"; code.textContent = source; pre.append(code); root.append(pre);
+  }
+  prepareDiagrams(root, "en");
+  let calls = 0;
+  await renderDiagrams(root, "en", async () => ({ render: async (_id, source) => {
+    calls++; if (source.startsWith("bad")) throw new Error("Invalid syntax <img src=x>");
+    return { svg: "<svg></svg>" };
+  } }));
+  const figures = [...root.querySelectorAll("figure")];
+  assert.equal(calls, 2); assert.deepEqual(figures.map((node) => node.dataset.diagramState), ["error", "error", "ready"]);
+  assert.equal(figures[0].querySelector(".mermaid-source").open, true);
+  assert.equal(figures[0].querySelector("code").textContent, 'bad <script>alert(1)</script>');
+  assert.equal(root.querySelector("script, img"), null);
+  assert.match(figures[1].querySelector(".mermaid-status").textContent, /50,000/);
+  await window.happyDOM.abort();
+});
 
 test("the initial surface is the specification; selecting text reveals its examples and design reasons", async () => {
   const input = structuredClone(snapshot);

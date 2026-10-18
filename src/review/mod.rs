@@ -1,5 +1,5 @@
 use crate::language::Language;
-use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd, html};
+use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd, html};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -605,12 +605,16 @@ fn markdown(text: &str) -> String {
                 )
                 .into(),
             ),
-            Event::Start(Tag::CodeBlock(_)) => Event::Html(
-                format!(
-                    "<pre tabindex=\"0\" data-line=\"{line}\" data-line-end=\"{end_line}\"><code>"
-                )
-                .into(),
-            ),
+            Event::Start(Tag::CodeBlock(kind)) => {
+                let class = if matches!(&kind, CodeBlockKind::Fenced(info) if info.split_whitespace().next() == Some("mermaid")) {
+                    " class=\"language-mermaid\""
+                } else {
+                    ""
+                };
+                Event::Html(format!(
+                    "<pre tabindex=\"0\" data-line=\"{line}\" data-line-end=\"{end_line}\"><code{class}>"
+                ).into())
+            }
             Event::Start(Tag::Item) => Event::Html(
                 format!("<li tabindex=\"0\" data-line=\"{line}\" data-line-end=\"{end_line}\">")
                     .into(),
@@ -824,6 +828,19 @@ pub fn run(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn mermaid_blocks_keep_escaped_source_locations_without_marking_other_code() {
+        let rendered = super::markdown(
+            "```mermaid\nflowchart LR\n A[<script>]-->B\n```\n\n```rust\nlet x = 1;\n```\n\n```mermaid-not-a-language\nuntouched\n```\n",
+        );
+        assert_eq!(rendered.matches("class=\"language-mermaid\"").count(), 1);
+        assert!(rendered.contains("data-line=\"1\" data-line-end=\"4\""));
+        assert!(rendered.contains("A[&lt;script&gt;]--&gt;B"));
+        assert!(!rendered.contains("<script>"));
+        assert!(rendered.contains("<code>let x = 1;"));
+        assert!(rendered.contains("<code>untouched"));
+    }
+
     #[test]
     fn markdown_retains_the_complete_source_range_for_inline_comments() {
         let rendered = super::markdown("# Title\n\nFirst sentence.\nSecond sentence.\n");
