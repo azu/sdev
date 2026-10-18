@@ -22,6 +22,8 @@ Routine implementation choices need no additional approval. Ask about unresolved
 
 Start with items requiring a decision. Offer the representative results and supporting detail separately, so the person can choose how much to read.
 Group by behavior or condition in the specification, not just by changed file or function.
+For each item, show the relevant specification, then before-and-after results for the same input, followed by the implementation decision and one focused question for the person.
+Label the original behavior, the implemented candidate, and any unimplemented proposal separately. Do not mix an additional proposal into the candidate's observed output.
 For each selected item, present:
 
 | Item | Content |
