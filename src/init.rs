@@ -180,7 +180,6 @@ fn prepare_launcher(
     let _ = (root, path, documents, bodies);
     #[cfg(unix)]
     {
-        let script = crate::launcher::render(path);
         crate::launcher::check_parents(root, path)?;
         let target = root.join(path);
         let permissions = match fs::symlink_metadata(&target) {
@@ -198,6 +197,7 @@ fn prepare_launcher(
         } else {
             Vec::new()
         };
+        let script = crate::launcher::render(path)?;
         let body = if bytes == script.as_bytes() {
             script.clone()
         } else if permissions.is_some() {

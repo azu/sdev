@@ -32,13 +32,14 @@ Initialization prepares these files, preserving existing AGENTS.md instructions.
 
 | File | Purpose |
 | --- | --- |
-| `bin/sdev` | A launcher pinned to a specific version |
+| `bin/sdev` | A launcher pinned to a version and every target's SHA-256 |
 | `AGENTS.md` | Instructions for agents to read sdev's guides |
 | `sdev.toml` | The project's default and translation languages |
 | `.gitignore` | Excludes downloaded binaries in `.sdev/` from Git |
 
 Commit these four files so a clone can use `./bin/sdev help` too.
-The launcher downloads the binary when absent and runs cached copies without network access.
+Initialization fetches the published checksums for all five targets and stores them in the launcher. It requires curl and network access.
+The launcher downloads a missing binary, checks it against the committed SHA-256, and runs cached copies without network access. A later replacement of the remote binary and checksum is rejected.
 Initialization creates no specifications or empty specification directories.
 
 Downloads are checked against their checksum and version.
@@ -58,6 +59,19 @@ curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev
 
 Existing unrelated files and edited launchers are preserved.
 For changing an initialized location, see [Releasing and updating](docs/engineering/guidelines/releasing.md).
+
+### mise
+
+Projects using mise can install the same Release binaries through its GitHub backend.
+Follow [installation with mise](docs/engineering/guidelines/releasing.md#install-with-mise) to configure the platform files and generate mise.lock, then run:
+
+```sh
+mise install --locked
+mise exec -- sdev help
+```
+
+Commit mise.toml and mise.lock. Point AGENTS.md to `mise exec -- sdev help`.
+This route uses mise for version selection and updates; it does not require `bin/sdev` or `sdev init`.
 
 ### Windows
 

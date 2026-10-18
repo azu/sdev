@@ -192,12 +192,25 @@ pub fn build(name: &str) -> Result<()> {
 }
 
 fn invoke(binary: &Path, directory: &Path, args: &[&str], status: i32) -> Result<Output> {
+    invoke_with_checksums(binary, directory, args, status, None)
+}
+
+fn invoke_with_checksums(
+    binary: &Path,
+    directory: &Path,
+    args: &[&str],
+    status: i32,
+    checksums: Option<&str>,
+) -> Result<Output> {
     let mut command = Command::new(binary);
     command
         .args(args)
         .current_dir(directory)
         .env_clear()
         .env("PATH", "");
+    if let Some(checksums) = checksums {
+        command.env("SDEV_INIT_CHECKSUMS", checksums);
+    }
     for key in ["SystemRoot", "WINDIR", "TEMP", "TMP"] {
         if let Some(value) = env::var_os(key) {
             command.env(key, value);
@@ -345,14 +358,22 @@ pub fn verify(path: &Path) -> Result<()> {
         return Err("Missing lint violation".into());
     }
     invoke(&binary, &directory.0, &["init", "--help"], 0)?;
-    invoke(&binary, &directory.0, &["init"], 0)?;
+    // Public checksums cannot exist before publication. Use explicit synthetic
+    // data to exercise the internal handoff and offline release verification.
+    let checksum_text: String = TARGETS
+        .iter()
+        .map(|t| format!("{digest}  {}\n", asset_name(version, t)))
+        .collect();
+    let initialize =
+        || invoke_with_checksums(&binary, &directory.0, &["init"], 0, Some(&checksum_text));
+    initialize()?;
     let instructions = fs::read(directory.0.join("AGENTS.md"))?;
     let ignores = fs::read(directory.0.join(".gitignore"))?;
     let languages = fs::read(directory.0.join("sdev.toml"))?;
     if languages != b"language = \"en\"\ntranslations = []\n" {
         return Err("Unexpected initialized document languages".into());
     }
-    invoke(&binary, &directory.0, &["init"], 0)?;
+    initialize()?;
     if instructions != fs::read(directory.0.join("AGENTS.md"))?
         || ignores != fs::read(directory.0.join(".gitignore"))?
         || languages != fs::read(directory.0.join("sdev.toml"))?

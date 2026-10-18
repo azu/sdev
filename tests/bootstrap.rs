@@ -77,6 +77,11 @@ impl Fixture {
                 );
             }
         }
+        let asset = format!("sdev-v{version}-windows-x64.exe");
+        files.insert(
+            format!("/releases/download/v{version}/{asset}.sha256"),
+            format!("{hash}  {asset}\n").into_bytes(),
+        );
         files.insert(
             format!("/releases/download/v{version}/attestation.sigstore.json"),
             b"test verifier fixture".to_vec(),
@@ -136,9 +141,7 @@ impl Fixture {
             root.join("install.sh"),
             // Exercise downloads through the local HTTP fixture; production restricts both
             // the initial connection and redirects to HTTPS.
-            include_str!("../install.sh")
-                .replace("https://github.com/azu/sdev/releases", &base)
-                .replace("--proto '=https' --proto-redir '=https' --tlsv1.2 ", ""),
+            include_str!("../install.sh"),
         )
         .unwrap();
         Self {
@@ -152,6 +155,7 @@ impl Fixture {
     }
     fn command(&self) -> Command {
         let mut command = Command::new("sh");
+        self.update_environment(&mut command);
         command
             .arg(self.root.join("install.sh"))
             .current_dir(&self.root)
@@ -175,12 +179,15 @@ impl Fixture {
     fn canonical_launcher(&self, path: &str) -> PathBuf {
         let project = self.root.join("project");
         fs::create_dir(&project).unwrap();
-        let result = Command::new(env!("CARGO_BIN_EXE_sdev"))
+        let mut command = Command::new(env!("CARGO_BIN_EXE_sdev"));
+        self.update_environment(&mut command);
+        let result = command
             .args(["init", "--path", path])
             .current_dir(&project)
             .output()
             .unwrap();
         assert!(result.status.success(), "{result:?}");
+        self.requests.lock().unwrap().clear();
         project
     }
     fn old_launcher(&self, path: &str) -> PathBuf {
@@ -188,6 +195,34 @@ impl Fixture {
         let body = fs::read_to_string(project.join(path))
             .unwrap()
             .replace(env!("CARGO_PKG_VERSION"), "0.2.0");
+        // Model a legacy launcher without checksum pins, not a new-format launcher
+        // whose table points to a different fixture executable.
+        let start = body.find("\nsdev_pinned_checksums() {\n").unwrap();
+        let end = body[start..].find("sdev_launch() {").unwrap() + start;
+        let body = format!("{}{}", &body[..start], &body[end..]);
+        let body = body
+            .lines()
+            .filter(|line| {
+                !line
+                    .trim_start()
+                    .starts_with("sdev_hash=$(sdev_pinned_checksums")
+            })
+            .map(|line| {
+                if (line.trim_start().starts_with("0) main")
+                    || line.trim_start().starts_with("1) main"))
+                    && let Some(start) = line.find(" --sha256 ")
+                {
+                    let end = line[start..]
+                        .find(" --verify")
+                        .map_or_else(|| line[start..].find(" ;;").unwrap() + start, |n| n + start);
+                    format!("{}{}", &line[..start], &line[end..])
+                } else {
+                    line.to_owned()
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+            + "\n";
         fs::write(project.join(path), &body).unwrap();
         fs::write(self.root.join("old-launcher"), body).unwrap();
         let binary = b"#!/bin/sh\ncase \"$1\" in\n--version) printf 'sdev 0.2.0\\n' ;;\ninit) shift; [ \"$1\" = --path ] || exit 1; mkdir -p \"$(dirname -- \"$2\")\"; cp \"$TEST_OLD_LAUNCHER\" \"$2\"; chmod +x \"$2\" ;;\n*) exec \"$TEST_CURRENT_BIN\" \"$@\" ;;\nesac\n";
@@ -210,6 +245,11 @@ impl Fixture {
             .unwrap()
             .to_owned();
         let mut files = self.files.lock().unwrap();
+        let asset = format!("sdev-v{version}-windows-x64.exe");
+        files.insert(
+            format!("/releases/download/v{version}/{asset}.sha256"),
+            format!("{digest}  {asset}\n").into_bytes(),
+        );
         for platform in ["macos", "linux"] {
             for arch in ["arm64", "x64"] {
                 let asset = format!("sdev-v{version}-{platform}-{arch}");
@@ -259,7 +299,8 @@ impl Fixture {
             .env("NO_PROXY", "127.0.0.1")
             .env("no_proxy", "127.0.0.1")
             .env_remove("SDEV_VERIFY")
-            .env_remove("SDEV_LAUNCHER_PATH");
+            .env_remove("SDEV_LAUNCHER_PATH")
+            .env_remove("SDEV_INIT_CHECKSUMS");
     }
     fn verifier(&self, version: &str, success: bool) -> Command {
         let tools = self.root.join("tools");
@@ -482,7 +523,11 @@ fn requested_update_attestation_never_falls_back_and_is_used_for_both_versions()
         let environment = fixture.verifier("2.100.0", success);
         let mut command = Command::new(env!("CARGO_BIN_EXE_sdev"));
         for (key, value) in environment.get_envs() {
-            command.env(key, value.unwrap());
+            if let Some(value) = value {
+                command.env(key, value);
+            } else {
+                command.env_remove(key);
+            }
         }
         fixture.update_environment(&mut command);
         command
@@ -623,12 +668,169 @@ fn cloned_launcher_pins_the_version_preserves_cwd_arguments_and_exit_status_then
         assert!(cloned.join(cache_path()).is_file());
     }
     let requests = fixture.requests.lock().unwrap();
-    assert_eq!(requests.len(), 2, "{requests:?}");
+    assert_eq!(requests.len(), 1, "{requests:?}");
     assert!(
         requests
             .iter()
             .all(|p| p.contains(&format!("/download/v{}/", env!("CARGO_PKG_VERSION"))))
     );
+}
+
+#[test]
+fn committed_hash_rejects_replaced_binary_and_sidecar_before_execution_or_update() {
+    for update in [false, true] {
+        let fixture = Fixture::new(false);
+        let project = fixture.canonical_launcher("bin/sdev");
+        let original = fs::read(project.join("bin/sdev")).unwrap();
+        let malicious = format!(
+            "#!/bin/sh\nprintf ran > '{}'\nprintf 'sdev {}\\n'\n",
+            fixture.root.join("ran").display(),
+            env!("CARGO_PKG_VERSION")
+        );
+        fixture.publish(env!("CARGO_PKG_VERSION"), malicious.as_bytes());
+        let mut command = if update {
+            let mut command = fixture.command();
+            command.args(["--update", "--version", env!("CARGO_PKG_VERSION")]);
+            command
+        } else {
+            let mut command = Command::new(project.join("bin/sdev"));
+            fixture.update_environment(&mut command);
+            command.arg("help");
+            command
+        };
+        let result = command.current_dir(&project).output().unwrap();
+        assert!(!result.status.success(), "{result:?}");
+        assert!(String::from_utf8_lossy(&result.stderr).contains("SHA-256 checksum mismatch"));
+        assert!(!fixture.root.join("ran").exists());
+        assert_eq!(fs::read(project.join("bin/sdev")).unwrap(), original);
+        assert!(!project.join(cache_path()).exists());
+        assert!(
+            fixture
+                .requests
+                .lock()
+                .unwrap()
+                .iter()
+                .all(|p| !p.ends_with(".sha256"))
+        );
+    }
+}
+
+#[test]
+fn missing_checksum_for_another_platform_preserves_project_during_init_and_update() {
+    for update in [false, true] {
+        let fixture = Fixture::new(false);
+        let project = if update {
+            fixture.old_launcher("bin/sdev")
+        } else {
+            let project = fixture.root.join("project");
+            fs::create_dir(&project).unwrap();
+            project
+        };
+        let original = fs::read(project.join("bin/sdev")).ok();
+        fixture.files.lock().unwrap().remove(&format!(
+            "/releases/download/v{}/sdev-v{}-windows-x64.exe.sha256",
+            env!("CARGO_PKG_VERSION"),
+            env!("CARGO_PKG_VERSION")
+        ));
+        let mut command = fixture.command();
+        command
+            .current_dir(&project)
+            .args(["--version", env!("CARGO_PKG_VERSION")]);
+        if update {
+            command.arg("--update");
+        } else {
+            command.arg("--init");
+        }
+        let result = command.output().unwrap();
+        assert!(!result.status.success(), "{result:?}");
+        if update {
+            assert_eq!(fs::read(project.join("bin/sdev")).ok(), original);
+        } else {
+            assert!(!project.join("AGENTS.md").exists());
+            assert!(!project.join("sdev.toml").exists());
+        }
+    }
+}
+
+#[test]
+fn direct_initialization_requires_a_complete_valid_remote_checksum_set_before_writing() {
+    for missing in [false, true] {
+        let fixture = Fixture::new(false);
+        let project = fixture.root.join("direct-init");
+        fs::create_dir(&project).unwrap();
+        fs::write(project.join("AGENTS.md"), "Keep these instructions.\n").unwrap();
+        fs::write(project.join(".gitignore"), "/keep\n").unwrap();
+        let checksum = format!(
+            "/releases/download/v{}/sdev-v{}-windows-x64.exe.sha256",
+            env!("CARGO_PKG_VERSION"),
+            env!("CARGO_PKG_VERSION")
+        );
+        if missing {
+            fixture.files.lock().unwrap().remove(&checksum);
+        } else {
+            fixture
+                .files
+                .lock()
+                .unwrap()
+                .insert(checksum, b"invalid checksum\n".to_vec());
+        }
+        let mut command = Command::new(env!("CARGO_BIN_EXE_sdev"));
+        fixture.update_environment(&mut command);
+        let result = command.arg("init").current_dir(&project).output().unwrap();
+        assert_eq!(result.status.code(), Some(1), "{result:?}");
+        assert_eq!(
+            fs::read_to_string(project.join("AGENTS.md")).unwrap(),
+            "Keep these instructions.\n"
+        );
+        assert_eq!(
+            fs::read_to_string(project.join(".gitignore")).unwrap(),
+            "/keep\n"
+        );
+        assert_eq!(fs::read_dir(&project).unwrap().count(), 2);
+    }
+}
+
+#[test]
+fn the_same_committed_launcher_selects_each_supported_unix_platform() {
+    let fixture = Fixture::with_binary(
+        false,
+        format!(
+            "#!/bin/sh\nprintf 'sdev {}\\n'\n",
+            env!("CARGO_PKG_VERSION")
+        )
+        .into_bytes(),
+    );
+    let project = fixture.launcher("bin/sdev");
+    let uname = fixture.root.join("tools/uname");
+    fs::write(&uname, "#!/bin/sh\ncase \"$1\" in -s) echo \"$TEST_OS\" ;; -m) echo \"$TEST_ARCH\" ;; *) exit 1 ;; esac\n").unwrap();
+    fs::set_permissions(&uname, fs::Permissions::from_mode(0o755)).unwrap();
+    for (os, arch, label) in [
+        ("Darwin", "arm64", "macos-arm64"),
+        ("Darwin", "x86_64", "macos-x64"),
+        ("Linux", "aarch64", "linux-arm64"),
+        ("Linux", "x86_64", "linux-x64"),
+    ] {
+        let mut command = Command::new(project.join("bin/sdev"));
+        fixture.update_environment(&mut command);
+        let result = command
+            .arg("--version")
+            .env("TEST_OS", os)
+            .env("TEST_ARCH", arch)
+            .current_dir(&project)
+            .output()
+            .unwrap();
+        assert!(result.status.success(), "{label}: {result:?}");
+        let requests = fixture.requests.lock().unwrap();
+        assert_eq!(
+            requests.last().unwrap(),
+            &format!(
+                "/releases/download/v{}/sdev-v{}-{label}",
+                env!("CARGO_PKG_VERSION"),
+                env!("CARGO_PKG_VERSION")
+            )
+        );
+        assert!(requests.iter().all(|p| !p.ends_with(".sha256")));
+    }
 }
 
 #[test]
@@ -688,7 +890,11 @@ fn launcher_requested_attestation_failure_never_falls_back() {
     let verifier = fixture.verifier("2.93.0", false);
     let mut command = Command::new(project.join("bin/sdev"));
     for (key, value) in verifier.get_envs() {
-        command.env(key, value.unwrap());
+        if let Some(value) = value {
+            command.env(key, value);
+        } else {
+            command.env_remove(key);
+        }
     }
     let output = command
         .env("SDEV_VERIFY", "1")

@@ -6,6 +6,8 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 
+mod support;
+
 struct Project(PathBuf);
 impl Project {
     fn new() -> Self {
@@ -37,6 +39,8 @@ impl Project {
                 command.env(key, value);
             }
         }
+        #[cfg(unix)]
+        command.env("SDEV_INIT_CHECKSUMS", support::checksums());
         command.output().unwrap()
     }
     fn success(&self, args: &[&str]) -> String {

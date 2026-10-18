@@ -33,13 +33,15 @@ curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev
 
 | ファイル | 役割 |
 | --- | --- |
-| `bin/sdev` | 使用するバージョンを固定した起動スクリプト |
+| `bin/sdev` | バージョンと全対象のSHA-256を固定した起動スクリプト |
 | `AGENTS.md` | AIがsdevのガイドを読むための指示 |
 | `sdev.toml` | プロジェクトの既定言語と翻訳言語 |
 | `.gitignore` | 取得した本体の保存先`.sdev/`をGit管理から除外する設定 |
 
 この4ファイルをコミットすると、cloneした環境でも`./bin/sdev help`から使えます。
-本体がなければ起動時に取得し、取得済みなら通信せずに実行します。
+初期設定はcurlと通信を使い、公開済みの全5対象のSHA-256を起動スクリプトへ保存します。
+本体がなければ取得してコミット済みSHAと照合し、取得済みなら通信せずに実行します。
+配布元の本体とチェックサムが後から両方変わっても拒否します。
 仕様ファイルや空の仕様ディレクトリは作りません。
 
 取得時にはチェックサムとバージョンを照合します。
@@ -59,6 +61,20 @@ curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev
 
 既存の別ファイルや編集済みの起動スクリプトは上書きしません。
 初期設定済みの配置先変更は、[配布と更新](docs/engineering/guidelines/releasing.ja.md)を参照してください。
+
+### mise
+
+miseを使うプロジェクトでは、GitHub backendから同じReleaseの本体を導入できます。
+[miseでの導入手順](docs/engineering/guidelines/releasing.ja.md#miseで導入する)に従って対象別の配布名とmise.lockを準備し、次を実行します。
+
+```sh
+mise install --locked
+mise exec -- sdev help
+```
+
+mise.tomlとmise.lockをコミットし、AGENTS.mdの参照先を`mise exec -- sdev help`にします。
+この方法ではバージョンの固定と更新もmiseへ任せます。
+`bin/sdev`の作成や`sdev init`の実行は不要です。
 
 ### Windows
 

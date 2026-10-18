@@ -32,7 +32,7 @@ Do not add credentials to shell configuration or environment.
 
 Validate the destination and every existing parent as ordinary directories, without symlink traversal.
 Download into a temporary directory within the destination, defaulting to `./bin`; accept `--install-dir DIR` for launcher acquisition.
-Download the executable and `.sha256`; compare both the expected filename and a value computed by `sha256sum` or `shasum -a 256`.
+For initial installation, download the executable and `.sha256`; compare both the expected filename and a value computed by `sha256sum` or `shasum -a 256`. For acquisition through a committed launcher, compare against its stored SHA-256 instead of fetching a new expected value.
 Do not use downloaded paths to choose arbitrary local files for hashing.
 After hashes and requested attestations pass, verify the downloaded executable's `--version`.
 Replace destination `sdev` on the same filesystem only after all checks succeed.
@@ -61,13 +61,16 @@ AGENTS.md                           # Material access through the launcher
 sdev.toml                           # Shared document languages
 ```
 
-Store the generating sdev version and relative depth from launcher to root, without absolute paths, so another clone location works.
+Store the generating sdev version, all five published target SHA-256 values, and relative depth from launcher to root, without absolute paths, so another clone location works.
+Use the existing macOS arm64/x64, Linux arm64/x64, and Windows x64 artifact names. Recording a Windows checksum does not add a Windows shell launcher.
 Separate caches by OS/CPU so other supported platforms can use the same launcher.
 Preserve the caller's working directory and forward every argument through `exec`.
 Only acquisition runs in a subshell based at the project root.
 
-Embed the installer from the same source. Download executables/checksums directly without fetching and executing another shell script at runtime.
-Pass the pinned `--version` and cache `--install-dir`, never `--init`, to avoid recursive initialization and instruction edits at each invocation.
+Embed the installer from the same source. During `init`, retrieve every target's published `.sha256` sidecar as data using curl over HTTPS, with the same fixed sources, redirect restrictions, and timeouts as the installer. Require one lowercase 64-character SHA-256 and the exact versioned artifact name per target, rejecting unknown, duplicate, missing, or malformed entries before generating a launcher. When installation/update uses `--verify`, verify the provenance of all sidecars using the selected release record's source/signer commit before recording their values.
+Pass the complete set to launcher generation and embed a deterministic table directly in `bin/sdev`; no additional committed lockfile is needed. Installation/update may pass an already collected set through the child-process-only `SDEV_INIT_CHECKSUMS` environment variable, avoiding repeated retrieval and preserving attestation verification. Validate this data with exactly the same parser; never evaluate it as shell code. Treat this as internal process communication, not a public offline initialization option. Unpublished release validation supplies synthetic checksum data through this boundary instead of requiring a release to exist before it can be built.
+Download executables directly without fetching and executing another shell script at runtime.
+Select the matching hash from the embedded table and pass it together with the pinned `--version` and cache `--install-dir`, never `--init`, to avoid recursive initialization and instruction edits at each invocation.
 Use an executable regular cached file without network access.
 Reuse checksum/version checks, replacement rules, timeouts, and progress reporting on first download.
 Default acquisition checks consistency; `SDEV_VERIFY=1` also verifies attestations. Verification failure never falls back.
@@ -82,6 +85,12 @@ Preserve older AGENTS.md blocks. If an existing block lacks the chosen path, fai
 Updating means regenerating the launcher with a new sdev and committing its diff, without automatic runtime updates.
 Windows keeps manual placement and `init`; Unix shell launcher generation via `--path` is limited to supported Unix environments.
 
+### mise as an alternative installation method
+
+Use mise's [GitHub backend](https://mise.jdx.dev/dev-tools/backends/github.html) to install the same Release executables. Specify raw format, the installed command name `sdev`, and an exact platform-specific asset pattern so checksum and metadata files cannot be selected as executables.
+Let mise.toml and mise.lock own version/checksum selection and updates. Document `mise exec -- sdev help` as the reference command in consuming-project instructions. No mise-specific CLI mode, automatic mise configuration editing, or mandatory sdev launcher is introduced.
+Existing `init` remains the project-launcher setup operation; mise users can configure their guide references directly without running it.
+
 ### Explicit project updates
 
 Updating changes the version committed by the project while keeping its entry point and documents stable.
@@ -95,11 +104,11 @@ A standalone executable still uses ordinary installation, and explicit update re
 Restrict update paths to the same project-relative components accepted by `init`, and reject symlinks in the target, parents, and cache.
 
 A launcher header identifies the claimed old version but does not authorize overwriting the file.
-Acquire that published version with checksum and requested attestation checks, run its `init` in an isolated directory using the same relative path, and compare the generated bytes with the original launcher.
+When the original launcher has a checksum table, validate it and use its host-platform hash before executing the old version. Acquire that published version with checksum and requested attestation checks, run its `init` in an isolated directory using the same relative path, and compare the generated bytes with the original launcher.
 This recognizes older versions without assuming their script body still matches the current renderer and protects user edits.
 A source-commit pin applies to the new version; the old version's provenance uses its own signed release record.
 
-After this comparison, acquire and check the requested new executable through the same installer and generate its launcher in a second isolated directory.
+After this comparison, acquire and check the requested new executable and complete target checksum set through the same installer, then generate its launcher in a second isolated directory. A missing checksum on another platform must also prevent switching.
 These isolated initializations never operate on the consuming project's documents.
 If the version is unchanged, report it without rewriting the launcher.
 Otherwise prepare an adjacent script file with the original permissions, publish the verified executable into its version/OS/CPU cache, and replace the launcher with a same-filesystem rename.
@@ -123,7 +132,7 @@ sequenceDiagram
     I->>P: Read original and lock updates
     I->>R: Acquire and verify old version
     I->>S: Generate old launcher and compare
-    I->>R: Acquire and verify new version
+    I->>R: Acquire and verify new version and all target checksums
     I->>S: Generate new launcher
     I->>P: Recheck and atomically replace
     I-->>U: Versions and file to commit
@@ -131,7 +140,7 @@ sequenceDiagram
 
 ## Data model and ER diagram
 
-No database is used.
+No database is used. The launcher stores one version and a complete mapping from versioned artifact names to expected SHA-256 values; only its OS/CPU selects which binary to download.
 Identify the AGENTS.md block with `<!-- sdev:begin -->` and `<!-- sdev:end -->`.
 Exactly one ordered pair preserves the existing block, including user edits; missing, duplicate, or reversed markers fail.
 Preserve outside text as bytes. Appended text uses CRLF if present, otherwise LF.
@@ -201,7 +210,7 @@ Do not automatically trust roots acquired from the same unverified distribution.
 Persist three initialization files, the Unix launcher, and executables downloaded on demand.
 Commit instructions, configuration, and launcher, excluding `.sdev/` executables.
 Deleting the cache causes acquisition on the next invocation.
-Keep attestations/checksums only in temporary verification storage.
+Keep attestations and downloaded sidecars in temporary verification storage; persist the normalized expected hashes in the committed launcher.
 Do not send existing instruction bodies or paths externally.
 Bootstrap does not edit .gitignore; only `init` adds exclusions.
 Cloud sessions use committed launchers and instructions rather than rewriting them each time.
@@ -221,7 +230,7 @@ Use ordinary cache directories/files without symlink traversal.
 Trust the writable local executable cache; do not reverify every invocation. Delete and reacquire to check again.
 
 Checksums establish consistency, not provenance if both executable and hash are replaced.
-Do not embed every platform's expected hash in the launcher: offline `init` and avoiding circular build hashes require download-time comparison with optional attestations.
+Collect hashes after all release binaries are built rather than compiling a binary with its own final hash. A committed value detects later replacement of both executable and remote sidecar; establishing initial trust still requires source review or attestation verification.
 `--verify` cannot retroactively establish trust in an already executed installer.
 Use reviewed source or independently verify the distributed script and bundle with GitHub CLI before execution.
 Workflow attestations do not guarantee harmless code.
@@ -252,7 +261,12 @@ Artifact placement and signer commit comparison also apply here.
 At investigation time, insmith retrieved attestations through GitHub API and tag commits through `git ls-remote`, without the local bundle/record path needed for cloud cross-repository restrictions.
 Implement a small script with that path for now. Reconsider generated maintenance if insmith supports it.
 
+### A separate lockfile or mise-only distribution
+
+A separate lockfile provides the same content pinning but adds a file to a single-tool bootstrap. Keep the complete table in the already committed launcher.
+Requiring mise would add a prerequisite for standalone users. Support it as a separate route to the same assets instead.
+
 ## Open questions
 
-No implementation decisions remain.
+No implementation decisions remain. Normal `init` retrieves published hashes; the installer/update handoff reuses already verified data. No additional public initialization flag is introduced.
 Maintainers record actual published URL and cloud verification in the distribution guide during publication.

@@ -48,6 +48,38 @@ On Windows, rename it to `sdev.exe` and use PowerShell:
 Before publication, check OS startup restrictions and signing status.
 A working local build does not prove that a browser-downloaded file starts successfully.
 
+## Install with mise
+
+The [mise GitHub backend](https://mise.jdx.dev/dev-tools/backends/github.html) installs the same Release binaries. Configure sdev in the consuming project's mise.toml; this example selects the published v0.4.0:
+
+```toml
+[tools."github:azu/sdev"]
+version = "0.4.0"
+format = "raw"
+bin = "sdev"
+
+[tools."github:azu/sdev".platforms]
+macos-arm64 = { asset_pattern = "sdev-v*-macos-arm64" }
+macos-x64 = { asset_pattern = "sdev-v*-macos-x64" }
+linux-arm64 = { asset_pattern = "sdev-v*-linux-arm64" }
+linux-x64 = { asset_pattern = "sdev-v*-linux-x64" }
+windows-x64 = { asset_pattern = "sdev-v*-windows-x64.exe" }
+```
+
+The raw format and `bin` name make a standalone asset available as `sdev`. Each platform pattern selects only its executable, excluding checksum and metadata files.
+Review and trust the configuration, then record all five platforms and install the locked version:
+
+```sh
+mise trust
+mise lock --platform macos-arm64,macos-x64,linux-arm64,linux-x64,windows-x64
+mise install --locked
+mise exec -- sdev help
+```
+
+Commit mise.toml and mise.lock. In AGENTS.md, instruct agents to run `mise exec -- sdev help` and select the relevant guide before working on specifications or implementation.
+Use the existing sdev.toml language settings when needed. `sdev init` prepares a project launcher; it is unnecessary for this mise route.
+To update, change the selected version in mise.toml, regenerate mise.lock, inspect its URLs/checksums, and run `mise install --locked` again. Use mise for this installation rather than `sdev update`.
+
 ## Bootstrap and attestation verification
 
 On macOS/Linux, a reviewed `install.sh` from a checked source can install into project-local `./bin/sdev`.
@@ -56,7 +88,8 @@ At the sdev repository root, run `sh install.sh --version 0.1.0 --init`; in anot
 Omit the version for the latest stable Release; omit `--init` to prepare only the executable.
 `--install-dir DIR` changes the executable destination directory.
 Launcher-capable `init` replaces `bin/sdev` with a committed script.
-Its next invocation downloads the pinned executable into `.sdev/bin/<version>/<os>-<arch>/sdev` and reuses it afterward.
+Initialization retrieves every published target checksum and stores them with the version in the launcher. It requires curl and network access; a missing or invalid target checksum prevents generation.
+Its next invocation downloads the matching executable into `.sdev/bin/<version>/<os>-<arch>/sdev`, compares the committed SHA-256 without fetching a new expected value, and reuses it afterward.
 For a different launcher path, run the installed executable with `sdev init --path ./scripts/sdev`.
 AGENTS.md references that path. Manually align existing instructions for a different path before retrying.
 Use `sh install.sh --help` to list options.

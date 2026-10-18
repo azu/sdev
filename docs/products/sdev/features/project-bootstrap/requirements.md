@@ -13,7 +13,8 @@ Provide a bootstrap installer for published macOS/Linux executables and `init` i
 Bootstrap can install only the executable or continue with initial setup.
 On macOS/Linux, `init` also generates a launcher that can be committed and shared, at a configurable path, so clones use the same version.
 Add explicit project updates through `sdev update`; rerunning the installer at an existing generated launcher performs the same update.
-Always compare checksums and optionally verify provenance with GitHub Artifact Attestations when requested.
+Pin both the selected version and every supported target's SHA-256 in the committed launcher. Always compare checksums and optionally verify provenance with GitHub Artifact Attestations when requested.
+Offer mise as an alternative installation method using the same Release executables; mise is not required for the standalone launcher.
 Language configuration and translated instructions follow the [localization requirements](../localization/requirements.md).
 
 ### Out of scope
@@ -47,6 +48,24 @@ Scenario: Unsupported environments and invalid arguments prevent downloads
 - Given: The OS/CPU is unsupported or an option/version is invalid.
 - When: Bootstrap runs.
 - Then: It reports the reason and exits nonzero without downloading or executing an artifact.
+
+### Manage sdev with mise
+
+As a developer already using mise, I want to install and update sdev alongside my other tools using the same published executables.
+
+**Acceptance criteria:**
+
+Scenario: A mise-managed executable provides the same guides
+
+- Given: The project selects a supported sdev Release in mise configuration.
+- When: mise installs it and the user runs `mise exec -- sdev help`.
+- Then: The selected version provides the same guides and templates as the standalone distribution, without requiring a project launcher.
+
+Scenario: mise owns its installation and updates
+
+- Given: sdev is managed by mise.
+- When: The project shares or updates the selected version and checksums.
+- Then: It uses mise's configuration, lockfile, and update operations; sdev does not rewrite that configuration or add a mise-specific initialization mode.
 
 ### Verify provenance before use
 
@@ -136,7 +155,19 @@ Scenario: First invocation after clone verifies and runs the pinned version
 
 - Given: The launcher and instructions are shared, but the executable is not cached.
 - When: The launcher receives arguments such as `help`.
-- Then: It downloads the matching release executable, checks checksum and version before execution, preserves arguments and caller directory, and leaves instructions unchanged.
+- Then: It downloads the matching release executable, checks the checksum committed in the launcher and the version before execution, preserves arguments and caller directory, and leaves instructions unchanged.
+
+Scenario: Replacing both the remote executable and its checksum is rejected
+
+- Given: The launcher was committed with a complete checksum set and the executable is not cached.
+- When: The distribution serves a different executable and a matching replacement checksum.
+- Then: The launcher rejects the executable against its committed value without running it or changing project files.
+
+Scenario: An incomplete checksum set prevents launcher generation
+
+- Given: A checksum is missing or invalid for any supported target, including one different from the current machine.
+- When: Initial setup or update prepares a launcher.
+- Then: It fails with a reason instead of writing a partially pinned launcher; existing project instructions and launchers are preserved.
 
 Scenario: A cached executable works without network access
 
@@ -239,7 +270,7 @@ Treat installer trust separately: executing an unverified script is not an attes
 Run at the project root. A generated launcher supplies its configured relative path to the command; direct invocation defaults to `bin/sdev` and accepts an explicit project-relative path.
 Rerunning installation at an existing launcher uses the same update, including for versions predating this command.
 Compare the original launcher with its published version's generated content before allowing replacement; a header alone is insufficient.
-Check the new executable and prepare its launcher before switching. Preserve the previous launcher on failure and preserve all project documents.
+Check the new executable and all target checksums before switching. If the original launcher has a checksum pin, use that pin before running the old executable to reproduce its launcher. Preserve the previous launcher on failure and preserve all project documents.
 Use the existing checksum and optional attestation policy, without downgrading a requested verification after a failure.
 Updating to the current version preserves the launcher; selecting an older supported published version is explicit through `--version`.
 
@@ -260,8 +291,8 @@ Leave unsupported Windows and global installations to their existing installatio
 
 Default to `./bin/sdev` on macOS/Linux and allow project-relative paths.
 Instructions reference that launcher. Windows references the manually installed `./bin/sdev.exe`.
-Pin the launcher to the generating sdev version and fetch the executable only when needed.
-`init` performs no network operations and creates only required launcher parent directories, not empty specification directories.
+Pin the launcher to the generating sdev version and all supported targets' expected SHA-256 values. Resolve the complete checksum set before writing project files. Fetch only the executable needed by the current environment on first invocation, using its committed checksum rather than a newly retrieved expected value.
+`init` retrieves the selected Release's complete checksum set over HTTPS before generating a launcher. It requires curl and network access on macOS/Linux; retrieval or validation failure leaves project files unchanged. Windows initialization does not generate a launcher and needs no checksum retrieval. Create only required launcher parent directories, not empty specification directories.
 Preserve identical generated launchers; do not overwrite another user script.
 Initial installer setup may replace the currently running sdev executable with the default launcher.
 If existing instructions reference another path, report where manual adjustment is needed rather than rewriting them silently.
@@ -282,7 +313,7 @@ A failure during multi-file saving identifies its location; cross-file transacti
 
 - **Artifacts:** Selected executable, checksum, and optional attestation bundle.
 - **Existing instructions and exclusions:** Text to preserve while adding material access and local executable exclusions.
-- **Launcher:** A tracked entry point containing the pinned version and acquisition procedure.
+- **Launcher:** A tracked entry point containing the pinned version, all target SHA-256 values, and acquisition procedure.
 - **Language configuration:** Shared default and translation languages as defined by localization.
 
 ### Relationships
@@ -310,5 +341,5 @@ Explain installer trust, artifact consistency, and provenance as separate checks
 
 ## Open questions
 
-No implementation decisions remain.
+No implementation decisions remain. `init` retrieves the published checksum set; do not add a public offline-input option or a mise-specific initialization mode.
 After source changes and publication, maintainers verify the documented download URL and actual retrieval/verification in Claude Code on the web.

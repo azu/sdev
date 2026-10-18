@@ -5,12 +5,13 @@ set -eu
 fail() { printf 'sdev: %s\n' "$*" >&2; exit 1; }
 usage() {
     cat <<'EOF'
-Usage: sh install.sh [--version X.Y.Z] [--install-dir DIR] [--verify] [--source-commit SHA] [--trusted-root FILE] [--init]
+Usage: sh install.sh [--version X.Y.Z] [--install-dir DIR] [--sha256 HASH] [--verify] [--source-commit SHA] [--trusted-root FILE] [--init]
        sh install.sh --update [--path PATH] [--version X.Y.Z] [--verify] [--source-commit SHA] [--trusted-root FILE]
 
 Install a public release into ./bin/sdev without changing PATH.
 --install-dir chooses the directory for the binary.
 The default version is the latest stable release. SHA-256 is always checked.
+--sha256 pins the executable's expected hash instead of fetching its sidecar.
 --verify requires gh and verifies the binary's GitHub Artifact Attestation before execution.
 --source-commit pins an independently checked source commit (requires --verify).
 --trusted-root supplies independently obtained trust material for offline verification.
@@ -30,9 +31,11 @@ main() {
     install_dir=
     updating=false
     update_path=
+    pinned_sha256=
     while [ "$#" -gt 0 ]; do
         case "$1" in
             --version) [ "$#" -ge 2 ] || fail '--version needs X.Y.Z'; version=$2; shift 2 ;;
+            --sha256) [ "$#" -ge 2 ] || fail '--sha256 needs a hash'; pinned_sha256=$2; [ "${#pinned_sha256}" -eq 64 ] || fail 'SHA-256 must be 64 lowercase hexadecimal characters'; case "$pinned_sha256" in *[!0-9a-f]*) fail 'Invalid SHA-256' ;; esac; shift 2 ;;
             --install-dir) [ "$#" -ge 2 ] || fail '--install-dir needs a directory'; [ -n "$2" ] || fail '--install-dir needs a directory'; install_dir=$2; shift 2 ;;
             --verify) verify=true; shift ;;
             --source-commit) [ "$#" -ge 2 ] || fail '--source-commit needs a SHA'; expected_commit=$2; shift 2 ;;
@@ -50,6 +53,7 @@ main() {
     fi
     if [ "$updating" = true ]; then
         [ -z "$install_dir" ] || fail '--update cannot be combined with --install-dir'
+        [ -z "$pinned_sha256" ] || fail '--update cannot be combined with --sha256'
     fi
     if [ -n "$expected_commit" ]; then
         [ "$verify" = true ] || fail '--source-commit requires --verify'
@@ -59,6 +63,7 @@ main() {
     if [ -n "$trusted_root" ]; then
         [ "$verify" = true ] || fail '--trusted-root requires --verify'
         [ -f "$trusted_root" ] || fail 'Trusted root file not found'
+        case "$trusted_root" in /*) ;; *) trusted_root=$(pwd -P)/$trusted_root ;; esac
     fi
     if [ "$verify" = true ]; then check_verifier; fi
     command -v curl >/dev/null 2>&1 || fail 'curl is required'
@@ -128,7 +133,11 @@ main() {
     base=$releases/download/v$version
     printf 'sdev: Installing %s into %s/sdev\n' "$asset" "$install_dir" >&2
     fetch "$base/$asset" "$temporary/$asset"
-    fetch "$base/$asset.sha256" "$temporary/checksum"
+    if [ -n "$pinned_sha256" ]; then
+        printf '%s  %s\n' "$pinned_sha256" "$asset" > "$temporary/checksum"
+    else
+        fetch "$base/$asset.sha256" "$temporary/checksum"
+    fi
     printf '%s\n' 'sdev: Checking SHA-256...' >&2
     if [ "$hash_command" = sha256sum ]; then
         actual=$(sha256sum "$temporary/$asset")
@@ -140,20 +149,7 @@ main() {
     [ "$expected" = "$actual  $asset" ] || fail 'SHA-256 checksum mismatch'
     if [ "$verify" = true ]; then
         printf '%s\n' 'sdev: Verifying provenance...' >&2
-        fetch "$base/attestation.sigstore.json" "$temporary/attestation.sigstore.json"
-        fetch "$base/sdev-release.txt" "$temporary/sdev-release.txt"
-        commit=
-        verify_file "$temporary/sdev-release.txt"
-        # Read only data from an already authenticated manifest; never source it as shell code.
-        manifest_version=$(sed -n 's/^version=//p' "$temporary/sdev-release.txt")
-        commit=$(sed -n 's/^source_commit=//p' "$temporary/sdev-release.txt")
-        [ "$manifest_version" = "$version" ] || fail 'Attested release version does not match'
-        [ "${#commit}" -eq 40 ] || fail 'Invalid source commit in attested release manifest'
-        case "$commit" in *[!0-9a-f]*) fail 'Invalid source commit in attested release manifest' ;; esac
-        if [ -n "$expected_commit" ]; then
-            [ "$commit" = "$expected_commit" ] || fail 'Attested source commit does not match the pinned commit'
-        fi
-        verify_file "$temporary/sdev-release.txt"
+        verify_release_record
         verify_file "$temporary/$asset"
     else
         printf '%s\n' 'sdev: SHA-256 checked; provenance NOT verified (use --verify to check it).' >&2
@@ -165,11 +161,55 @@ main() {
     mv -f "$temporary/$asset" "$install_dir/sdev" || fail 'Cannot replace installed executable'
     printf 'Installed sdev %s into %s/sdev\n' "$version" "$install_dir"
     if [ "$initialize" = true ]; then
-        "$install_dir/sdev" init
+        initialize_project "$install_dir/sdev" "$version"
     else
         printf 'Run %s/sdev help, or %s/sdev init to add project instructions.\n' "$install_dir" "$install_dir"
     fi
 }
+verify_release_record() {
+    fetch "$base/attestation.sigstore.json" "$temporary/attestation.sigstore.json"
+    fetch "$base/sdev-release.txt" "$temporary/sdev-release.txt"
+    commit=
+    verify_file "$temporary/sdev-release.txt"
+    # Only parse data from an authenticated record; never source downloaded text.
+    manifest_version=$(sed -n 's/^version=//p' "$temporary/sdev-release.txt")
+    commit=$(sed -n 's/^source_commit=//p' "$temporary/sdev-release.txt")
+    [ "$manifest_version" = "$version" ] || fail 'Attested release version does not match'
+    [ "${#commit}" -eq 40 ] || fail 'Invalid source commit in attested release manifest'
+    case "$commit" in *[!0-9a-f]*) fail 'Invalid source commit in attested release manifest' ;; esac
+    if [ -n "$expected_commit" ]; then
+        [ "$commit" = "$expected_commit" ] || fail 'Attested source commit does not match the pinned commit'
+    fi
+    verify_file "$temporary/sdev-release.txt"
+}
+initialize_project() (
+    init_binary=$1
+    version=$2
+    shift 2
+    temporary=$(mktemp -d "${TMPDIR:-/tmp}/sdev-checksums.XXXXXXXX") || fail 'Cannot prepare release checksums'
+    trap 'rm -rf "$temporary"' EXIT
+    trap 'exit 1' HUP INT TERM
+    base=$releases/download/v$version
+    if [ "$verify" = true ]; then verify_release_record; fi
+    : > "$temporary/checksums"
+    for init_target in macos-arm64 macos-x64 linux-arm64 linux-x64 windows-x64.exe; do
+        init_asset=sdev-v$version-$init_target
+        fetch "$base/$init_asset.sha256" "$temporary/$init_asset.sha256"
+        if [ "$verify" = true ]; then verify_file "$temporary/$init_asset.sha256"; fi
+        cat "$temporary/$init_asset.sha256" >> "$temporary/checksums"
+        printf '\n' >> "$temporary/checksums"
+    done
+    # Sidecars are complete records; normalize their trailing newlines only.
+    sed '/^$/d' "$temporary/checksums" > "$temporary/normalized"
+    if [ "$hash_command" = shasum ]; then
+        init_actual=$(shasum -a 256 "$init_binary")
+    else
+        init_actual=$(sha256sum "$init_binary")
+    fi
+    init_actual=${init_actual%% *}
+    grep -Fqx "$init_actual  sdev-v$version-$platform-$arch" "$temporary/normalized" || fail 'SHA-256 checksum mismatch during initialization'
+    SDEV_INIT_CHECKSUMS=$(cat "$temporary/normalized") "$init_binary" init "$@"
+)
 check_verifier() {
     command -v gh >/dev/null 2>&1 || fail '--verify requires GitHub CLI (gh)'
     # Older versions may leak credentials while fetching trust material (GHSA-8xvp-7hj6-mcj9).
@@ -245,13 +285,18 @@ update_project() {
     cp -p "$update_target" "$update_temporary/original"
     printf 'sdev: Checking the original %s launcher...\n' "$update_old_version" >&2
     set -- --version "$update_old_version" --install-dir "$update_temporary/old"
+    if grep -q '^sdev_pinned_checksums() {' "$update_temporary/original"; then
+        update_old_hash=$(sed -n "/^sdev_pinned_checksums() {/,/^SDEV_CHECKSUMS$/p" "$update_temporary/original" | awk -v asset="sdev-v$update_old_version-$platform-$arch" '$2 == asset { print $1 }')
+        set -- "$@" --sha256 "$update_old_hash"
+    fi
     if [ "$verify" = true ]; then set -- "$@" --verify; fi
     if [ -n "$trusted_root" ]; then set -- "$@" --trusted-root "$trusted_root"; fi
     ( main "$@" ) >/dev/null || fail 'Could not verify the original launcher version; nothing updated'
     mkdir "$update_temporary/old-project"
     (
         cd "$update_temporary/old-project"
-        "$update_temporary/old/sdev" init --path "$update_relative"
+        expected_commit=
+        initialize_project "$update_temporary/old/sdev" "$update_old_version" --path "$update_relative"
     ) >/dev/null || fail 'Could not reproduce the original launcher; nothing updated'
     cmp -s "$update_temporary/original" "$update_temporary/old-project/$update_relative" || fail 'Launcher has been edited; review it before updating'
 
@@ -263,7 +308,7 @@ update_project() {
     mkdir "$update_temporary/new-project"
     (
         cd "$update_temporary/new-project"
-        "$update_temporary/new/sdev" init --path "$update_relative"
+        initialize_project "$update_temporary/new/sdev" "$version" --path "$update_relative"
     ) >/dev/null || fail 'Could not prepare the new launcher; nothing updated'
     update_generated=$update_temporary/new-project/$update_relative
     if [ -L "$update_generated" ] || [ ! -f "$update_generated" ]; then

@@ -5,6 +5,8 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 
+mod support;
+
 struct Project(PathBuf);
 impl Project {
     fn new() -> Self {
@@ -18,7 +20,10 @@ impl Project {
         Self(path)
     }
     fn run(&self, args: &[&str]) -> Output {
-        Command::new(env!("CARGO_BIN_EXE_sdev"))
+        let mut command = Command::new(env!("CARGO_BIN_EXE_sdev"));
+        #[cfg(unix)]
+        command.env("SDEV_INIT_CHECKSUMS", support::checksums());
+        command
             .args(["--lang", "ja"])
             .args(args)
             .current_dir(&self.0)
@@ -189,6 +194,30 @@ fn help_and_invalid_arguments_do_not_write_files() {
                 2
             })
         );
+        assert_eq!(fs::read_dir(&project.0).unwrap().count(), 0);
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn incomplete_duplicate_or_malformed_checksum_input_never_writes_project_files() {
+    let valid = support::checksums();
+    for text in [
+        valid.lines().take(4).collect::<Vec<_>>().join("\n"),
+        format!("{valid}{}\n", valid.lines().next().unwrap()),
+        valid.replace("windows-x64.exe", "unknown-target"),
+        valid.replace(&"0".repeat(64), &"G".repeat(64)),
+        valid.replace("sdev-v", "sdev-v999."),
+    ] {
+        let project = Project::new();
+        let result = Command::new(env!("CARGO_BIN_EXE_sdev"))
+            .arg("init")
+            .env("SDEV_INIT_CHECKSUMS", text)
+            .env("PATH", "")
+            .current_dir(&project.0)
+            .output()
+            .unwrap();
+        assert_eq!(result.status.code(), Some(1), "{result:?}");
         assert_eq!(fs::read_dir(&project.0).unwrap().count(), 0);
     }
 }

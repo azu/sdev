@@ -48,6 +48,38 @@ Windowsではファイル名を`sdev.exe`へ変え、PowerShellから起動し�
 OSによる起動制限と署名の状態は、公開者が配布前に確認します。
 開発時のローカルビルドで起動できたことだけでは、ブラウザーで取得したファイルの起動を確認したことにはなりません。
 
+## miseで導入する
+
+[miseのGitHub backend](https://mise.jdx.dev/dev-tools/backends/github.html)から、同じReleaseの本体を導入できます。利用先のmise.tomlへ次の設定を追加します。この例は公開済みのv0.4.0を選びます。
+
+```toml
+[tools."github:azu/sdev"]
+version = "0.4.0"
+format = "raw"
+bin = "sdev"
+
+[tools."github:azu/sdev".platforms]
+macos-arm64 = { asset_pattern = "sdev-v*-macos-arm64" }
+macos-x64 = { asset_pattern = "sdev-v*-macos-x64" }
+linux-arm64 = { asset_pattern = "sdev-v*-linux-arm64" }
+linux-x64 = { asset_pattern = "sdev-v*-linux-x64" }
+windows-x64 = { asset_pattern = "sdev-v*-windows-x64.exe" }
+```
+
+raw形式と`bin`の指定により、単体の配布ファイルを`sdev`として実行できます。対象別の名前で本体だけを選び、チェックサムやメタデータを除外します。
+設定を確認して信頼した後、全5対象をロックし、固定したバージョンを導入します。
+
+```sh
+mise trust
+mise lock --platform macos-arm64,macos-x64,linux-arm64,linux-x64,windows-x64
+mise install --locked
+mise exec -- sdev help
+```
+
+mise.tomlとmise.lockをコミットします。AGENTS.mdには、仕様や実装の作業前に`mise exec -- sdev help`を実行し、作業に対応するガイドを選ぶよう記載します。
+言語を共有する場合は既存のsdev.tomlの設定を使います。`sdev init`はプロジェクト用の起動スクリプトを作る操作であり、このmise経由の導入では不要です。
+更新はmise.tomlのバージョン変更後にmise.lockを生成し直し、URL・チェックサムの差分を確認して`mise install --locked`を実行します。この導入先には`sdev update`を使わず、miseで更新します。
+
 ## bootstrapと証明の検証
 
 macOS・Linuxでは、内容と取得元を確認した`install.sh`からプロジェクト内の`./bin/sdev`へ導入できます。
@@ -56,6 +88,8 @@ macOS・Linuxでは、内容と取得元を確認した`install.sh`からプロ�
 バージョンを省略すると最新の安定Releaseを取得し、`--init`を省略すると実行ファイルだけを用意します。
 `--install-dir DIR`で本体の配置先ディレクトリを変更できます。
 起動スクリプトに対応する版の`init`は、`bin/sdev`をコミット用の起動スクリプトへ置き換えます。
+初期設定では公開済みの全対象のSHA-256を取得して起動スクリプトへ保存するため、curlと通信が必要です。対象のチェックサムに不足や不正があれば生成しません。
+初回起動時には期待値を取得し直さず、コミット済みのSHAと本体を照合します。
 次回の起動時に固定した本体を`.sdev/bin/<version>/<os>-<arch>/sdev`へ取得し、以後はそれを使います。
 配置先を変える場合は、導入済みの本体から`sdev init --path ./scripts/sdev`のように実行します。
 AGENTS.md内の参照指示も指定先に合わせて生成されます。すでにある別の配置先の指示は手動で合わせてから再実行します。
