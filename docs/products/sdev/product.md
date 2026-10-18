@@ -116,10 +116,11 @@ A dedicated documentation website and entry URL have not been selected.
 Use embedded guides and templates while retaining direct Markdown reading.
 If a dedicated website is needed, developers and users will decide its destination.
 
-How to record and reference relationships between code, Requirements, and Design, and the specific visualization features, remain open.
-Code comments containing reasons are one option, but no recording location or code-origin reference checker has been selected.
-Use existing document placement and links; the initial linter follows the [document-link Requirements](features/document-lint/requirements.md).
-When examples show a need for code relationships or additional checks, developers and users will decide each feature.
+The [specification-centered review](features/specification-review/requirements.md) finds related Requirements and Design passages and identifies code changes whose specification coverage needs review. People read the actual passages and differences; generated rationale is unnecessary. Code-to-specification investigation remains a separate entrance.
+How to retain code relationships in maintained source documents, and whether to check references originating in code, remain open.
+Code comments containing reasons are one option; the review input does not establish a mandatory long-term recording location.
+Use existing document placement and links; document checks follow the [document-link Requirements](features/document-lint/requirements.md).
+Developers and users decide further relationship and checking features from actual reviews.
 
 Whether writing and product development should be unified through modes or operations remains undecided.
 Share ideas through guidelines and revisit operational integration when real examples require it.

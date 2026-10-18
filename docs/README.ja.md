@@ -15,6 +15,7 @@
 | 機能の振る舞い・受け入れ条件を決める | [Requirementsを書く](guidelines/requirements.ja.md)、[シナリオ](guidelines/scenarios.ja.md) | 対象Product、変更なら既存Requirements・Design | [requirements.md](templates/requirements.ja.md) |
 | 要件を実現する方法を決める | [Designを書く](guidelines/design.ja.md) | 対象Product・Requirements、既存Design | [design.md](templates/design.ja.md) |
 | 実装・検証・既存文書の変更を行う | [文書の責務と更新](guidelines/documents.ja.md)、[実装と検証](guidelines/agent.ja.md#実装と検証) | 対象Product・Requirements・Design | 変更対象の文書のテンプレート |
+| RequirementsとDesignを判断する材料を用意する | [仕様を中心にしたレビューの準備](guidelines/review.ja.md) | 対象Product、変更するRequirements・Design、取り込んだGit比較 | ガイド内のAgentレビュー項目 |
 
 共通の判断基準は[文書の責務と更新](guidelines/documents.ja.md)、対話や調査の進め方は[エージェントの作業原則](guidelines/agent.ja.md)に記述しています。
 ガイドラインに判断基準と作業の進め方を、テンプレートに文書の構造をまとめています。
@@ -34,6 +35,8 @@
 | Design | [プロジェクトへの導入の設計](products/sdev/features/project-bootstrap/design.ja.md) |
 | Requirements | [既定言語と複数言語の文書](products/sdev/features/localization/requirements.ja.md) |
 | Design | [言語と文書の設計](products/sdev/features/localization/design.ja.md) |
+| Requirements | [仕様を中心にしたレビュー](products/sdev/features/specification-review/requirements.ja.md) |
+| Design | [仕様を中心にしたレビューの設計](products/sdev/features/specification-review/design.ja.md) |
 
 文書の配置と関係は[文書の責務と更新](guidelines/documents.ja.md)に従います。
 

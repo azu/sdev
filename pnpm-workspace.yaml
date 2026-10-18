@@ -1,0 +1,3 @@
+allowBuilds:
+  # The platform binary is an optional package; no install script is needed.
+  esbuild: false

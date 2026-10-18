@@ -15,6 +15,7 @@ This entry point and its linked documents support work from writing specificatio
 | Specify feature behavior and acceptance criteria | [Writing Requirements](guidelines/requirements.md), [Scenarios](guidelines/scenarios.md) | Target Product; existing Requirements and Design for changes | [requirements.md](templates/requirements.md) |
 | Choose how to meet requirements | [Writing Design](guidelines/design.md) | Target Product, Requirements, and existing Design | [design.md](templates/design.md) |
 | Implement, verify, or revise existing documents | [Document responsibilities and updates](guidelines/documents.md), [Implementation and verification](guidelines/agent.md#implementation-and-verification) | Target Product, Requirements, and Design | Template applicable to the document |
+| Prepare material to judge Requirements and Design | [Prepare a specification-centered review](guidelines/review.md) | Target Product, changed Requirements and Design, and captured Git comparison | Agent review items described in the guide |
 
 Common decision criteria are in [Document responsibilities and updates](guidelines/documents.md); dialogue and research practices are in [Agent working principles](guidelines/agent.md).
 Guidelines define judgment and working practices; templates define document structure.
@@ -34,6 +35,8 @@ Guidelines define judgment and working practices; templates define document stru
 | Design | [Project bootstrap design](products/sdev/features/project-bootstrap/design.md) |
 | Requirements | [Default language and multilingual documents](products/sdev/features/localization/requirements.md) |
 | Design | [Language and document localization design](products/sdev/features/localization/design.md) |
+| Requirements | [Specification-centered review](products/sdev/features/specification-review/requirements.md) |
+| Design | [Specification-centered review design](products/sdev/features/specification-review/design.md) |
 
 Follow [Document responsibilities and updates](guidelines/documents.md) for placement and relationships.
 For selecting distributions, reading materials through commands, and preparing updates and publication, read [Releasing and updating](engineering/guidelines/releasing.md).

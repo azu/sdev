@@ -167,6 +167,27 @@ It checks README.md, AGENTS.md, their language versions, and Markdown under docs
 Text output is the default; JSON is available for other tools.
 See [document-lint Requirements](docs/products/sdev/features/document-lint/requirements.md) for scope and exit codes.
 
+## Review Requirements and Design
+
+`review` captures real Git differences and opens the specifications as a reading surface.
+With `JEV_API_KEY` set privately in the server environment, enable Jev to find related Requirements and Design passages and check changed code for missing specification coverage:
+
+```sh
+./bin/sdev help review
+./bin/sdev review --base main --serve --jev
+./bin/sdev review --base main --serve --jev --jev-model jev-1.13.0 --cache-dir "$HOME/.cache/sdev/review"
+```
+
+Read with J/K, or click a passage to focus it and open related text in place. Hovering or tabbing through text does not open or change details. The related-view selector also offers a popover. Press Enter or type a character other than J/K to start an inline comment.
+
+Use "Copy notes" to paste comments with their original context into the agent conversation. In server mode, "Send to agent" writes a `review.feedback` JSON line to the launching command output for that agent to read; it does not automatically resume an idle agent. Markdown and JSON file exports remain available.
+
+Jev classifies the actual captured passages and changes; it does not generate rationale. The code check returns unmatched or uncertain candidates for human inspection. It does not certify specification completeness. Results are cached by actual input, model, and judgment conditions. Credentials remain on the server, and only explicit `--jev` permits external transmission of specification and code context.
+
+A portable offline HTML remains available with `--output /tmp/review.html`. Optional `--prepare` and `--input` retain a fixed comparison and supplementary agent items; hand-written relationship JSON is unnecessary for live queries. Working-tree servers update saved specifications and code without a page reload, retaining comments and replacing old judgments. Prepared input, two-commit comparisons, and standalone HTML remain fixed. Existing output files are preserved.
+
+See the [review Requirements](docs/products/sdev/features/specification-review/requirements.md) for scope.
+
 ## Develop sdev
 
 Prepare Rust, then use [mise](https://mise.jdx.dev/getting-started.html) for development tools and commands.

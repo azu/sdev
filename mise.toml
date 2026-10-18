@@ -21,6 +21,8 @@ run = [
   "pnpm exec textlint --config .textlintrc.json README.md",
   "pnpm exec textlint --config .textlintrc.ja.json README.ja.md",
   "node scripts/check-doc-languages.mjs",
+  "node scripts/build-review.mjs --check",
+  "node --test scripts/test-review.mjs",
   "cargo run --locked --package sdev --bin sdev -- lint",
 ]
 
