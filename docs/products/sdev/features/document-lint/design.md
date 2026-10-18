@@ -272,7 +272,11 @@ Sort diagnostics stably by relative path, line, column, code, and target.
 Show destination/reason without whole source bodies.
 JSON keys, code identifiers, and status values are stable; reasons, guidance sections, and text summaries follow the selected language, defaulting to English.
 `target` retains the checked link string; `guidance` has `command` and `section`.
-Invalid arguments write usage to stderr without starting checks.
+Once the display language is selected, invalid lint arguments write a localized reason and usage to stderr, leave stdout empty, and return 2 without starting checks.
+This applies to unknown formats, missing format values, and extra arguments, including extra arguments with `--format json`.
+Select the fixed reason with the existing Language value at the argument-error branch, using the same language as usage. Do not translate the assembled output by replacement.
+The existing language selection and two fixed messages are sufficient for this branch. Follow the Requirements' preference for translated errors without adding a translation mechanism or changing validation order merely to translate every error.
+Language-option and project-configuration errors occur before this branch and are outside this change; they may remain in English.
 File failures after checks begin stay within the same report format, including JSON.
 
 | Exit | Status | Condition |

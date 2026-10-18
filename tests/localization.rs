@@ -291,6 +291,43 @@ fn configuration_is_not_inherited_from_parent_directories() {
 }
 
 #[test]
+fn lint_argument_errors_follow_the_selected_language_before_checking_documents() {
+    for configured in ["en", "ja"] {
+        let p = Project::new();
+        p.write("sdev.toml", format!("language = '{configured}'\n"));
+        let before = p.snapshot();
+        // There is no docs directory: a lint report would prove checks started.
+        for explicit in [None, Some("en"), Some("ja")] {
+            let selected = explicit.unwrap_or(configured);
+            for invalid in [
+                vec!["--format", "yaml"],
+                vec!["--format"],
+                vec!["--format", "json", "unexpected"],
+            ] {
+                let mut args = vec!["lint"];
+                args.extend(invalid);
+                if let Some(language) = explicit {
+                    args.extend(["--lang", language]);
+                }
+                let result = p.run(&args);
+                assert_eq!(result.status.code(), Some(2), "{args:?}");
+                assert!(result.stdout.is_empty(), "{args:?}");
+                let error = String::from_utf8(result.stderr).unwrap();
+                let (reason, usage) = if selected == "ja" {
+                    ("lintの引数が不正です。", "現在のディレクトリをルートとして")
+                } else {
+                    ("Invalid lint arguments.", "from the current directory.")
+                };
+                assert!(error.starts_with(reason), "{args:?}: {error}");
+                assert!(error.contains("sdev lint [--format text|json]"));
+                assert!(error.contains(usage), "{args:?}: {error}");
+                assert_eq!(before, p.snapshot());
+            }
+        }
+    }
+}
+
+#[test]
 fn lint_localizes_text_but_keeps_codes_paths_and_counts() {
     let p = Project::new();
     p.write("docs/guide.md", "[missing](absent.md)\n");
