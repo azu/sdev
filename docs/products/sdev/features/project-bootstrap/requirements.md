@@ -209,7 +209,7 @@ Scenario: Updating to the current version leaves the launcher unchanged
 
 - Given: The generated launcher already selects the requested version.
 - When: The update verifies the selected release.
-- Then: It reports that the version is current and preserves the launcher's bytes and permissions.
+- Then: After verifying and reproducing the existing launcher, it reports that the version is current and preserves the launcher's bytes and permissions, without acquiring the same executable and checksum set again.
 
 Scenario: A changed or unsafe launcher cannot be overwritten
 
@@ -272,7 +272,7 @@ Rerunning installation at an existing launcher uses the same update, including f
 Compare the original launcher with its published version's generated content before allowing replacement; a header alone is insufficient.
 Check the new executable and all target checksums before switching. If the original launcher has a checksum pin, use that pin before running the old executable to reproduce its launcher. Preserve the previous launcher on failure and preserve all project documents.
 Use the existing checksum and optional attestation policy, without downgrading a requested verification after a failure.
-Updating to the current version preserves the launcher; selecting an older supported published version is explicit through `--version`.
+Updating to the current version verifies and reproduces the existing launcher once, then preserves it without repeating executable and checksum acquisition. Requested provenance and source-commit checks still apply. Selecting an older supported published version is explicit through `--version`.
 
 #### Exceptional behavior
 

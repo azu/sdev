@@ -291,6 +291,9 @@ update_project() {
     fi
     if [ "$verify" = true ]; then set -- "$@" --verify; fi
     if [ -n "$trusted_root" ]; then set -- "$@" --trusted-root "$trusted_root"; fi
+    if [ "$version" = "$update_old_version" ] && [ -n "$expected_commit" ]; then
+        set -- "$@" --source-commit "$expected_commit"
+    fi
     ( main "$@" ) >/dev/null || fail 'Could not verify the original launcher version; nothing updated'
     mkdir "$update_temporary/old-project"
     (
@@ -299,6 +302,19 @@ update_project() {
         initialize_project "$update_temporary/old/sdev" "$update_old_version" --path "$update_relative"
     ) >/dev/null || fail 'Could not reproduce the original launcher; nothing updated'
     cmp -s "$update_temporary/original" "$update_temporary/old-project/$update_relative" || fail 'Launcher has been edited; review it before updating'
+    if [ "$version" = "$update_old_version" ]; then
+        check_directory "$update_parent"
+        if [ -L "$update_target" ] || [ ! -f "$update_target" ]; then
+            fail 'Launcher file type changed during update'
+        fi
+        cmp -s "$update_temporary/original" "$update_target" || fail 'Launcher changed during update; nothing replaced'
+        if [ "${SDEV_UPDATE_LANGUAGE:-en}" = ja ]; then
+            printf 'sdev %sはすでに./%sで選択されています。\n' "$version" "$update_relative"
+        else
+            printf 'sdev %s is already selected by ./%s.\n' "$version" "$update_relative"
+        fi
+        return
+    fi
 
     set -- --version "$version" --install-dir "$update_temporary/new"
     if [ "$verify" = true ]; then set -- "$@" --verify; fi
@@ -320,14 +336,6 @@ update_project() {
         fail 'Launcher file type changed during update'
     fi
     cmp -s "$update_temporary/original" "$update_target" || fail 'Launcher changed during update; nothing replaced'
-    if [ "$version" = "$update_old_version" ]; then
-        if [ "${SDEV_UPDATE_LANGUAGE:-en}" = ja ]; then
-            printf 'sdev %sはすでに./%sで選択されています。\n' "$version" "$update_relative"
-        else
-            printf 'sdev %s is already selected by ./%s.\n' "$version" "$update_relative"
-        fi
-        return
-    fi
     update_cache=$update_root/.sdev/bin/$version/$platform-$arch
     check_directory "$update_cache"
     [ ! -L "$update_cache/sdev" ] || fail 'Cached executable must not be a symbolic link'
