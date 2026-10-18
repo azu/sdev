@@ -175,6 +175,18 @@ Scenario: Mixed violations and failures preserve both
 - When: Lint runs.
 - Then: Both are reported, and the overall result indicates incomplete checks.
 
+Scenario: Invalid lint arguments explain usage in the selected language
+
+- Given: The display language has been selected from valid project settings or an explicit supported language, and lint receives invalid command-specific arguments.
+- When: The user runs lint.
+- Then: The reason and usage are both shown in the selected language, without starting document checks or changing files. An explicit language takes precedence over project settings.
+
+Scenario: Invalid arguments do not produce a JSON check result
+
+- Given: The display language has been selected and lint receives a JSON output request together with an invalid extra argument.
+- When: The user runs lint.
+- Then: It explains the argument error and usage in that language rather than returning a document-check report.
+
 ## KPIs
 
 ### Results expose the agreed link rules

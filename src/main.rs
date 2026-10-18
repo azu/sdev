@@ -267,7 +267,10 @@ fn lint_command(
         }
         [] | ["--format", "text"] => "text",
         ["--format", "json"] => "json",
-        _ => return Err(invalid(format!("Invalid lint arguments.\n{help}"))),
+        _ => {
+            let reason = language.select("Invalid lint arguments.", "lintの引数が不正です。");
+            return Err(invalid(format!("{reason}\n{help}")));
+        }
     };
     let root = env::current_dir().map_err(|e| invalid(e.to_string()))?;
     let report = lint::check(&root).with_language(language);

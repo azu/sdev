@@ -2,6 +2,8 @@
 
 [日本語](README.ja.md)
 
+For a separate, optional experiment using a real change, see [Specification-centered review](spec-review/README.md). It uses conversation and existing checks rather than the intake harness below.
+
 Check whether an agent's response clarifies the user's request and stays within its scope. A separate fresh subagent judges response content against case-specific criteria, following the [agentic judge approach in agent-eval](https://github.com/vercel-labs/agent-eval#agentic-llm-judge). Each case separates the request in `help/<case>/PROMPT.md`, content criteria in `RUBRIC.json`, and checks in `EVAL.rs`. The harness runs through the existing Rust `cargo xtask`; it needs no additional runtime or crate dependencies.
 
 ## Prepare and run

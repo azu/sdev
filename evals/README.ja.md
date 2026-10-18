@@ -2,6 +2,8 @@
 
 [English](README.md)
 
+実際の変更を題材にする別の任意実験は、[仕様を中心にレビューする実験](spec-review/README.ja.md)を参照してください。以下の初回応答用の評価基盤とは分け、会話と既存の検査で試します。
+
 AIの応答が利用者の依頼を明確にし、その範囲を守っているかを確かめます。[agent-evalの意味を判定する方法](https://github.com/vercel-labs/agent-eval#agentic-llm-judge)を参考に、別の新しいsubagentがケースごとの基準で回答内容を判定します。各ケースの`help/<case>/PROMPT.md`を利用者の依頼、`RUBRIC.json`を内容の判定基準、`EVAL.rs`を検査として分けています。既存のRustの`cargo xtask`を使い、追加の実行環境やcrate依存は増やしません。
 
 ## 準備と実行
