@@ -30,6 +30,8 @@ Product crates are compiled into the executable; users need no separate librarie
 
 Compile Markdown under `docs/guidelines/` as task guides and under `docs/templates/` as built-in default templates.
 A catalog maps public operation/topic names, descriptions, and source paths. Names describe tasks and materials rather than being generated from filenames.
+Guide descriptions state both when to use the guide and what it helps accomplish, so agents can match exploratory requests as well as explicit document tasks.
+The descriptions select existing guidance; the guide bodies continue to own dialogue and work procedures.
 Generate CLI choices and guide reference commands from this catalog. Fail the build for mismatches with the material directories or duplicate operation/topic names.
 Add or remove source Markdown and catalog registrations together; do not maintain a separate material count.
 Do not bundle specifications in `docs/products/` or development conventions in `docs/engineering/`.

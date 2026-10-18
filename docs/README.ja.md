@@ -45,3 +45,4 @@ Rustの実装・検証を行う場合は、[Rust開発ガイド](engineering/gui
 目的と提供範囲は独立した[Rust開発基盤のProduct](products/development-platform/product.ja.md)、参照機能の条件と構成は[共通開発ガイドのRequirements](products/development-platform/features/common-development-guide/requirements.ja.md)と[Design](products/development-platform/features/common-development-guide/design.ja.md)に記述しています。
 採用する環境と共通CIの構成は[Rust開発環境と共通CIの設計](engineering/design/rust-development.ja.md)で定義します。
 この開発環境はsdev自身が対象であり、sdevを使う他のプロジェクトへ一律に適用しません。
+helpの説明を変えるときは、[ローカルでのエージェント評価](../evals/README.ja.md)で、独立したsubagentの判定を通じて聞き取りの応答の質を比較します。

@@ -45,3 +45,4 @@ Purpose and scope are defined in the separate [Rust development platform Product
 Start environment and CI changes from the [cross-platform CI guidance](engineering/guidelines/rust-development.md#ci-and-other-operating-systems).
 Adopted environment and CI decisions are in [Rust environment and shared CI design](engineering/design/rust-development.md).
 This environment applies to sdev itself; it does not require every consuming project to adopt Rust or these tools.
+Use the [local agent evaluations](../evals/README.md) to compare intake response quality through independent subagent judgments when changing help descriptions.

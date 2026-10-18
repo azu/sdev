@@ -59,6 +59,12 @@ Scenario: An agent can discover the available materials
 - When: It requests usage.
 - Then: The output lists guides by task and shared topic, template types, and how to read them, without requiring internal filenames.
 
+Scenario: An exploratory request can be matched to a guide
+
+- Given: The user is discussing an idea or a feature change without yet requesting a specification document.
+- When: The agent reads the available guides in the command's usage output.
+- Then: Each guide describes when to use it and what it helps accomplish, including dialogue to clarify vague ideas and feature requests.
+
 Scenario: A selected material has the same version as the command
 
 - Given: The repository does not contain a copy of the guidelines, and the agent can run the command.

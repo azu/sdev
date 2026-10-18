@@ -121,7 +121,7 @@ The project's default also selects the language of guides and templates when `--
 ## Read a guide
 
 Pass a task name to `help` to read its guide.
-List the available choices first:
+List the available choices first. Each description explains when to use the guide and what it helps accomplish, including early discussions of ideas and feature changes:
 
 ```sh
 ./bin/sdev help

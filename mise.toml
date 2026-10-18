@@ -35,6 +35,10 @@ run = [
 description = "Run the existing Rust checks"
 run = "cargo xtask check"
 
+[tasks."eval:check"]
+description = "Check the local evaluation harness without running agents"
+run = ["cargo build --locked --package sdev --bin sdev", "cargo test --locked --package xtask evals::"]
+
 [tasks.pre-commit]
 description = "Check staged document and Rust changes with hk"
 run = "hk run pre-commit"

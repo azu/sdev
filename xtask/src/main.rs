@@ -1,3 +1,4 @@
+mod evals;
 mod notices;
 mod publishing;
 mod release;
@@ -12,7 +13,7 @@ fn run() -> Result<()> {
     match args.as_slice() {
         [] | ["--help" | "-h"] => {
             println!(
-                "cargo xtask check [--target TARGET]\ncargo xtask build-release --target TARGET\ncargo xtask verify-release BINARY\ncargo xtask release-matrix\ncargo xtask release-preflight VERSION\ncargo xtask stage-release VERSION ARTIFACTS OUTPUT\ncargo xtask publish-release VERSION ARTIFACTS ATTESTATION"
+                "cargo xtask check [--target TARGET]\ncargo xtask eval prepare --binary BINARY --output DIRECTORY\ncargo xtask eval judge-prepare --output DIRECTORY\ncargo xtask eval score --output DIRECTORY\ncargo xtask build-release --target TARGET\ncargo xtask verify-release BINARY\ncargo xtask release-matrix\ncargo xtask release-preflight VERSION\ncargo xtask stage-release VERSION ARTIFACTS ATTESTATION"
             );
             Ok(())
         }
@@ -20,6 +21,7 @@ fn run() -> Result<()> {
             release::matrix();
             Ok(())
         }
+        ["eval", arguments @ ..] => evals::run(arguments),
         ["release-preflight", version] => publishing::preflight(version),
         ["stage-release", version, artifacts, output] => {
             publishing::stage(version, Path::new(artifacts), Path::new(output))
@@ -61,6 +63,17 @@ fn check(target: Option<&str>) -> Result<()> {
 }
 
 fn main() {
+    if env::current_exe()
+        .ok()
+        .is_some_and(|path| path.file_stem().is_some_and(|name| name == "sdev"))
+    {
+        let arguments: Vec<String> = env::args().skip(1).collect();
+        let code = evals::observe_wrapper(&arguments).unwrap_or_else(|error| {
+            eprintln!("{error}");
+            2
+        });
+        std::process::exit(code);
+    }
     if let Err(error) = run() {
         eprintln!("{error}");
         std::process::exit(1);
