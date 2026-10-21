@@ -3,18 +3,7 @@ let queue = Promise.resolve();
 let sequence = 0;
 
 async function loadRenderer() {
-  renderer ??= import("mermaid").then(({ default: mermaid }) => {
-    mermaid.initialize({
-      startOnLoad: false, securityLevel: "strict", htmlLabels: false,
-      suppressErrorRendering: true, maxTextSize: 50_000, maxEdges: 500,
-      theme: "default", fontFamily: "system-ui, sans-serif",
-      flowchart: { htmlLabels: false },
-      secure: ["secure", "securityLevel", "startOnLoad", "htmlLabels", "maxTextSize",
-        "maxEdges", "suppressErrorRendering", "flowchart", "theme", "themeCSS",
-        "themeVariables", "fontFamily", "layout", "look"],
-    });
-    return mermaid;
-  });
+  renderer ??= import("pele/lazy");
   return renderer;
 }
 
@@ -58,15 +47,16 @@ export function renderDiagrams(root, language, load = loadRenderer) {
     const task = queue.catch(() => {}).then(async () => {
       if (!figure.isConnected) return;
       try {
-        // Enforce before loading/parsing; Mermaid otherwise replaces oversized
-        // inputs with an error diagram, which would look like successful output.
+        // Enforce before loading/parsing so oversized inputs do not look successful.
         if (text.length > 50_000) throw new Error(language === "ja" ? "ソースが50,000文字を超えています。" : "Source exceeds 50,000 characters.");
-        const mermaid = await load();
+        const pele = await load();
         if (!figure.isConnected) return;
-        const { svg } = await mermaid.render(`sdev-diagram-${++sequence}`, text);
+        const { svg } = await pele.renderAsync(text, {
+          idPrefix: `sdev-diagram-${++sequence}`, links: false, images: false,
+          limit: 50_000, maxEdges: 500, outputLimit: 4_000_000,
+        });
         if (!figure.isConnected) return;
-        // Only Mermaid's strict renderer supplies this SVG; never bind diagram
-        // callbacks or use raw Markdown as HTML.
+        // Keep diagram links inert even if a renderer includes them in its SVG.
         const template = figure.ownerDocument.createElement("template");
         template.innerHTML = svg;
         for (const link of template.content.querySelectorAll("a")) link.replaceWith(...link.childNodes);

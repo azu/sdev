@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { Window } from "happy-dom";
 import { prepareDiagrams, renderDiagrams } from "../src/review/mermaid.js";
 
@@ -74,15 +74,19 @@ test("Mermaid figures retain source targets, render sequentially, and ignore det
   assert.equal(figure.querySelector("pre").hasAttribute("data-line"), false);
   let finish, started;
   const entered = new Promise((resolve) => { started = resolve; });
-  const drawn = renderDiagrams(root, "ja", async () => ({ render: (id, source) => {
-    assert.match(id, /^sdev-diagram-/); assert.equal(source, "flowchart LR\n A-->B\n"); started();
+  const drawn = renderDiagrams(root, "ja", async () => ({ renderAsync: (source, options) => {
+    assert.match(options.idPrefix, /^sdev-diagram-/);
+    assert.equal(source, "flowchart LR\n A-->B\n");
+    assert.equal(options.links, false); assert.equal(options.images, false);
+    assert.equal(options.limit, 50_000); assert.equal(options.maxEdges, 500);
+    started();
     return new Promise((resolve) => { finish = resolve; });
   } }));
   await entered;
   figure.remove(); finish({ svg: '<svg><text>Old result</text></svg>' }); await drawn;
   assert.equal(figure.querySelector("svg"), null);
   root.append(figure); figure.dataset.diagramState = "pending";
-  await renderDiagrams(root, "ja", async () => ({ render: async () => ({ svg: '<svg><a href="https://example.com"><text>New result</text></a></svg>' }) }));
+  await renderDiagrams(root, "ja", async () => ({ renderAsync: async () => ({ svg: '<svg><a href="https://example.com"><text>New result</text></a></svg>' }) }));
   assert.equal(figure.dataset.diagramState, "ready");
   assert.equal(figure.querySelector("svg text").textContent, "New result");
   assert.equal(figure.querySelector("a"), null);
@@ -99,7 +103,7 @@ test("failed or oversized Mermaid keeps literal source and does not stop the nex
   }
   prepareDiagrams(root, "en");
   let calls = 0;
-  await renderDiagrams(root, "en", async () => ({ render: async (_id, source) => {
+  await renderDiagrams(root, "en", async () => ({ renderAsync: async (source) => {
     calls++; if (source.startsWith("bad")) throw new Error("Invalid syntax <img src=x>");
     return { svg: "<svg></svg>" };
   } }));
@@ -109,6 +113,34 @@ test("failed or oversized Mermaid keeps literal source and does not stop the nex
   assert.equal(figures[0].querySelector("code").textContent, 'bad <script>alert(1)</script>');
   assert.equal(root.querySelector("script, img"), null);
   assert.match(figures[1].querySelector(".mermaid-status").textContent, /50,000/);
+  await window.happyDOM.abort();
+});
+
+test("Pele renders existing specification diagrams and keeps links inert", async () => {
+  const window = new Window(); const root = window.document.createElement("div");
+  window.document.body.append(root);
+  const docs = new URL("../docs/", import.meta.url);
+  const sources = [];
+  for (const path of await readdir(docs, { recursive: true })) {
+    if (!path.endsWith(".md")) continue;
+    const markdown = await readFile(new URL(path, docs), "utf8");
+    for (const match of markdown.matchAll(/^```mermaid\s*\n([\s\S]*?)^```/gm)) sources.push(match[1]);
+  }
+  assert.ok(sources.length >= 5);
+  sources.push(
+    "erDiagram\n REQUIREMENT ||--o{ DESIGN : informs",
+    "flowchart LR\n A[Open]-->B[Review]\n click A https://example.com",
+  );
+  for (const source of sources) {
+    const pre = window.document.createElement("pre"); pre.dataset.line = "1";
+    const code = window.document.createElement("code"); code.className = "language-mermaid";
+    code.textContent = source; pre.append(code); root.append(pre);
+  }
+  prepareDiagrams(root, "en"); await renderDiagrams(root, "en");
+  const figures = [...root.querySelectorAll("figure")];
+  assert.deepEqual(figures.map((node) => node.dataset.diagramState), sources.map(() => "ready"));
+  assert.equal(root.querySelectorAll("svg").length, sources.length);
+  assert.equal(root.querySelector("svg a, svg image, script"), null);
   await window.happyDOM.abort();
 });
 
