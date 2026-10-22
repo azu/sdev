@@ -1,0 +1,84 @@
+name: Create release PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'New stable version, such as 0.5.0 (without v)'
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  create:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Install the repository's pinned toolchain
+        run: rustup show active-toolchain
+      - name: Check the requested version and existing refs
+        env:
+          VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          if [[ ! "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo 'Enter a stable X.Y.Z version without v.' >&2
+            exit 1
+          fi
+          if git ls-remote --exit-code --heads origin "release/v$VERSION" >/dev/null; then
+            echo "release/v$VERSION already exists" >&2
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "v$VERSION" >/dev/null; then
+            echo "v$VERSION is already tagged" >&2
+            exit 1
+          fi
+          if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "v$VERSION already has a GitHub Release" >&2
+            exit 1
+          fi
+      - name: Update Cargo version and lockfile
+        env:
+          VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import re
+
+          path = pathlib.Path('Cargo.toml')
+          source = path.read_text()
+          match = re.search(r'(?m)^version = "(\d+\.\d+\.\d+)"$', source)
+          if match is None:
+              raise SystemExit('Missing stable package version in Cargo.toml')
+          old = tuple(map(int, match.group(1).split('.')))
+          new = tuple(map(int, os.environ['VERSION'].split('.')))
+          if new <= old:
+              raise SystemExit('Release version must be newer than Cargo.toml')
+          path.write_text(source[:match.start(1)] + os.environ['VERSION'] + source[match.end(1):])
+          PY
+          cargo update --workspace --offline
+          cargo build --locked --package sdev --bin sdev
+          git diff --check
+      - name: Open release PR
+        env:
+          VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          branch="release/v$VERSION"
+          git switch -c "$branch"
+          git add Cargo.toml Cargo.lock
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "chore: prepare v$VERSION release"
+          git push origin "$branch"
+          gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$branch" \
+            --title "chore: prepare v$VERSION release" \
+            --body "Update the sdev version and lockfile to $VERSION. After checks and review, merge this PR, then run Release sdev on main with version $VERSION."
