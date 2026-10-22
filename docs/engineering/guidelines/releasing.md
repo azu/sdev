@@ -240,11 +240,12 @@ Signing and notarization are not yet automated here.
 
 ## Release manually
 
-First update the product version in Cargo.toml, synchronize Cargo.lock through Cargo, and merge through normal review to main.
+In GitHub Actions, open Create release PR, select Run workflow on main, and enter the new stable version without `v`. Review the resulting PR and merge it to main after its checks pass. The workflow updates Cargo.toml and Cargo.lock; it does not publish a Release. Repository settings must allow GitHub Actions to create pull requests.
+Alternatively, update the product version in Cargo.toml, synchronize Cargo.lock through Cargo, and merge through normal review to main.
 Choose and commit the project LICENSE too. Missing/empty LICENSE or a requested version differing from Cargo prevents release.
 Accept stable `X.Y.Z`, such as `0.1.0`, without `v`, prerelease, or build metadata.
 
-In GitHub Actions, open Release sdev, select Run workflow, choose main, and enter the Cargo.toml version.
+After the version PR is merged, open Release sdev in GitHub Actions, select Run workflow on main, and enter the Cargo.toml version without `v`. Creating a GitHub Release directly in the Releases page does not build or verify the distribution assets.
 GitHub CLI invokes the same manual workflow. Replace this example's version with the one being published:
 
 ```sh
