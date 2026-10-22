@@ -9,6 +9,9 @@ on:
       - "licenses/*.md"
       - sdev.toml
       - scripts/check-doc-languages.mjs
+      - scripts/*review.mjs
+      - src/review/**
+      - pnpm-workspace.yaml
       - package.json
       - pnpm-lock.yaml
       - ".textlintrc*.json"
@@ -25,6 +28,9 @@ on:
       - "licenses/*.md"
       - sdev.toml
       - scripts/check-doc-languages.mjs
+      - scripts/*review.mjs
+      - src/review/**
+      - pnpm-workspace.yaml
       - package.json
       - pnpm-lock.yaml
       - ".textlintrc*.json"

@@ -171,6 +171,36 @@ AIはこれらのガイドに従って、利用者と目的や作業の範囲を
 通常はテキストで結果を表示し、他のツールから使う場合はJSONで取得できます。
 検査の範囲や終了コードは[文書リンク検査のRequirements](docs/products/sdev/features/document-lint/requirements.ja.md)を参照してください。
 
+## RequirementsとDesignをレビューする
+
+`review`は実際のGit差分を取り込み、仕様本文を読み進める画面を開きます。
+サーバーの環境変数へ`JEV_API_KEY`を安全に設定し、Jevを明示的に有効にすると、RequirementsとDesignの関連箇所や、仕様への対応を確認すべきコード変更を調べられます。
+
+```sh
+./bin/sdev help review
+./bin/sdev review --base main --serve --jev
+./bin/sdev review --base main --serve --jev --jev-model jev-1.13.0 --cache-dir "$HOME/.cache/sdev/review"
+```
+
+J/Kで文を読み進め、関連先を確認できます。
+ホバーやTabでフォーカスを移すだけでは、詳細を開いたり切り替えたりしません。
+クリックで本文にフォーカスすると、関連する文章をその場に開きます。
+関連の表示方法はポップオーバーへも切り替えられます。
+EnterまたはJ/K以外の文字入力で直下にコメントを始め、「メモをコピー」で元の文脈ごとAgentとの会話へ貼り付けられます。
+サーバーモードの「Agentに渡す」は、起動したコマンドの出力へ`review.feedback`のJSON行を返し、起動元Agentが読めるようにします。
+待機中のAgentを自動で再開する機能ではありません。保存にはMarkdownとJSONの書き出しも使えます。
+
+Jevは取り込んだ文章と差分を判定し、理由の文章は生成しません。
+コードの照合結果は対応先なし・不確かな候補として人が確認し、仕様が完全だという証明には使いません。
+実際の入力・モデル・判定条件を基にキャッシュします。
+キーはサーバー側で保持し、`--jev`を明示した場合だけ仕様やコードの情報を外部へ送ります。
+
+`--output /tmp/review.html`でオフラインの単一HTMLも生成できます。
+`--prepare`と`--input`は固定した比較やAgentの補助材料を扱う任意の手段であり、動的な照会に手書きの対応関係JSONは不要です。
+作業ツリーの配信では、保存した仕様とコードを再読み込みなしで反映し、コメントを保って判定を更新します。
+準備済み入力・2コミット間の比較・単一HTMLは固定したまま扱い、既存の出力ファイルは保持します。
+対象範囲は[レビューのRequirements](docs/products/sdev/features/specification-review/requirements.ja.md)を参照してください。
+
 ## sdevを開発する
 
 Rustの環境を用意し、開発用のツールと検査コマンドは[mise](https://mise.jdx.dev/getting-started.html)でそろえます。

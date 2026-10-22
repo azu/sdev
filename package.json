@@ -6,6 +6,11 @@
     "node": ">=22.13.0"
   },
   "devDependencies": {
+    "@pierre/diffs": "1.5.2",
+    "esbuild": "0.28.2",
+    "happy-dom": "21.0.3",
+    "pele": "1.6.0",
+    "shiki": "4.5.0",
     "textlint": "15.8.0",
     "textlint-rule-preset-ja-technical-writing": "12.0.2",
     "textlint-rule-preset-slopless": "npm:slopless@0.2.41"

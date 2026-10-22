@@ -1,0 +1,35 @@
+sdev review [--base REF] [--head REF] [--spec PATH] [--prepare] [--input FILE] [--output FILE | --serve [--port PORT]] [--jev [--jev-model MODEL] [--cache-dir PATH]] [--lang en|ja]
+
+Read Requirements and Design, find related passages, and inspect code changes needing specification review.
+  sdev review --base main --serve --jev
+  sdev review --base main --output /tmp/review.html
+  sdev help review
+
+Jev mode requires --serve and JEV_API_KEY privately set in the server environment.
+Only explicit --jev sends captured specification and code context to https://api.typesafe.ai.
+Credentials stay on the server, never in HTML, browser requests, exports, or cache.
+--jev-model defaults to pinned jev-1.13.0. --cache-dir defaults to $XDG_CACHE_HOME/sdev/review or $HOME/.cache/sdev/review.
+Cache identity includes actual text, differences, candidates, model, and judgment conditions. Corrupt entries are misses; aliases expire after one hour.
+
+Click text for related Req/Design passages and keep details open. Hover and passive focus do not change details.
+J/K move between sentences. Enter or other typing starts an inline comment and retains the first character.
+Choose inline peek or popover. Copy notes as contextual Markdown; file exports remain available.
+Send to agent returns review.feedback JSON lines through the server launch output; the launching agent reads its running-command output. It does not resume an idle agent.
+Comments stay in page memory; copy, hand off, or export before closing. Add drafts as comments before handing them over.
+The code check finds changes worth recording whose content is absent or uncertain in the supplied specifications.
+These are candidates, not proven violations. Show inspected/total and partial/unavailable input separately.
+Jev returns judgments, not generated rationale. Live queries do not require hand-written review items.
+
+Capture at the Git root. Default: HEAD vs working tree (staged, unstaged, and non-ignored untracked files).
+--head compares two commits. --spec adds requirements[.LANG].md or design[.LANG].md; repeat as needed.
+Same-feature specifications are context, not inferred links. Use --lang ja for Japanese display.
+--prepare writes optional snapshot JSON; --input reads it without Git. See sdev help review for supplementary item fields.
+Working-tree servers automatically update saved specifications and code without reloading the page. Comments retain their original targets; old judgments are replaced.
+Prepared --input, explicit --head comparisons, and standalone HTML stay fixed. Do not edit captured text to fit explanations.
+Static HTML works offline, with no live Jev queries. It excludes full implementation files.
+
+Default output: preparation to stdout, rendering to sdev-review.html. --output - writes stdout; existing files are preserved.
+--input cannot combine capture flags or --prepare. --serve cannot combine --prepare or --output.
+--port requires --serve; default 0 selects a free port. The server prints its 127.0.0.1 URL and runs until Ctrl-C.
+Text limit: 1 MiB per side, 16 MiB total, 500 files. Unsupported content is reported.
+Exit codes: 0 success / 1 capture, input, output or server failure / 2 invalid arguments or configuration.

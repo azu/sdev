@@ -12,5 +12,10 @@ Dependencies used only by development tasks or build scripts are excluded.
 Missing required notices fail release preparation rather than being omitted.
 There is no CLI operation for displaying notices or reading notice files at runtime.
 
+The review viewer embeds JavaScript dependencies as product assets.
+`node scripts/build-review.mjs` gathers full notices from the packages included in its bundle and commits them with the generated assets.
+The executable includes those notices and places them in every generated review HTML; viewing and generation do not need separate notice files.
+Run `node scripts/build-review.mjs --check` after installing locked development dependencies to verify the committed bundle and notices.
+
 sdev itself uses the MIT License, whose text is in the root LICENSE file.
 Release preparation copies LICENSE alongside the other notices.

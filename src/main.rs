@@ -3,6 +3,7 @@ mod language;
 #[cfg(unix)]
 mod launcher;
 mod lint;
+mod review;
 mod update;
 
 use language::{Language, ProjectConfig};
@@ -63,6 +64,10 @@ fn overview(writer: &mut impl Write, operation: &str, language: Language) -> Res
         )?;
     }
     if operation == "help" {
+        output(writer, language.select(
+            "\n  sdev review                Review specifications and Git differences in one HTML file\n",
+            "\n  sdev review                仕様とGit差分を単一HTMLでレビュー\n",
+        ))?;
         output(writer, language.select(
             "\n  sdev init                  Set up project instructions, languages, and a launcher\n  sdev update                Update the project launcher\n  sdev lint                  Check document links and reference directions\n  sdev template              List templates\n  sdev --version             Show version\n\nUse the consuming project's Product → Requirements → Design, not sdev's own specifications.\nSelect a language with --lang en|ja. Configure project defaults in sdev.toml.\n",
             "\n  sdev init                  プロジェクトの参照指示・言語・起動方法を準備\n  sdev update                プロジェクトの起動スクリプトを更新\n  sdev lint                  文書のリンク切れと参照方向を検査\n  sdev template              テンプレートの種類を確認\n  sdev --version             バージョン\n\n利用先のProduct → 機能のRequirements → Designを前提に進めます。\nsdev自身の仕様ではなく、作業するプロジェクトの文書を参照してください。\n--lang en|jaで言語を選択できます。プロジェクトの既定はsdev.tomlに設定します。\n"))?;
@@ -144,6 +149,16 @@ fn run(args: &[String], writer: &mut impl Write) -> Result<u8, CliError> {
     let language = explicit.unwrap_or_else(|| config.as_ref().map_or(Language::En, |c| c.language));
     let result = match values.as_slice() {
         ["lint", rest @ ..] => lint_command(rest, writer, language),
+        ["review", rest @ ..] => {
+            if matches!(rest, ["--help" | "-h"]) {
+                output(writer, review::help(language)).map(|()| 0)
+            } else {
+                let arguments = review::arguments(rest).map_err(invalid)?;
+                review::run(&arguments, &root, writer, language)
+                    .map(|()| 0)
+                    .map_err(|message| CliError { status: 1, message })
+            }
+        }
         ["init", rest @ ..] => init_command(rest, writer, language, explicit, config.as_ref()),
         ["update", rest @ ..] => update_command(rest, writer, language),
         [] | ["--help" | "-h" | "help"] | ["help", "--help" | "-h"] => {

@@ -50,6 +50,13 @@ pub const TOPICS: &[Topic] = &[
         source: "docs/guidelines/scenarios.md",
     },
     Topic {
+        operation: "help",
+        name: "review",
+        title: "When reviewing specifications: find related Requirements and Design passages and inspect code changes without specification coverage",
+        title_ja: "仕様からレビューするとき、RequirementsとDesignの関連箇所と、仕様への対応を確認すべきコード変更を調べる",
+        source: "docs/guidelines/review.md",
+    },
+    Topic {
         operation: "template",
         name: "product",
         title: "Product template",
