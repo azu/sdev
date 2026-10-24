@@ -170,7 +170,7 @@ pub fn build(name: &str) -> Result<()> {
     let crate_notices = "THIRD-PARTY-CRATES.html";
     fs::write(
         artifact.parent().unwrap().join(crate_notices),
-        crate::notices::crates(name)?,
+        crate::notices::crates()?,
     )?;
     if root().join("LICENSE").is_file() {
         fs::copy(
@@ -328,7 +328,7 @@ pub fn verify(path: &Path) -> Result<()> {
     }
     if metadata["crate_notices"] != "THIRD-PARTY-CRATES.html"
         || fs::read_to_string(binary.parent().unwrap().join("THIRD-PARTY-CRATES.html"))?
-            != crate::notices::crates(target_name)?
+            != crate::notices::crates()?
     {
         return Err("Crate notices mismatch".into());
     }

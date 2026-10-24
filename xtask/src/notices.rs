@@ -10,9 +10,9 @@ fn escape(value: &str) -> String {
         .replace('"', "&quot;")
 }
 
-// Use the resolved normal dependency graph, not the xtask/build-only graph.
-// License bodies come from the exact downloaded package selected by Cargo.lock.
-pub fn crates(target: &str) -> Result<String> {
+// Use the normal dependency graph for every target so the release has one
+// shared notice file. License bodies come from the exact package in Cargo.lock.
+pub fn crates() -> Result<String> {
     let toolchain = Toolchain::new()?;
     let tree = support::output(toolchain.cargo().args([
         "tree",
@@ -26,7 +26,7 @@ pub fn crates(target: &str) -> Result<String> {
         "--format",
         "{p}",
         "--target",
-        target,
+        "all",
     ]))?;
     let metadata: Value = serde_json::from_str(&support::output(toolchain.cargo().args([
         "metadata",
