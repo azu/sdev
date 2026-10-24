@@ -273,6 +273,7 @@ impl Fixture {
         );
     }
     fn update_environment(&self, command: &mut Command) {
+        static NEXT_WRAPPER: AtomicU64 = AtomicU64::new(0);
         let tools = self.root.join("tools");
         fs::create_dir_all(&tools).unwrap();
         let curl = Command::new("sh")
@@ -282,8 +283,13 @@ impl Fixture {
         assert!(curl.status.success());
         let real_curl = String::from_utf8(curl.stdout).unwrap();
         let wrapper = tools.join("curl");
-        fs::write(&wrapper, "#!/bin/sh\nset -eu\nremaining=$#\nwhile [ \"$remaining\" -gt 0 ]; do\n arg=$1; shift; remaining=$((remaining-1))\n case \"$arg\" in\n  --proto|--proto-redir) shift; remaining=$((remaining-1)) ;;\n  --tlsv1.2) ;;\n  https://github.com/azu/sdev/releases*) set -- \"$@\" \"$TEST_RELEASES${arg#https://github.com/azu/sdev/releases}\" ;;\n  *) set -- \"$@\" \"$arg\" ;;\n esac\ndone\nresult=$(\"$TEST_REAL_CURL\" \"$@\") || exit $?\nprintf '%s' \"$result\" | sed \"s#$TEST_RELEASES#https://github.com/azu/sdev/releases#g\"\n").unwrap();
-        fs::set_permissions(wrapper, fs::Permissions::from_mode(0o755)).unwrap();
+        let replacement = tools.join(format!(
+            "curl-{}",
+            NEXT_WRAPPER.fetch_add(1, Ordering::Relaxed)
+        ));
+        fs::write(&replacement, "#!/bin/sh\nset -eu\nremaining=$#\nwhile [ \"$remaining\" -gt 0 ]; do\n arg=$1; shift; remaining=$((remaining-1))\n case \"$arg\" in\n  --proto|--proto-redir) shift; remaining=$((remaining-1)) ;;\n  --tlsv1.2) ;;\n  https://github.com/azu/sdev/releases*) set -- \"$@\" \"$TEST_RELEASES${arg#https://github.com/azu/sdev/releases}\" ;;\n  *) set -- \"$@\" \"$arg\" ;;\n esac\ndone\nresult=$(\"$TEST_REAL_CURL\" \"$@\") || exit $?\nprintf '%s' \"$result\" | sed \"s#$TEST_RELEASES#https://github.com/azu/sdev/releases#g\"\n").unwrap();
+        fs::set_permissions(&replacement, fs::Permissions::from_mode(0o755)).unwrap();
+        fs::rename(replacement, wrapper).unwrap();
         command
             .env(
                 "PATH",
