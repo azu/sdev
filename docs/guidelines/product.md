@@ -29,6 +29,11 @@ Make the overview explain the product on the first reading, and distinguish back
 Identify concrete usage situations rather than an audience as broad as everyone.
 Define product-wide outcomes separately from feature acceptance criteria.
 
+For key concepts, write the names and meanings of concepts visible to users, as the reference for terms used in Requirements and Design.
+For the feature list, write each feature's name, a one-line description, and a link to its Requirements, or "Not written" when it has none yet.
+Add a row when a feature is added, and leave feature conditions to Requirements.
+When code already exists, follow [Start specifications in a project with existing code](brownfield.md) to read both from the code and existing documents.
+
 Describe reliability indicators, targets, and measurement methods.
 When none are appropriate, state that decision and its reason. Never present unmeasured values as results.
 Leave feature implementation methods and file layouts to their own documents.

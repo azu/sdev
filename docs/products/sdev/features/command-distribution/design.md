@@ -131,6 +131,7 @@ There is no user database, so no ER diagram is needed.
 | `sdev help documents` | Document roles, placement, updates, and template selection |
 | `sdev help workflow` | Conversation, research, implementation, and verification principles |
 | `sdev help scenarios` | Acceptance scenario guide |
+| `sdev help brownfield` | Guide for starting specifications in a project with existing code |
 | `sdev template` | Built-in default types and reminder to prefer project-designated templates |
 | `sdev template product` / `requirements` / `design` | The selected default's original Markdown |
 | `sdev --version` | Running sdev version |

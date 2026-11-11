@@ -139,6 +139,7 @@ translations = ["ja"]
 | `./bin/sdev help documents` | 文書の責務・配置・更新 |
 | `./bin/sdev help workflow` | 対話・調査・実装・検証の進め方 |
 | `./bin/sdev help scenarios` | 受け入れ条件のシナリオ |
+| `./bin/sdev help brownfield` | 既存コードのあるプロジェクトで仕様を始める手順 |
 
 AIはこれらのガイドに従って、利用者と目的や作業の範囲を整理します。
 「作りたい」という相談だけで実装を始めず、文書の作成だけを頼まれた場合は、その提示で区切ります。

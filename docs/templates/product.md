@@ -32,6 +32,18 @@
 - **Offering:** [What value is provided]
 - **Reason:** [Why provide it? Support any competitive comparison with evidence.]
 
+## Key concepts
+
+- **[Concept name]:** [Meaning of a concept visible to users. It is the reference for terms used in Requirements and Design. If none, write "None" and the reason.]
+
+## Feature list
+
+| Feature | Description | Specification |
+| --- | --- | --- |
+| [Feature name] | [One-line description. Do not write feature conditions.] | [Relative link to its Requirements, or "Not written" if it has none yet.] |
+
+[If there are no features yet, write "None" and the reason.]
+
 ## Definition of success
 
 [The desired product-wide outcome, distinct from feature acceptance criteria.]

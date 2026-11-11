@@ -152,6 +152,18 @@ fn each_guide_keeps_its_role_and_routes_to_related_commands() {
     ] {
         assert!(requirements.contains(required), "{required}");
     }
+    assert!(requirements.contains("sdev help brownfield"));
+    let brownfield = success(&["help", "brownfield"]);
+    for required in [
+        "不明であることを文章で書きます",
+        "未作成",
+        "sdev help product",
+        "sdev help requirements",
+        "sdev help design",
+        "sdev template product",
+    ] {
+        assert!(brownfield.contains(required), "{required}");
+    }
     let design = success(&["help", "design"]);
     assert!(design.contains("親Productと対象Requirements"));
     assert!(design.contains("sdev template design"));

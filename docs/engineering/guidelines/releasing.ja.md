@@ -162,6 +162,7 @@ sdev help design
 sdev help documents
 sdev help workflow
 sdev help scenarios
+sdev help brownfield
 ```
 
 言語はsdev.tomlに従い、未設定では英語です。`--lang ja`または`--lang en`で今回の言語を選べます。
