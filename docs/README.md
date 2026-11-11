@@ -37,6 +37,8 @@ Guidelines define judgment and working practices; templates define document stru
 | Design | [Language and document localization design](products/sdev/features/localization/design.md) |
 | Requirements | [Specification-centered review](products/sdev/features/specification-review/requirements.md) |
 | Design | [Specification-centered review design](products/sdev/features/specification-review/design.md) |
+| Requirements | [Start specifications in a project with existing code](products/sdev/features/brownfield-start/requirements.md) |
+| Design | [Design for starting specifications in a project with existing code](products/sdev/features/brownfield-start/design.md) |
 
 Follow [Document responsibilities and updates](guidelines/documents.md) for placement and relationships.
 For selecting distributions, reading materials through commands, and preparing updates and publication, read [Releasing and updating](engineering/guidelines/releasing.md).
