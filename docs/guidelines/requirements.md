@@ -4,6 +4,7 @@
 
 Read [Document responsibilities and updates](documents.md), [Scenarios](scenarios.md), [Agent working principles](agent.md), and the [Requirements template](../templates/requirements.md).
 Identify and read the parent Product. If absent, [write the Product](product.md) first.
+If the Product is absent and code already exists, follow [Start specifications in a project with existing code](brownfield.md).
 If the target is unclear, inspect existing Products and feature lists, then present candidates.
 Follow [template selection](documents.md#choosing-templates): the linked template is sdev's fallback when no applicable project template is designated.
 

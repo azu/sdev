@@ -12,6 +12,7 @@ This entry point and its linked documents support work from writing specificatio
 | Task | Guidelines | Prerequisite specifications | Template |
 | --- | --- | --- | --- |
 | Define product purpose, users, and value | [Writing a Product](guidelines/product.md) | Existing target Product, if any | [product.md](templates/product.md) |
+| Start specifications in a project that has code but no specifications | [Start specifications in a project with existing code](guidelines/brownfield.md) | Existing code, tests, README, and documents | [product.md](templates/product.md), then the templates for the documents written |
 | Specify feature behavior and acceptance criteria | [Writing Requirements](guidelines/requirements.md), [Scenarios](guidelines/scenarios.md) | Target Product; existing Requirements and Design for changes | [requirements.md](templates/requirements.md) |
 | Choose how to meet requirements | [Writing Design](guidelines/design.md) | Target Product, Requirements, and existing Design | [design.md](templates/design.md) |
 | Implement, verify, or revise existing documents | [Document responsibilities and updates](guidelines/documents.md), [Implementation and verification](guidelines/agent.md#implementation-and-verification) | Target Product, Requirements, and Design | Template applicable to the document |

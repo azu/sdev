@@ -12,6 +12,7 @@
 | 作業 | 読むガイドライン | 前提となる仕様 | テンプレート |
 | --- | --- | --- | --- |
 | プロダクトの目的・利用者・価値を決める | [Productを書く](guidelines/product.ja.md) | 対象の既存Productがあれば読む | [product.md](templates/product.ja.md) |
+| コードがあり仕様がないプロジェクトで仕様を起点にした開発を始める | [既存コードのあるプロジェクトで仕様を起点にした開発を始める](guidelines/brownfield.ja.md) | 既存のコード・テスト・README・文書 | [product.md](templates/product.ja.md)、続いて書く文書のテンプレート |
 | 機能の振る舞い・受け入れ条件を決める | [Requirementsを書く](guidelines/requirements.ja.md)、[シナリオ](guidelines/scenarios.ja.md) | 対象Product、変更なら既存Requirements・Design | [requirements.md](templates/requirements.ja.md) |
 | 要件を実現する方法を決める | [Designを書く](guidelines/design.ja.md) | 対象Product・Requirements、既存Design | [design.md](templates/design.ja.md) |
 | 実装・検証・既存文書の変更を行う | [文書の責務と更新](guidelines/documents.ja.md)、[実装と検証](guidelines/agent.ja.md#実装と検証) | 対象Product・Requirements・Design | 変更対象の文書のテンプレート |
@@ -37,8 +38,8 @@
 | Design | [言語と文書の設計](products/sdev/features/localization/design.ja.md) |
 | Requirements | [仕様を中心にしたレビュー](products/sdev/features/specification-review/requirements.ja.md) |
 | Design | [仕様を中心にしたレビューの設計](products/sdev/features/specification-review/design.ja.md) |
-| Requirements | [既存コードのあるプロジェクトで仕様を始める](products/sdev/features/brownfield-start/requirements.ja.md) |
-| Design | [既存コードのあるプロジェクトで仕様を始める設計](products/sdev/features/brownfield-start/design.ja.md) |
+| Requirements | [既存コードのあるプロジェクトで仕様を起点にした開発を始める](products/sdev/features/brownfield-start/requirements.ja.md) |
+| Design | [既存コードのあるプロジェクトで仕様を起点にした開発を始める設計](products/sdev/features/brownfield-start/design.ja.md) |
 
 文書の配置と関係は[文書の責務と更新](guidelines/documents.ja.md)に従います。
 

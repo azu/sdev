@@ -12,7 +12,7 @@ Keep task plans, verification results, and completion records in the conversatio
 
 | Type | Content | When to write | Excludes |
 | --- | --- | --- | --- |
-| Product (product.md) | What is offered, to whom, and why; background, users, value, success, development principles, service guarantees, and reliability targets | Product creation or changes in purpose or users | Feature inputs, outputs, acceptance criteria, and implementation methods |
+| Product (product.md) | What is offered, to whom, and why; background, users, value, key concepts, the feature list, success, development principles, service guarantees, and reliability targets | Product creation, changes in purpose or users, or adding a feature | Feature inputs, outputs, acceptance criteria, and implementation methods |
 | Requirements (requirements.md) | Feature scope, user actions, acceptance criteria, success measures, conditions, data needs, external usage dependencies, and safety conditions | Defining a feature or changing its behavior | Repeated Product explanations and implementation details such as types, storage, or APIs |
 | Design (design.md) | Methods and reasons sufficient to implement its Requirements: responsibilities, flows, structures, interfaces, integration, protection, deployment notes, and alternatives | Before implementing the corresponding Requirements; update as described below | Redefining requirements, restating Product reliability targets, and test design or execution procedures |
 

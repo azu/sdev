@@ -135,6 +135,7 @@ List the available choices first. Each description explains when to use the guid
 | `./bin/sdev help documents` | Document responsibilities, placement, and updates |
 | `./bin/sdev help workflow` | Dialogue, research, implementation, and verification |
 | `./bin/sdev help scenarios` | Acceptance scenarios |
+| `./bin/sdev help brownfield` | Starting specifications in a project with existing code |
 
 Agents use these guides to clarify purpose and scope with the user.
 An idea alone does not authorize implementation; a request limited to writing a document ends with presenting it for review.

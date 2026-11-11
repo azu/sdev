@@ -28,13 +28,14 @@ mod requirements_followup;
 #[path = "../../evals/help/version/EVAL.rs"]
 mod version;
 
-const GUIDES: [&str; 6] = [
+const GUIDES: [&str; 7] = [
     "product",
     "requirements",
     "design",
     "documents",
     "workflow",
     "scenarios",
+    "brownfield",
 ];
 const INSTRUCTIONS: &str = "Read `./sdev help` first. Choose and read the guides relevant to the user's request, then carry out the request. Respond in the user's language.\n";
 const CONFIG: &str = "language = \"en\"\ntranslations = [\"ja\"]\n";

@@ -160,6 +160,7 @@ sdev help design
 sdev help documents
 sdev help workflow
 sdev help scenarios
+sdev help brownfield
 ```
 
 Internal filenames are unnecessary. Guide references point to subsequent commands.
