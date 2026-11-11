@@ -37,6 +37,8 @@
 | Design | [言語と文書の設計](products/sdev/features/localization/design.ja.md) |
 | Requirements | [仕様を中心にしたレビュー](products/sdev/features/specification-review/requirements.ja.md) |
 | Design | [仕様を中心にしたレビューの設計](products/sdev/features/specification-review/design.ja.md) |
+| Requirements | [既存コードのあるプロジェクトで仕様を始める](products/sdev/features/brownfield-start/requirements.ja.md) |
+| Design | [既存コードのあるプロジェクトで仕様を始める設計](products/sdev/features/brownfield-start/design.ja.md) |
 
 文書の配置と関係は[文書の責務と更新](guidelines/documents.ja.md)に従います。
 
