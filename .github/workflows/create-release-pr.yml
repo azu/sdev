@@ -49,6 +49,9 @@ jobs:
           VERSION: ${{ inputs.version }}
         shell: bash
         run: |
+          # A fresh runner has no registry cache, so download the locked
+          # dependencies before the offline lockfile update below.
+          cargo fetch --locked
           python3 - <<'PY'
           import os
           import pathlib
