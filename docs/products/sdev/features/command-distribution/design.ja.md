@@ -134,7 +134,7 @@ sequenceDiagram
 | `sdev help documents --lang ja` | 文書の責務・配置・更新とテンプレートの選び方 |
 | `sdev help workflow --lang ja` | 対話・調査・実装・検証の作業原則 |
 | `sdev help scenarios --lang ja` | 受け入れ条件のシナリオのガイド |
-| `sdev help brownfield --lang ja` | 既存コードのあるプロジェクトで仕様を始めるガイド |
+| `sdev help brownfield --lang ja` | 既存コードのあるプロジェクトで仕様を起点にした開発を始めるガイド |
 | `sdev template --lang ja` | 内蔵の既定テンプレートの種類と利用先の指定を優先する案内 |
 | `sdev template product --lang ja` / `requirements` / `design` | 選んだ既定テンプレートの元のMarkdown本文 |
 | `sdev --version` | 実行中のsdevのバージョン |

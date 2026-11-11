@@ -4,7 +4,7 @@
 
 [文書の責務と更新](documents.ja.md)、[シナリオ](scenarios.ja.md)、[エージェントの作業原則](agent.ja.md)、[Requirementsテンプレート](../templates/requirements.ja.md)を読みます。
 親Productを特定して読み、なければ[Productの作成](product.ja.md)から行います。
-Productがなく、すでにコードがある場合は、[既存コードのあるプロジェクトで仕様を始める](brownfield.ja.md)に従います。
+Productがなく、すでにコードがある場合は、[既存コードのあるプロジェクトで仕様を起点にした開発を始める](brownfield.ja.md)に従います。
 対象が曖昧なら既存Product・機能の一覧を調べて候補を示します。
 テンプレートは[選び方](documents.ja.md#テンプレートの選び方)に従って選び、上のリンクは適用するものがない場合のsdevの既定テンプレートとして使います。
 

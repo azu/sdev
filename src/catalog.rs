@@ -53,7 +53,7 @@ pub const TOPICS: &[Topic] = &[
         operation: "help",
         name: "brownfield",
         title: "When starting specifications in a project that already has code but no Product, Requirements, or Design: write only the documents needed to start the next change or feature",
-        title_ja: "コードがあり仕様がないプロジェクトで仕様を始めるとき、次の変更や新機能を始めるために必要な文書だけを書き起こす",
+        title_ja: "コードがあり仕様がないプロジェクトで仕様を起点にした開発を始めるとき、次の変更や新機能を始めるために必要な文書だけを書き起こす",
         source: "docs/guidelines/brownfield.md",
     },
     Topic {
