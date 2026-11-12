@@ -54,18 +54,23 @@ A current-state document is an ordinary Requirements or Design, and the next cha
 The guide separates where each kind of content is confirmed.
 The current behavior and structure (what the code does) are confirmed in the code and tests.
 Explanations in the README and existing documents are used as hints for where to read in the code, and are not copied as the current state.
-Reasons (why the code does it) often cannot be read from the code, and explanations in existing documents describe the time they were written, so reasons are settled by the developer's confirmation.
-Copying explanations from existing documents makes the body read as what a material says, such as "The README explains that ...", and leaves unconfirmed content in the same place as settled content.
+Copying descriptions of behavior as they are makes the body read as what a material says, such as "The README explains that ...", and leaves content not confirmed in the code in the same place as settled content.
 
-The guide says to confirm reasons in the conversation before saving the documents.
-When the review of a document is the first place of confirmation, unconfirmed content is first written in the body, and stays there if the review misses it.
+Reasons (why the code does it) often cannot be read from the code, so a reason in the README, existing documents, or history is adopted when it does not disagree with the behavior of the code.
+An adopted reason is written in the body as a description of the design or product, not as what a material says, and is shown with its material in the breakdown of the basis when presenting.
+When a reason in an existing document no longer applies, the developer corrects it in review.
+Confirming every reason in advance would mean many questions and more effort to start.
+A reason the agent thought of from the material when the material has no reason is a guess, so it is treated as unconfirmed.
+
+When the agent can talk with the developer, it may ask its questions together before writing the documents.
+It may also write the documents without waiting for answers; then the items that wait for an answer are left as unconfirmed and asked about when presenting.
 
 Documents separate content into the following three states.
 
 | State | Content | Where it is written |
 | --- | --- | --- |
-| Settled | Content confirmed in code or tests, and content the developer answered or confirmed as still correct | The body, as a description of the product or feature itself |
-| Unconfirmed | Content read from the material that is waiting for the developer's confirmation | The open questions of that document, with what needs confirmation, the candidate read from the material and that material, that it stays out of the body until decided, and who decides |
+| Settled | Content confirmed in code or tests, reasons taken from existing documents, and content the developer answered | The body, as a description of the product or feature itself |
+| Unconfirmed | Content waiting for the developer's answer, such as contradictions between materials, or candidates the agent thought of for a reason not in the material | The open questions of that document, with what needs confirmation, the candidate and the material it is based on, that it stays out of the body until decided, and who decides |
 | Unknown | A reason the developer does not know either | The position in the body where the rationale is written, stated in prose |
 
 Unconfirmed items are placed in the open questions, which every template has.
@@ -78,9 +83,9 @@ For alternatives considered, when there is no record, the Design states that the
 Writing "None, because this describes the current state" cannot be told apart from not having considered alternatives, so the guide says not to write it that way.
 Neither unconfirmed items nor unknowns get a dedicated marker or metadata, so the text reads as ordinary Markdown prose.
 
-The breakdown of the basis is written, in the report given when the documents are presented, in four groups.
-They are content confirmed in code or tests, content based on the developer's answers or confirmation, content left as unconfirmed in the open questions, and content left unknown.
-Content merely copied from existing documents is not a group; an explanation in an existing document becomes content of another group when it is confirmed in the code or by the developer.
+The breakdown of the basis is written, in the report given when the documents are presented, in five groups.
+They are content confirmed in code or tests, reasons taken from existing documents, content based on the developer's answers, content left as unconfirmed in the open questions, and content left unknown.
+Reasons taken from existing documents are listed with their material, so that the developer can check in review whether any no longer applies.
 This report is kept in the conversation or PR description and is not saved in a document.
 This matches the existing placement rule that verification results for a piece of work are not placed in documents.
 
@@ -229,12 +234,12 @@ However, settled and unconfirmed content mix in the body, and a reader who misse
 It also lets sentences copied from existing documents, such as "The README explains that ...", remain in the body.
 The body holds only settled content, and unconfirmed content is written separately in the existing open questions section.
 
-### Treat reasons in existing documents as settled content
+### Confirm every reason in existing documents with the developer before writing
 
-This writes reasons found in the README or existing documents as settled content without asking the developer.
-It has the advantage of fewer questions to the developer.
-However, a reason in an existing document describes the time it was written, and may differ from the current purpose or decisions.
-Only the developer can settle a reason, so reasons in existing documents are treated as candidates for questions.
+This treats a reason in the README or existing documents as a candidate until the developer confirms it is still correct.
+It has the advantage that no outdated reason is written in the body.
+However, every reason becomes a question, which increases the effort to start, and most reasons in existing documents are still correct.
+Reasons are adopted, shown with their material in the breakdown of the basis, and corrected by the developer in review when they no longer apply.
 
 ## Open questions
 

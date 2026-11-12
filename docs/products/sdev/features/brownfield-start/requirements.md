@@ -143,11 +143,11 @@ Scenario: When behavior appears only in existing documents, it is not written as
 - When: The agent writes the current state.
 - Then: The agent does not write that explanation in the Requirements or Design as the current state, and shows it to the developer as a disagreement between existing documents and code.
 
-Scenario: When a reason needs confirmation, the agent asks before saving the documents
+Scenario: When existing documents give a reason, it is adopted and shown in the breakdown of the basis
 
-- Given: A reason needed to start the next change is not settled, and the developer can be asked.
+- Given: A reason to write in the Design is in the README or existing documents, and it does not disagree with the behavior of the code.
 - When: The agent writes the current state.
-- Then: The agent asks for the reason in the conversation before saving the documents, and does not make the review of a document the first place where the reason is confirmed.
+- Then: The reason is written in the body as a description of the design, not as what a material says, and the agent does not ask about it in advance. In the breakdown of the basis given when presenting, it is shown as a reason taken from existing documents, together with the material it came from.
 
 Scenario: When asking for a reason, candidates may be shown but are not written without confirmation
 
@@ -165,7 +165,7 @@ Scenario: When presenting the current state, the agent reports the basis of conf
 
 - Given: The agent has finished writing the current state of a feature in Requirements and Design.
 - When: The agent presents the documents to the developer.
-- Then: The agent reports, as separate groups, content confirmed in code or tests, content based on the developer's answers or confirmation, content left as unconfirmed in the open questions, and content left unknown, and asks the developer about the unconfirmed items.
+- Then: The agent reports, as separate groups, content confirmed in code or tests, reasons taken from existing documents, content based on the developer's answers, content left as unconfirmed in the open questions, and content left unknown, and asks the developer about the unconfirmed items.
 
 Scenario: When only part of a feature is written, the unwritten range is shown
 
@@ -247,16 +247,17 @@ Documents not needed for this state are not added for the sake of completion.
 
 The agent confirms the current behavior and structure in the code and tests, and does not ask the developer about them.
 Descriptions of behavior in existing documents are used as hints for where to read in the code, and are written only after being confirmed in the code and tests.
-A reason is treated as a candidate even when existing documents or history explain it, and is not settled until the developer answers that it is still correct.
-The agent asks the developer about reasons that are not settled and about contradictions between materials.
+When existing documents or history explain a reason and it does not disagree with the behavior of the code, that explanation is adopted.
+A reason the agent thought of from the material when the material has no reason is a guess, and is not written as settled content.
+The agent asks the developer about reasons that are not in the material and about contradictions between materials.
 Questions about reasons are limited to those needed to start the next feature change or new feature.
 Reasons not needed to start are left unknown.
 
 When asking for a reason, the agent may show candidates it can think of from the material as options.
 A candidate is material for the question, and is not written in a document as a reason until the developer chooses it or answers in their own words.
 
-Questions are asked in the conversation before the documents are saved.
-Only the items the developer cannot answer right away are left as unconfirmed in the open questions of the document.
+When the agent can talk with the developer, it may ask its questions together before writing the documents.
+When it writes the documents without waiting for answers, the items that wait for an answer are left as unconfirmed in the open questions of the document and asked about when presenting.
 
 ##### Separating the current state from the change
 
@@ -330,15 +331,17 @@ When a feature missing from the list is found while writing the current state or
 
 #### Applicable conditions
 
-The basis is divided into four groups: content confirmed in code or tests, content based on the developer's answers or confirmation, unconfirmed, and unknown.
-An explanation in an existing document becomes content of one of these groups when it is confirmed in the code and tests, or when the developer confirms that it is still correct.
+The basis is divided into five groups: content confirmed in code or tests, reasons taken from existing documents, content based on the developer's answers, unconfirmed, and unknown.
+A description of behavior in an existing document becomes content confirmed in code or tests when it is confirmed there.
 
 The body of a document contains only settled content, written as a description of the product or feature itself.
-Settled content is content confirmed in code or tests and content based on the developer's answers or confirmation.
+Settled content is content confirmed in code or tests, reasons taken from existing documents, and content based on the developer's answers.
 It is not written as what a material says; which material it is based on is written in the report given when the documents are presented.
 
-Unconfirmed content is content read from the material that is waiting for the developer's confirmation.
-It is not written in the body; the open questions of that document state what needs confirmation, the candidate read from the material and that material, that it stays out of the body until decided, and who decides.
+Unconfirmed content is content waiting for the developer's answer, such as contradictions between materials, or candidates the agent thought of for a reason that is not in the material.
+It is not written in the body; the open questions of that document state what needs confirmation, the candidate and the material it is based on, that it stays out of the body until decided, and who decides.
+
+Reasons taken from existing documents are shown with their material in the report given when presenting, so that the developer can check in review whether any no longer applies.
 When the developer confirms it, the confirmed content is written in the body and the item is removed from the open questions.
 
 Unknown is a reason the developer does not know either.
@@ -360,7 +363,7 @@ When the developer does not know either, it is left unknown, and the reason for 
 - **Key concepts:** The reference for terms used in Requirements and Design. Placed in the Product, with the name and meaning of each concept.
 - **Feature list:** The index for choosing what to write. Placed in the Product, with each feature's name, one-line description, and whether its specification is written.
 - **Breakdown of the basis:** The report given when the current-state documents are presented. Not saved in a document; kept in the completion report or PR description.
-- **Unconfirmed items:** Content waiting for the developer's confirmation. Placed in the open questions of the document, with what needs confirmation, the candidate read from the material and that material, and who decides. When confirmed, it moves to the body and is removed from the open questions.
+- **Unconfirmed items:** Content waiting for the developer's answer. Placed in the open questions of the document, with what needs confirmation, the candidate and the material it is based on, and who decides. When confirmed, it moves to the body and is removed from the open questions.
 
 ### Relationships
 
