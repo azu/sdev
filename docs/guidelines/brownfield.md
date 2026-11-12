@@ -25,10 +25,15 @@ Do not add documents that are not needed for it.
 
 ## What to read and what to ask
 
-Read the current behavior and structure from the code, tests, and existing documents.
-Do not ask the developer about what can be read.
+Confirm the current behavior and structure (what the code does) in the code and tests.
+Use descriptions of behavior in the README and existing documents as hints for where to read in the code, and write them only after confirming them in the code and tests.
+Do not ask the developer about what can be confirmed in the code and tests.
 
-Ask the developer about reasons that cannot be confirmed from the material, and about contradictions between materials.
+Reasons (why the code does it) often cannot be read from the code.
+A reason explained in the README, existing documents, or history describes the time it was written and is not necessarily still correct.
+Treat a reason in the material as a candidate, and do not settle it until the developer answers that it is still correct.
+
+Ask the developer about reasons that are not settled, and about contradictions between materials.
 Limit questions about reasons to those needed to start the next feature change or new feature.
 Leave reasons that are not needed to start as unknown.
 
@@ -37,8 +42,29 @@ A candidate is material for the question.
 Do not write it in a document as a reason until the developer chooses it or answers in their own words.
 Follow [questions to make ideas concrete](agent.md#make-ideas-concrete-through-questions) for how to ask.
 
+Ask in the conversation before writing and saving the documents.
+Do not make the review of a document the first place where reasons are confirmed.
+Leave as unconfirmed, following [Separate settled and unconfirmed content](#separate-settled-and-unconfirmed-content), only the items the developer cannot answer right away.
+
 When an existing document and the behavior of the code disagree, show both to the developer and confirm which is the intended behavior.
+Treat behavior that appears only in existing documents and cannot be confirmed in the code and tests the same way as a disagreement.
 Do not settle either as the current state before receiving an answer.
+
+## Separate settled and unconfirmed content
+
+Write only settled content in the body of a document.
+Settled content is behavior and structure confirmed in the code or tests, and reasons the developer gave or confirmed as still correct.
+
+Write settled content as a description of the product or feature itself.
+Do not write it as what a material says, such as "The README explains that ..." or "In the code, ...".
+Report which material confirmed it in the [breakdown of the basis](#present-the-current-state) when presenting the documents.
+
+Do not write content that is waiting for the developer's confirmation in the body; write it as unconfirmed in the open questions of that document.
+For an unconfirmed item, write what needs confirmation, the candidate read from the material and that material, that it stays out of the body until decided, and who decides.
+When the developer confirms it, write the confirmed content in the body and remove the item from the open questions.
+
+A reason that the developer does not know either can be neither settled nor waiting for confirmation, so state in the body that it is unknown.
+Follow [Write the current state](#write-the-current-state) for how to write it.
 
 ## Check the material
 
@@ -55,6 +81,7 @@ The purpose and usage scenes express why the product was made and who uses it in
 When the README or other documents explain the motivation or policy, show the developer what you read and confirm that it is still correct before writing it.
 Do not settle an existing explanation as the current purpose without confirmation.
 Ask the developer about users or value that the material does not show, and do not fill them with assumptions before receiving an answer.
+Write items waiting for confirmation in the open questions of the Product, following [Separate settled and unconfirmed content](#separate-settled-and-unconfirmed-content).
 
 The key concepts and the feature list express what exists now.
 Read them from the code and existing documents, then show the developer what you read and confirm it.
@@ -101,8 +128,12 @@ Write only the current behavior and structure in the current-state documents.
 Do not include the change to be made this time.
 When only part of a feature is written, state in the out-of-scope section of the Requirements that some behavior is not yet written, and its range.
 
-Where a reason could not be confirmed, state in prose, at the position in the Design where the rationale is written, that the reason is unknown.
+Write the structure and processing flow in the Design after confirming them in the code and tests.
+Do not copy a design explanation in the README or existing documents into the Design without confirming it in the code.
+
+Where the reason was still unknown after asking the developer, state in prose, at the position in the Design where the rationale is written, that the reason is unknown.
 For alternatives considered, when there is no record, state that there is no record.
+Do not write it in a way that reads as if no alternatives were considered, such as "None, because this describes the current state".
 Do not write a guessed reason.
 
 When an unknown reason is needed to decide the next change, ask the developer.
@@ -112,17 +143,20 @@ When the developer does not know either, leave it unknown and write the reason f
 
 When presenting the documents to the developer, report the breakdown of the basis in these four groups.
 
-- Content confirmed from code or tests
-- Content taken from existing documents
-- Content based on the developer's answers
+- Content confirmed in code or tests
+- Content based on the developer's answers or confirmation (including explanations in existing documents that the developer confirmed as still correct)
+- Content left as unconfirmed in the open questions
 - Content left unknown
 
 Keep the breakdown in the conversation or PR description; do not save it in a document.
-The body of a document states only that something is unknown.
+Only the unconfirmed items in the open questions and the unknowns in the body remain in the documents.
+
+When unconfirmed items remain, ask the developer about them when presenting the documents.
 
 ## Write the change
 
 After the developer confirms the current-state documents, write the next change as an update to those documents.
+When unconfirmed items needed to decide the next change remain, confirm them with the developer first.
 Do not settle the current state and the change mixed in the same update before receiving confirmation.
 Keeping them separate lets the difference in behavior before and after the change be read from the Git diff.
 

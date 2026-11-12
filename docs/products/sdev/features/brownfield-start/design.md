@@ -29,7 +29,7 @@ The key concepts and the feature list placed in the Product are added as items o
 
 | Part | Responsibility |
 | --- | --- |
-| Guide for starting | Shows the order of steps, the documents each step creates, the range of questions, how to write unknowns, and the report given when presenting |
+| Guide for starting | Shows the order of steps, the documents each step creates, the range of questions, how to separate settled, unconfirmed, and unknown content, and the report given when presenting |
 | Description in the list of guides | Lets the agent choose this guide when a change is requested in a project without specifications |
 | Product template | Provides the items for writing the key concepts and the feature list |
 | Product guide and document responsibilities | Show that the key concepts and the feature list are the Product's responsibility, and how to write them |
@@ -49,14 +49,38 @@ The section on writing the current state directs the agent to use the existing g
 No dedicated template or document type is created for documents that describe the current state.
 A current-state document is an ordinary Requirements or Design, and the next change is written as an update to it, so the difference before and after the change can be read from the Git diff.
 
-### Writing unknowns and the report given when presenting
+### Writing settled, unconfirmed, and unknown content, and the report given when presenting
 
-Where a reason could not be confirmed, the Design states in prose, at the position where the rationale is written, that the reason is unknown.
+The guide separates where each kind of content is confirmed.
+The current behavior and structure (what the code does) are confirmed in the code and tests.
+Explanations in the README and existing documents are used as hints for where to read in the code, and are not copied as the current state.
+Reasons (why the code does it) often cannot be read from the code, and explanations in existing documents describe the time they were written, so reasons are settled by the developer's confirmation.
+Copying explanations from existing documents makes the body read as what a material says, such as "The README explains that ...", and leaves unconfirmed content in the same place as settled content.
+
+The guide says to confirm reasons in the conversation before saving the documents.
+When the review of a document is the first place of confirmation, unconfirmed content is first written in the body, and stays there if the review misses it.
+
+Documents separate content into the following three states.
+
+| State | Content | Where it is written |
+| --- | --- | --- |
+| Settled | Content confirmed in code or tests, and content the developer answered or confirmed as still correct | The body, as a description of the product or feature itself |
+| Unconfirmed | Content read from the material that is waiting for the developer's confirmation | The open questions of that document, with what needs confirmation, the candidate read from the material and that material, that it stays out of the body until decided, and who decides |
+| Unknown | A reason the developer does not know either | The position in the body where the rationale is written, stated in prose |
+
+Unconfirmed items are placed in the open questions, which every template has.
+The open questions section records what is undecided, how it is handled until decided, and who decides, so it can hold what an unconfirmed item needs as it is.
+When the developer confirms an item, the confirmed content is written in the body and the item is removed from the open questions.
+This way, the body alone shows the settled content, and the open questions show where confirmation remains.
+
+Unknowns are stated in prose at the position in the Design where the rationale is written.
 For alternatives considered, when there is no record, the Design states that there is no record.
-No dedicated marker or metadata for unknowns is created, so the text reads as ordinary Markdown prose.
+Writing "None, because this describes the current state" cannot be told apart from not having considered alternatives, so the guide says not to write it that way.
+Neither unconfirmed items nor unknowns get a dedicated marker or metadata, so the text reads as ordinary Markdown prose.
 
 The breakdown of the basis is written, in the report given when the documents are presented, in four groups.
-They are content confirmed from code or tests, content taken from existing documents, content based on the developer's answers, and content left unknown.
+They are content confirmed in code or tests, content based on the developer's answers or confirmation, content left as unconfirmed in the open questions, and content left unknown.
+Content merely copied from existing documents is not a group; an explanation in an existing document becomes content of another group when it is confirmed in the code or by the developer.
 This report is kept in the conversation or PR description and is not saved in a document.
 This matches the existing placement rule that verification results for a piece of work are not placed in documents.
 
@@ -195,7 +219,22 @@ The requirement is to write only the documents needed to start, so this is not a
 
 This would let a later reader confirm the basis of each statement from the document alone.
 However, annotations would make the body hard to read, which does not fit the policy of keeping plain Markdown that people can read and write.
-The body states only unknowns, and the breakdown is kept in the report given when presenting.
+The body states only settled content and unknowns; unconfirmed items go in the open questions, and the breakdown is kept in the report given when presenting.
+
+### Write unconfirmed content in the body with an annotation
+
+This writes unconfirmed content at its place in the body, annotated as "unconfirmed".
+It has the advantage that readers find unconfirmed content where it belongs.
+However, settled and unconfirmed content mix in the body, and a reader who misses the annotation reads unconfirmed content as settled.
+It also lets sentences copied from existing documents, such as "The README explains that ...", remain in the body.
+The body holds only settled content, and unconfirmed content is written separately in the existing open questions section.
+
+### Treat reasons in existing documents as settled content
+
+This writes reasons found in the README or existing documents as settled content without asking the developer.
+It has the advantage of fewer questions to the developer.
+However, a reason in an existing document describes the time it was written, and may differ from the current purpose or decisions.
+Only the developer can settle a reason, so reasons in existing documents are treated as candidates for questions.
 
 ## Open questions
 
