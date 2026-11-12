@@ -200,29 +200,29 @@ impl Fixture {
         let start = body.find("\nsdev_pinned_checksums() {\n").unwrap();
         let end = body[start..].find("sdev_launch() {").unwrap() + start;
         let body = format!("{}{}", &body[..start], &body[end..]);
-        let body = body
-            .lines()
-            .filter(|line| {
-                !line
-                    .trim_start()
-                    .starts_with("sdev_hash=$(sdev_pinned_checksums")
-            })
-            .map(|line| {
-                if (line.trim_start().starts_with("0) main")
-                    || line.trim_start().starts_with("1) main"))
-                    && let Some(start) = line.find(" --sha256 ")
-                {
-                    let end = line[start..]
-                        .find(" --verify")
-                        .map_or_else(|| line[start..].find(" ;;").unwrap() + start, |n| n + start);
-                    format!("{}{}", &line[..start], &line[end..])
-                } else {
-                    line.to_owned()
-                }
-            })
-            .collect::<Vec<_>>()
-            .join("\n")
-            + "\n";
+        // Older launchers acquired the executable without a pinned hash and ran any cache.
+        let acquire = body.find("    (\n        cd \"$sdev_root\"").unwrap();
+        let acquired = body[acquire..].find(") >&2 || exit 1\n").unwrap() + acquire;
+        let body = format!(
+            "{}{}{}",
+            &body[..acquire],
+            concat!(
+                "    (\n",
+                "        cd \"$sdev_root\"\n",
+                "        install_dir=./$sdev_cache\n",
+                "        check_destination\n",
+                "        if [ ! -e \"$install_dir/sdev\" ]; then\n",
+                "            case \"${SDEV_VERIFY:-0}\" in\n",
+                "                0) main --version 0.2.0 --install-dir \"$install_dir\" ;;\n",
+                "                1) main --version 0.2.0 --install-dir \"$install_dir\" --verify ;;\n",
+                "                *) fail 'SDEV_VERIFY must be 0 or 1' ;;\n",
+                "            esac\n",
+                "        fi\n",
+                "        [ -x \"$install_dir/sdev\" ] || fail 'Cached sdev is not executable; remove it and retry'\n",
+                "    "
+            ),
+            &body[acquired..]
+        );
         fs::write(project.join(path), &body).unwrap();
         fs::write(self.root.join("old-launcher"), body).unwrap();
         let binary = b"#!/bin/sh\ncase \"$1\" in\n--version) printf 'sdev 0.2.0\\n' ;;\ninit) shift; [ \"$1\" = --path ] || exit 1; mkdir -p \"$(dirname -- \"$2\")\"; cp \"$TEST_OLD_LAUNCHER\" \"$2\"; chmod +x \"$2\" ;;\n*) exec \"$TEST_CURRENT_BIN\" \"$@\" ;;\nesac\n";
@@ -996,6 +996,104 @@ fn launcher_requested_attestation_failure_never_falls_back() {
     assert!(!project.join(cache_path()).exists());
     assert!(!String::from_utf8_lossy(&output.stderr).contains("provenance NOT verified"));
 }
+#[test]
+fn launcher_rejects_a_replaced_cached_executable_without_running_it() {
+    let fixture = Fixture::with_binary(
+        false,
+        format!(
+            "#!/bin/sh\nif [ \"$1\" = --version ]; then echo 'sdev {}'; exit 0; fi\nexit 0\n",
+            env!("CARGO_PKG_VERSION")
+        )
+        .into_bytes(),
+    );
+    let project = fixture.launcher("bin/sdev");
+    let invoke = || {
+        let mut command = Command::new(project.join("bin/sdev"));
+        fixture.update_environment(&mut command);
+        command.arg("help").current_dir(&project).output().unwrap()
+    };
+    let output = invoke();
+    assert!(output.status.success(), "{output:?}");
+    let cache = project.join(cache_path());
+    let replaced = format!(
+        "#!/bin/sh\nprintf ran > '{}'\n",
+        fixture.root.join("ran").display()
+    );
+    fs::write(&cache, replaced).unwrap();
+    fs::set_permissions(&cache, fs::Permissions::from_mode(0o755)).unwrap();
+    let count = fixture.requests.lock().unwrap().len();
+    let output = invoke();
+    assert!(!output.status.success(), "{output:?}");
+    assert!(
+        String::from_utf8_lossy(&output.stderr)
+            .contains("Cached sdev does not match the pinned SHA-256")
+    );
+    assert!(!fixture.root.join("ran").exists());
+    assert_eq!(fixture.requests.lock().unwrap().len(), count);
+}
+
+#[test]
+fn launcher_requested_attestation_also_verifies_a_cached_executable() {
+    let fixture = Fixture::with_binary(
+        false,
+        format!(
+            "#!/bin/sh\nif [ \"$1\" = --version ]; then echo 'sdev {}'; exit 0; fi\nexit 0\n",
+            env!("CARGO_PKG_VERSION")
+        )
+        .into_bytes(),
+    );
+    let project = fixture.launcher("bin/sdev");
+    let mut command = Command::new(project.join("bin/sdev"));
+    fixture.update_environment(&mut command);
+    let output = command
+        .arg("--version")
+        .current_dir(&project)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let cache = project.join(cache_path());
+    for success in [false, true] {
+        let verifier = fixture.verifier("2.93.0", success);
+        let mut command = Command::new(project.join("bin/sdev"));
+        for (key, value) in verifier.get_envs() {
+            if let Some(value) = value {
+                command.env(key, value);
+            } else {
+                command.env_remove(key);
+            }
+        }
+        let _ = fs::remove_file(fixture.root.join("gh.log"));
+        let output = command
+            .env("SDEV_VERIFY", "1")
+            .arg("--version")
+            .current_dir(&project)
+            .output()
+            .unwrap();
+        let log = fs::read_to_string(fixture.root.join("gh.log")).unwrap();
+        assert!(log.contains("sdev-release.txt"), "{log}");
+        if success {
+            // The cached file itself is verified against the attested source commit.
+            assert!(
+                log.contains(&format!("{}\n", cache_path().display())),
+                "{log}"
+            );
+            assert!(log.contains(&"a".repeat(40)), "{log}");
+            assert!(output.status.success(), "{output:?}");
+            assert_eq!(
+                String::from_utf8_lossy(&output.stdout),
+                format!("sdev {}\n", env!("CARGO_PKG_VERSION"))
+            );
+        } else {
+            assert!(!output.status.success(), "{output:?}");
+            assert!(output.stdout.is_empty());
+            assert!(
+                String::from_utf8_lossy(&output.stderr).contains("Attestation verification failed")
+            );
+        }
+        assert!(cache.is_file());
+    }
+}
+
 impl Drop for Fixture {
     fn drop(&mut self) {
         self.stop.store(true, Ordering::Relaxed);

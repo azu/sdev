@@ -71,9 +71,9 @@ Embed the installer from the same source. During `init`, retrieve every target's
 Pass the complete set to launcher generation and embed a deterministic table directly in `bin/sdev`; no additional committed lockfile is needed. Installation/update may pass an already collected set through the child-process-only `SDEV_INIT_CHECKSUMS` environment variable, avoiding repeated retrieval and preserving attestation verification. Validate this data with exactly the same parser; never evaluate it as shell code. Treat this as internal process communication, not a public offline initialization option. Unpublished release validation supplies synthetic checksum data through this boundary instead of requiring a release to exist before it can be built.
 Download executables directly without fetching and executing another shell script at runtime.
 Select the matching hash from the embedded table and pass it together with the pinned `--version` and cache `--install-dir`, never `--init`, to avoid recursive initialization and instruction edits at each invocation.
-Use an executable regular cached file without network access.
+Use an executable regular cached file without network access after its SHA-256 matches the embedded value; a mismatch never runs the file and asks for its removal.
 Reuse checksum/version checks, replacement rules, timeouts, and progress reporting on first download.
-Default acquisition checks consistency; `SDEV_VERIFY=1` also verifies attestations. Verification failure never falls back.
+Default acquisition checks consistency; `SDEV_VERIFY=1` also verifies attestations, including for an executable that is already cached. Verification failure never falls back.
 
 Preserve an identical generated launcher. Fail for other contents with instructions to move/remove the file or reconsider its path.
 To connect initial `install.sh --init`, allow replacement only when the existing file's bytes match the running sdev executable.
@@ -180,7 +180,7 @@ Preserve existing blocks, including older versions, and document necessary addit
 | `sdev init --lang en --translations ja` | Initialize a shared default and translation language |
 | `sdev init --help` | Describe files and usage without writing |
 | `./bin/sdev ARG...` | Acquire the pinned executable when needed and forward arguments |
-| `SDEV_VERIFY=1 ./bin/sdev ARG...` | Verify attestations when acquiring an uncached executable |
+| `SDEV_VERIFY=1 ./bin/sdev ARG...` | Verify attestations of the acquired or cached executable before running it |
 
 Bootstrap success is 0; argument, acquisition, verification, and installation failures are nonzero.
 Failed `--init` returns its status and preserves the installed executable.
@@ -232,7 +232,7 @@ Run downloaded files as executables, never source them as shell code.
 Replace after checks instead of overwriting a running executable in place.
 Validate launcher parents and never evaluate the destination string as shell code.
 Use ordinary cache directories/files without symlink traversal.
-Trust the writable local executable cache; do not reverify every invocation. Delete and reacquire to check again.
+Check the writable local executable cache against the committed SHA-256 on every invocation, because Git does not show changes under the ignored `.sdev/`. This offline check detects a replaced or damaged cache; it does not protect against someone who can also edit the launcher. `SDEV_VERIFY=1` verifies attestations of the cached file each time it is set.
 
 Checksums establish consistency, not provenance if both executable and hash are replaced.
 Collect hashes after all release binaries are built rather than compiling a binary with its own final hash. A committed value detects later replacement of both executable and remote sidecar; establishing initial trust still requires source review or attestation verification.

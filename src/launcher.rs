@@ -135,6 +135,34 @@ sdev_pinned_checksums() {{
     cat <<'SDEV_CHECKSUMS'
 {checksums}SDEV_CHECKSUMS
 }}
+sdev_check_cached() {{
+    # The cache is ignored by Git, so a replaced file would not appear in review.
+    # Check it against the committed hash on every start; this needs no network.
+    if command -v sha256sum >/dev/null 2>&1; then
+        sdev_actual=$(sha256sum "$1")
+    elif command -v shasum >/dev/null 2>&1; then
+        sdev_actual=$(shasum -a 256 "$1")
+    else
+        fail 'sha256sum or shasum is required'
+    fi
+    [ "${{sdev_actual%% *}}" = "$2" ] || fail "Cached sdev does not match the pinned SHA-256; remove $1 and retry"
+    [ "$3" = true ] || return 0
+    # SDEV_VERIFY=1 always means verified provenance, including for a cached file.
+    check_verifier
+    command -v curl >/dev/null 2>&1 || fail 'curl is required'
+    if [ -t 2 ]; then curl_progress=--progress-bar; else curl_progress=--silent; fi
+    version={version}
+    base=https://github.com/azu/sdev/releases/download/v$version
+    commit=
+    expected_commit=
+    trusted_root=
+    temporary=$(mktemp -d "${{TMPDIR:-/tmp}}/sdev-verify.XXXXXXXX") || fail 'Cannot create temporary directory'
+    trap 'rm -rf "$temporary"' EXIT
+    trap 'exit 1' HUP INT TERM
+    printf '%s\n' 'sdev: Verifying provenance of the cached executable...' >&2
+    verify_release_record
+    verify_file "$1"
+}}
 sdev_launch() {{
     sdev_root=$(CDPATH='' cd -- "$(dirname -- "$0")/{root}" && pwd -P) || exit 1
     case "$(uname -s)" in
@@ -152,13 +180,21 @@ sdev_launch() {{
         cd "$sdev_root"
         install_dir=./$sdev_cache
         check_destination
+        case "${{SDEV_VERIFY:-0}}" in
+            0) sdev_verify=false ;;
+            1) sdev_verify=true ;;
+            *) fail 'SDEV_VERIFY must be 0 or 1' ;;
+        esac
+        sdev_hash=$(sdev_pinned_checksums | awk -v asset="sdev-v{version}-$sdev_os-$sdev_arch" '$2 == asset {{ print $1 }}')
+        [ -n "$sdev_hash" ] || fail 'The launcher has no pinned SHA-256 for this platform'
         if [ ! -e "$install_dir/sdev" ]; then
-            sdev_hash=$(sdev_pinned_checksums | awk -v asset="sdev-v{version}-$sdev_os-$sdev_arch" '$2 == asset {{ print $1 }}')
-            case "${{SDEV_VERIFY:-0}}" in
-                0) main --version {version} --install-dir "$install_dir" --sha256 "$sdev_hash" ;;
-                1) main --version {version} --install-dir "$install_dir" --sha256 "$sdev_hash" --verify ;;
-                *) fail 'SDEV_VERIFY must be 0 or 1' ;;
-            esac
+            if [ "$sdev_verify" = true ]; then
+                main --version {version} --install-dir "$install_dir" --sha256 "$sdev_hash" --verify
+            else
+                main --version {version} --install-dir "$install_dir" --sha256 "$sdev_hash"
+            fi
+        else
+            sdev_check_cached "$install_dir/sdev" "$sdev_hash" "$sdev_verify"
         fi
         [ -x "$install_dir/sdev" ] || fail 'Cached sdev is not executable; remove it and retry'
     ) >&2 || exit 1
