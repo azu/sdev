@@ -12,7 +12,7 @@ This feature provides, as a guideline, the steps and writing rules for preparing
 
 Provide the steps for starting specifications in a project with existing code as a guide readable from the command.
 The steps proceed in this order: check the material, write the Product, create the feature list, write the current state of the features the next change touches, then write the change.
-Define how to distinguish what was confirmed from what is unknown when writing the current state.
+Define how to distinguish settled content, unconfirmed content waiting for the developer's confirmation, and unknown content when writing the current state.
 Define the content of the feature list, which represents features that have no specification yet.
 
 Obtaining the executable and adding instructions to AGENTS.md follow the [project bootstrap Requirements](../project-bootstrap/requirements.md).
@@ -62,6 +62,18 @@ Scenario: When the README or other documents explain the purpose, the agent conf
 - Given: The project's README or existing documents explain the motivation or policy behind the project.
 - When: The agent writes the Product.
 - Then: The agent shows the developer what it read from the existing explanations, confirms whether it is still correct, and creates the Product from the confirmed content. It does not settle an existing explanation as the current purpose without confirmation.
+
+Scenario: When the developer confirms an existing explanation, it is written as a description of the Product, not as what a material says
+
+- Given: The README explains why the project was made, and the developer has confirmed that the explanation is still correct.
+- When: The agent writes that reason in the Product.
+- Then: The body of the Product states the reason as a description of the product itself, and does not contain the form of what a material says, such as "The README explains that ...". Which material it is based on can be read from the breakdown of the basis given when the documents are presented.
+
+Scenario: When the developer cannot answer right away, the item is left as unconfirmed in the open questions
+
+- Given: The README explains the motivation, and the developer has not yet answered whether it is still correct.
+- When: The agent saves the Product.
+- Then: The body of the Product does not contain that motivation, and the open questions show what needs confirmation, the candidate read from the material and that material, and who decides. After the developer confirms it, the confirmed content is written in the body and the item is removed from the open questions.
 
 Scenario: When the purpose or users cannot be found in existing material, the agent asks the developer
 
@@ -113,17 +125,29 @@ Scenario: When the features to write are chosen, Requirements and Design are cre
 - When: The agent writes the current state.
 - Then: Requirements and Design are created only for the chosen features, their content represents the current behavior and structure, and they do not include the change to be made this time. In the feature list, those features become features whose specification is written.
 
-Scenario: When the reason for processing is in neither the material nor an answer, it is written as unknown
+Scenario: When the developer does not know the reason for processing either, it is written as unknown
 
-- Given: The reason for the current structure or processing cannot be confirmed from the code, existing documents, history, or the developer's answers.
+- Given: The reason for the current structure or processing is not in the code or history, and the developer does not know it when asked.
 - When: The agent writes the rationale in the Design.
-- Then: The Design states that the reason is unknown, and no guessed reason is written.
+- Then: The Design states that the reason is unknown, and no guessed reason is written. When there is also no record of alternatives considered, the Design states that there is no record, and does not state that no alternatives were considered.
 
 Scenario: When current behavior can be confirmed from the code, it is written without asking the developer
 
-- Given: The current behavior of a chosen feature can be confirmed from the code, tests, and existing documents.
+- Given: The current behavior of a chosen feature can be confirmed in the code and tests.
 - When: The agent writes the current state.
-- Then: The agent writes the confirmed behavior in the Requirements, and does not ask the developer what that behavior is.
+- Then: The agent writes the confirmed behavior in the Requirements and Design, and does not ask the developer what that behavior is.
+
+Scenario: When behavior appears only in existing documents, it is not written as the current state until confirmed in the code
+
+- Given: The README or existing documents explain behavior or structure, but that behavior cannot be confirmed in the code and tests.
+- When: The agent writes the current state.
+- Then: The agent does not write that explanation in the Requirements or Design as the current state, and shows it to the developer as a disagreement between existing documents and code.
+
+Scenario: When existing documents give a reason, it is adopted and shown in the breakdown of the basis
+
+- Given: A reason to write in the Design is in the README or existing documents, and it does not disagree with the behavior of the code.
+- When: The agent writes the current state.
+- Then: The reason is written in the body as a description of the design, not as what a material says, and the agent does not ask about it in advance. In the breakdown of the basis given when presenting, it is shown as a reason taken from existing documents, together with the material it came from.
 
 Scenario: When asking for a reason, candidates may be shown but are not written without confirmation
 
@@ -141,7 +165,7 @@ Scenario: When presenting the current state, the agent reports the basis of conf
 
 - Given: The agent has finished writing the current state of a feature in Requirements and Design.
 - When: The agent presents the documents to the developer.
-- Then: The agent reports, as separate groups, content confirmed from code or tests, content taken from existing documents, content based on the developer's answers, and content left unknown.
+- Then: The agent reports, as separate groups, content confirmed in code or tests, reasons taken from existing documents, content based on the developer's answers, content left as unconfirmed in the open questions, and content left unknown, and asks the developer about the unconfirmed items.
 
 Scenario: When only part of a feature is written, the unwritten range is shown
 
@@ -221,13 +245,19 @@ Documents not needed for this state are not added for the sake of completion.
 
 ##### Range of questions
 
-The agent reads the current behavior and structure from the code, tests, and existing documents, and does not ask the developer about them.
-The agent asks the developer about reasons that cannot be confirmed from the material and about contradictions between materials.
+The agent confirms the current behavior and structure in the code and tests, and does not ask the developer about them.
+Descriptions of behavior in existing documents are used as hints for where to read in the code, and are written only after being confirmed in the code and tests.
+When existing documents or history explain a reason and it does not disagree with the behavior of the code, that explanation is adopted.
+A reason the agent thought of from the material when the material has no reason is a guess, and is not written as settled content.
+The agent asks the developer about reasons that are not in the material and about contradictions between materials.
 Questions about reasons are limited to those needed to start the next feature change or new feature.
 Reasons not needed to start are left unknown.
 
 When asking for a reason, the agent may show candidates it can think of from the material as options.
 A candidate is material for the question, and is not written in a document as a reason until the developer chooses it or answers in their own words.
+
+When the agent can talk with the developer, it may ask its questions together before writing the documents.
+When it writes the documents without waiting for answers, the items that wait for an answer are left as unconfirmed in the open questions of the document and asked about when presenting.
 
 ##### Separating the current state from the change
 
@@ -239,6 +269,7 @@ The content of the next change is written as an update to those documents after 
 ##### Existing documents and code disagree
 
 When the explanation in an existing document and the behavior of the code disagree, the agent shows both to the developer and confirms which is the intended behavior.
+Behavior that appears only in existing documents and cannot be confirmed in the code and tests is also treated as a disagreement.
 Neither is settled as the current state before an answer is received.
 
 ### Key concepts
@@ -296,12 +327,26 @@ When a feature missing from the list is found while writing the current state or
 
 **Input:** Code, tests, existing documents, history, and the developer's answers.
 
-**Output:** Documents that state where a reason is unknown, and a report of the breakdown of the basis.
+**Output:** Documents whose body contains only settled content, with unconfirmed items in the open questions and unknown reasons stated in the body, and a report of the breakdown of the basis.
 
 #### Applicable conditions
 
-The basis is divided into four groups: content confirmed from code or tests, content taken from existing documents, content based on the developer's answers, and unknown.
-The body of a document states only that something is unknown.
+The basis is divided into five groups: content confirmed in code or tests, reasons taken from existing documents, content based on the developer's answers, unconfirmed, and unknown.
+A description of behavior in an existing document becomes content confirmed in code or tests when it is confirmed there.
+
+The body of a document contains only settled content, written as a description of the product or feature itself.
+Settled content is content confirmed in code or tests, reasons taken from existing documents, and content based on the developer's answers.
+It is not written as what a material says; which material it is based on is written in the report given when the documents are presented.
+
+Unconfirmed content is content waiting for the developer's answer, such as contradictions between materials, or candidates the agent thought of for a reason that is not in the material.
+It is not written in the body; the open questions of that document state what needs confirmation, the candidate and the material it is based on, that it stays out of the body until decided, and who decides.
+
+Reasons taken from existing documents are shown with their material in the report given when presenting, so that the developer can check in review whether any no longer applies.
+When the developer confirms it, the confirmed content is written in the body and the item is removed from the open questions.
+
+Unknown is a reason the developer does not know either.
+The body states that it is unknown at the position where the rationale is written.
+
 The breakdown of the basis is written in the report given when the documents are presented.
 
 #### Exceptional behavior
@@ -318,6 +363,7 @@ When the developer does not know either, it is left unknown, and the reason for 
 - **Key concepts:** The reference for terms used in Requirements and Design. Placed in the Product, with the name and meaning of each concept.
 - **Feature list:** The index for choosing what to write. Placed in the Product, with each feature's name, one-line description, and whether its specification is written.
 - **Breakdown of the basis:** The report given when the current-state documents are presented. Not saved in a document; kept in the completion report or PR description.
+- **Unconfirmed items:** Content waiting for the developer's answer. Placed in the open questions of the document, with what needs confirmation, the candidate and the material it is based on, and who decides. When confirmed, it moves to the body and is removed from the open questions.
 
 ### Relationships
 

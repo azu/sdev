@@ -156,6 +156,7 @@ fn each_guide_keeps_its_role_and_routes_to_related_commands() {
     let brownfield = success(&["help", "brownfield"]);
     for required in [
         "不明であることを文章で書きます",
+        "未決事項に未確認として書きます",
         "未作成",
         "sdev help product",
         "sdev help requirements",
