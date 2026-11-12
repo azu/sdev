@@ -135,8 +135,9 @@ gh attestation verify ./install.sh --hostname github.com --repo azu/sdev \
 Web環境でも`./bin/sdev help`を実行すると、スクリプトが固定したバージョンを必要時に取得します。
 Setup scriptで先に取得する場合も、同じ起動スクリプトを実行できます。
 非対話で実行でき、PATHやシェルの設定ファイルを変更しません。
-初回取得に証明検証を求める場合は`SDEV_VERIFY=1 ./bin/sdev help`を使います。
-取得済みの本体は再検証しないため、検証方法を変える場合は該当するキャッシュを削除してから取得し直します。
+起動のたびに、取得済みの本体を起動スクリプトのSHA-256と通信せずに照合します。
+証明検証も求める場合は`SDEV_VERIFY=1 ./bin/sdev help`を使います。新しく取得する本体にも取得済みの本体にも検証を行います。
+取得済みの本体が一致しない場合は、そのファイルを削除してから起動し直します。
 
 [公式の環境仕様](https://code.claude.com/docs/en/cloud-environments)ではUbuntu 24.04のx86_64環境と、起動前のSetup scriptを提供しています。
 既定のTrustedネットワークには公開ファイルとReleaseの配布に使うドメインが含まれますが、別リポジトリのGitHub APIやソースアーカイブには別の制約があります。

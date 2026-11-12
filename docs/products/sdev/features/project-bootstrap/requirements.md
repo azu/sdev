@@ -173,7 +173,7 @@ Scenario: A cached executable works without network access
 
 - Given: The pinned version for the current OS/CPU is cached locally.
 - When: The launcher runs.
-- Then: It starts that executable without downloads and returns its exit code.
+- Then: It checks the executable against the committed SHA-256, starts it without downloads, and returns its exit code. A mismatched cache never runs.
 
 Scenario: Invalid or conflicting destinations preserve setup
 

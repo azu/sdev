@@ -133,8 +133,9 @@ Commit the launcher, AGENTS.md, sdev.toml, and .gitignore; exclude downloaded `.
 In a web environment, `./bin/sdev help` acquires the pinned version when needed.
 A Setup script can invoke the same launcher to download it in advance.
 It runs noninteractively without changing PATH or shell configuration.
-Use `SDEV_VERIFY=1 ./bin/sdev help` to require attestations on first acquisition.
-Cached executables are not reverified; delete the relevant cache before reacquiring with another verification method.
+Each start checks the cached executable against the launcher's SHA-256 without network access.
+Use `SDEV_VERIFY=1 ./bin/sdev help` to also require attestations, whether the executable is downloaded or already cached.
+If the cached file does not match, delete it and run the launcher again.
 
 The [official environment documentation](https://code.claude.com/docs/en/cloud-environments) describes Ubuntu 24.04 x86_64 and pre-start Setup scripts.
 The default Trusted network includes domains used for public files and Release distribution, but other repositories' GitHub APIs and source archives have separate restrictions.
