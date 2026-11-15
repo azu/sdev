@@ -49,6 +49,18 @@ Scenario: Unsupported environments and invalid arguments prevent downloads
 - When: Bootstrap runs.
 - Then: It reports the reason and exits nonzero without downloading or executing an artifact.
 
+Scenario: A failed latest-release lookup names how to choose a version
+
+- Given: No version is specified and the latest stable release cannot be looked up, for example because the network blocks that page.
+- When: Bootstrap runs.
+- Then: It exits nonzero without downloading or executing an artifact, and the reason says that specifying `--version X.Y.Z` installs that release without the lookup.
+
+Scenario: The documented installation command selects a published version
+
+- Given: A developer or AI copies the installation command from the README.
+- When: The command runs in an environment that can download published Release files.
+- Then: It installs the version shown in the command without the latest-release lookup, and that version is the newest stable release once its publication completes.
+
 ### Manage sdev with mise
 
 As a developer already using mise, I want to install and update sdev alongside my other tools using the same published executables.
@@ -114,6 +126,12 @@ Scenario: First setup explains questions and follow-up
 - Given: AGENTS.md has no sdev instructions.
 - When: `init` runs.
 - Then: Instructions say to ask rather than assume unclear goals or conditions, prefer available question tools, and choose follow-up questions from answers.
+
+Scenario: First setup explains what to do when help cannot run
+
+- Given: AGENTS.md has no sdev instructions.
+- When: `init` runs.
+- Then: Instructions say to run the help command instead of assuming it is unavailable, and, if it fails, to show its error output to the user and confirm how to proceed before working on specifications.
 
 Scenario: Repeated setup preserves edited instructions without duplicates
 

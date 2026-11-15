@@ -1103,6 +1103,26 @@ impl Drop for Fixture {
 }
 
 #[test]
+fn failed_latest_lookup_names_the_version_option_without_changing_files() {
+    let fixture = Fixture::new(false);
+    // Port 9 refuses the connection, like a network that blocks the latest-release page.
+    let output = fixture
+        .command()
+        .env("TEST_RELEASES", "http://127.0.0.1:9/releases")
+        .arg("--init")
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("Cannot resolve latest release; specify --version X.Y.Z"),
+        "{stderr}"
+    );
+    assert!(!fixture.root.join("bin/sdev").exists());
+    assert!(!fixture.root.join("AGENTS.md").exists());
+}
+
+#[test]
 fn latest_install_uses_public_redirects_and_can_initialize_then_restore_without_editing_instructions()
  {
     let fixture = Fixture::new(false);

@@ -152,11 +152,10 @@ fn default_initialization_uses_english_and_no_translations() {
         fs::read_to_string(p.0.join("sdev.toml")).unwrap(),
         "language = \"en\"\ntranslations = []\n"
     );
-    assert!(
-        fs::read_to_string(p.0.join("AGENTS.md"))
-            .unwrap()
-            .contains("Specifications-first development")
-    );
+    let agents = fs::read_to_string(p.0.join("AGENTS.md")).unwrap();
+    assert!(agents.contains("Specifications-first development"));
+    assert!(agents.contains("Run the command instead of assuming it is unavailable"));
+    assert!(agents.contains("show its error output to the user"));
 }
 
 #[test]

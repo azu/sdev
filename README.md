@@ -20,11 +20,12 @@ Follow the consuming project's existing documents and conventions when available
 ### macOS and Linux
 
 Run these commands at the root of the project where you want to use sdev.
-The installer selects the latest stable release for your OS and CPU and initializes the project.
+The installer selects the given release for your OS and CPU and initializes the project.
+The version in these commands is the latest stable release. Without `--version`, the installer looks up the latest release on GitHub instead, which some networks, such as cloud agent environments, block.
 No Rust, Node.js, or PATH setup is required.
 
 ```sh
-curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev/main/install.sh | sh -s -- --init
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev/main/install.sh | sh -s -- --version 0.6.2 --init
 ./bin/sdev help
 ```
 
@@ -52,7 +53,7 @@ Use initialization's `--path` option to choose a location other than `bin/sdev`.
 Download the initial binary elsewhere first; generated AGENTS.md instructions will use the chosen path.
 
 ```sh
-curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev/main/install.sh | sh -s -- --install-dir ./.sdev/setup
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev/main/install.sh | sh -s -- --version 0.6.2 --install-dir ./.sdev/setup
 ./.sdev/setup/sdev init --path ./scripts/sdev
 ./scripts/sdev help
 ```

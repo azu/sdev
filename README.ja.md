@@ -20,11 +20,12 @@ sdevは、人とAIが仕様をもとに開発を進めるためのフレーム�
 ### macOS・Linux
 
 使いたいプロジェクトのルートで、次のコマンドを実行します。
-OS・CPUに合う最新の安定版を取得し、初期設定します。
+指定したバージョンのうちOS・CPUに合うものを取得し、初期設定します。
+コマンドに書いたバージョンは最新の安定版です。`--version`を省くとGitHubで最新版を調べますが、クラウドのエージェント環境など、その確認を遮断するネットワークもあります。
 RustやNode.jsの準備、PATHの変更は必要ありません。
 
 ```sh
-curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev/main/install.sh | sh -s -- --init
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev/main/install.sh | sh -s -- --version 0.6.2 --init
 ./bin/sdev help
 ```
 
@@ -54,7 +55,7 @@ GitHubによる配布元の証明も確認したい場合は、インストー�
 本体を別の場所へ取得してから初期設定すると、AGENTS.mdも指定先を参照します。
 
 ```sh
-curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev/main/install.sh | sh -s -- --install-dir ./.sdev/setup
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev/main/install.sh | sh -s -- --version 0.6.2 --install-dir ./.sdev/setup
 ./.sdev/setup/sdev init --path ./scripts/sdev
 ./scripts/sdev help
 ```

@@ -25,6 +25,7 @@ Require no Rust, Node.js, or Python.
 Map macOS arm64/x64 and Linux arm64/x64 to existing release filenames; Windows initially uses manual downloads.
 
 Without an explicit version, read the public `releases/latest` redirect rather than using GitHub API.
+If that lookup fails, say that `--version X.Y.Z` skips it. Some networks, such as cloud agent environments, block repository pages while allowing Release downloads, so a fixed version still installs there.
 Accept only stable `vX.Y.Z` tags and derive filenames from existing distribution names.
 Treat HTTP errors as failures and fix download sources and network timeouts.
 Report latest-version lookup, each file, and comparison/verification starts on stderr. Use curl's progress bar only when stderr is a terminal; otherwise report steps.
@@ -159,6 +160,7 @@ New instructions clarify that wanting to build something alone does not authoriz
 Document-only requests end with presentation; authorized implementation includes intermediate summaries and confirmation when user decisions are needed.
 Delegate details to the shared workflow guide.
 Instructions also require questions for unclear goals/conditions, preference for available question tools, and follow-up based on answers.
+They also say to run the help command rather than assume it is unavailable, and, when it fails, to show the error output and confirm with the user before working on specifications. An agent that guesses from another URL can otherwise skip the guides without anyone noticing.
 Preserve existing blocks, including older versions, and document necessary additions in README.
 
 ## API and interfaces
@@ -244,6 +246,7 @@ Workflow attestations do not guarantee harmless code.
 
 Add installer and bundle to Releases.
 README documents curl retrieval from GitHub; verify download and startup after source publication and release.
+The README installation commands pass `--version` with the current release, so copying them does not depend on the latest-release lookup. Create release PR replaces that version in README.md and README.ja.md together with Cargo.toml, so the commands name the newest stable release once it is published.
 Claude Code on the web uses [Setup scripts and allowed domains](https://code.claude.com/docs/en/cloud-environments).
 Its default Ubuntu x86_64 environment matches Linux x64 distribution, but network paths and attestations require separate live checks.
 
