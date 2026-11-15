@@ -246,7 +246,7 @@ macOS・Windowsの署名・公証や取得後の起動制限、対応環境で�
 
 ## 手動でリリースする
 
-GitHubのActionsでCreate release PRを開き、mainからRun workflowを選び、先頭の`v`を付けない新しい安定バージョンを指定します。作成されたPRの検証結果と変更を確認してからmainへマージします。このワークフローはCargo.tomlとCargo.lockを更新しますが、Releaseは公開しません。リポジトリの設定では、GitHub ActionsによるPR作成を許可する必要があります。
+GitHubのActionsでCreate release PRを開き、mainからRun workflowを選び、先頭の`v`を付けない新しい安定バージョンを指定します。作成されたPRの検証結果と変更を確認してからmainへマージします。このワークフローはCargo.toml、Cargo.lock、READMEの導入コマンドのバージョンを更新しますが、Releaseは公開しません。リポジトリの設定では、GitHub ActionsによるPR作成を許可する必要があります。
 手動でCargo.tomlの製品バージョンを更新し、CargoでCargo.lockを同期して、通常のレビューでmainへ反映する方法もあります。
 プロジェクト自身のLICENSEも選択してmainへ配置します。LICENSEがない、空である、指定バージョンとCargoのバージョンが異なる場合はリリースを開始できません。
 初回の手動リリースは`0.1.0`のような`X.Y.Z`形式の安定バージョンだけを受け付けます。先頭のv、事前公開やビルド識別子は付けません。

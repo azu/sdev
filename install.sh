@@ -89,7 +89,7 @@ main() {
     if [ -z "$version" ]; then
         printf '%s\n' 'sdev: Resolving the latest release...' >&2
         latest=$(curl -q -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 15 --max-time 120 \
-            -o /dev/null -w '%{url_effective}' "$releases/latest") || fail 'Cannot resolve latest release'
+            -o /dev/null -w '%{url_effective}' "$releases/latest") || fail 'Cannot resolve latest release; specify --version X.Y.Z to install that release without the lookup'
         case "$latest" in
             "$releases/tag/v"*) version=${latest#"$releases/tag/v"} ;;
             *) fail 'No public stable release found; specify --version X.Y.Z' ;;

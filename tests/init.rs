@@ -52,6 +52,8 @@ fn init_creates_project_entry_and_routes_to_current_catalogs() {
         "<!-- sdev:begin -->",
         "仕様の作成・変更、設計、実装、検証",
         "表示される一覧から",
+        "使えないと推測せずにコマンドを実行",
+        "エラー出力を利用者に示し",
         "利用先の指示・規約と既存の仕様を優先",
         "docs/products/",
         "<!-- sdev:end -->",

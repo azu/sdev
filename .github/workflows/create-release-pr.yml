@@ -67,6 +67,19 @@ jobs:
           if new <= old:
               raise SystemExit('Release version must be newer than Cargo.toml')
           path.write_text(source[:match.start(1)] + os.environ['VERSION'] + source[match.end(1):])
+
+          # The README installation commands pin a version so that copying
+          # them does not depend on the latest-release lookup.
+          for name in ('README.md', 'README.ja.md'):
+              readme = pathlib.Path(name)
+              text, count = re.subn(
+                  r'(install\.sh \| sh -s -- --version )\d+\.\d+\.\d+',
+                  lambda m: m.group(1) + os.environ['VERSION'],
+                  readme.read_text(),
+              )
+              if count == 0:
+                  raise SystemExit(f'Missing pinned installation command in {name}')
+              readme.write_text(text)
           PY
           cargo update --workspace --offline
           cargo build --locked --package sdev --bin sdev
@@ -79,9 +92,9 @@ jobs:
         run: |
           branch="release/v$VERSION"
           git switch -c "$branch"
-          git add Cargo.toml Cargo.lock
+          git add Cargo.toml Cargo.lock README.md README.ja.md
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "chore: prepare v$VERSION release"
           git push origin "$branch"
           gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$branch" \
             --title "chore: prepare v$VERSION release" \
-            --body "Update the sdev version and lockfile to $VERSION. After checks and review, merge this PR, then run Release sdev on main with version $VERSION."
+            --body "Update the sdev version, lockfile, and README installation commands to $VERSION. After checks and review, merge this PR, then run Release sdev on main with version $VERSION."
