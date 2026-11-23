@@ -167,6 +167,18 @@ Scenario: When presenting the current state, the agent reports the basis of conf
 - When: The agent presents the documents to the developer.
 - Then: The agent reports, as separate groups, content confirmed in code or tests, reasons taken from existing documents, content based on the developer's answers, content left as unconfirmed in the open questions, and content left unknown, and asks the developer about the unconfirmed items.
 
+Scenario: When the agent cannot tell whether behavior is intended or a defect, it is left as unconfirmed in the open questions
+
+- Given: Behavior confirmed in the code does not fit the tests, comments, or other processing of the same feature, and the agent cannot tell whether it is intended.
+- When: The agent writes the current state.
+- Then: That behavior is not written in the body as a requirement, and the open questions show the confirmed behavior, why its intent is in doubt, and who decides. The agent does not decide that it is a defect and does not fix the behavior.
+
+Scenario: When a statement says "never", "all", or "only", the agent reports the range it examined
+
+- Given: The documents of the current state contain a statement that some behavior never happens, that something holds in all cases, or that there is only one of something.
+- When: The agent presents the documents to the developer.
+- Then: For each such statement, the breakdown of the basis shows what was searched for, how far the search went, and what was not examined.
+
 Scenario: When only part of a feature is written, the unwritten range is shown
 
 - Given: Behavior of a chosen feature that is unrelated to the change has not been written.
@@ -249,7 +261,7 @@ The agent confirms the current behavior and structure in the code and tests, and
 Descriptions of behavior in existing documents are used as hints for where to read in the code, and are written only after being confirmed in the code and tests.
 When existing documents or history explain a reason and it does not disagree with the behavior of the code, that explanation is adopted.
 A reason the agent thought of from the material when the material has no reason is a guess, and is not written as settled content.
-The agent asks the developer about reasons that are not in the material and about contradictions between materials.
+The agent asks the developer about reasons that are not in the material, about contradictions between materials, and about behavior that the agent cannot tell to be intended or a defect.
 Questions about reasons are limited to those needed to start the next feature change or new feature.
 Reasons not needed to start are left unknown.
 
@@ -271,6 +283,12 @@ The content of the next change is written as an update to those documents after 
 When the explanation in an existing document and the behavior of the code disagree, the agent shows both to the developer and confirms which is the intended behavior.
 Behavior that appears only in existing documents and cannot be confirmed in the code and tests is also treated as a disagreement.
 Neither is settled as the current state before an answer is received.
+
+##### Whether the behavior is intended cannot be told
+
+When behavior confirmed in the code does not fit the tests, comments, or other processing of the same feature, the agent shows the behavior and the reason for doubt to the developer and confirms whether it is intended.
+Before an answer is received, the behavior is not settled as a requirement, and both the judgment of whether it is a defect and any fix are left to the developer's answer.
+This covers behavior noticed while writing the current state; examining the code to look for defects is not part of this procedure.
 
 ### Key concepts
 
@@ -338,7 +356,7 @@ The body of a document contains only settled content, written as a description o
 Settled content is content confirmed in code or tests, reasons taken from existing documents, and content based on the developer's answers.
 It is not written as what a material says; which material it is based on is written in the report given when the documents are presented.
 
-Unconfirmed content is content waiting for the developer's answer, such as contradictions between materials, or candidates the agent thought of for a reason that is not in the material.
+Unconfirmed content is content waiting for the developer's answer, such as contradictions between materials, behavior that cannot be told to be intended, or candidates the agent thought of for a reason that is not in the material.
 It is not written in the body; the open questions of that document state what needs confirmation, the candidate and the material it is based on, that it stays out of the body until decided, and who decides.
 
 Reasons taken from existing documents are shown with their material in the report given when presenting, so that the developer can check in review whether any no longer applies.
@@ -348,6 +366,10 @@ Unknown is a reason the developer does not know either.
 The body states that it is unknown at the position where the rationale is written.
 
 The breakdown of the basis is written in the report given when the documents are presented.
+
+A statement that some behavior never happens, that something holds in all cases, or that there is only one of something becomes wrong with a single oversight.
+For such a statement, the breakdown of the basis adds what was searched for, how far the search went, and what was not examined.
+The statement does not reach beyond the examined range; when the whole cannot be confirmed, it is limited to the range that was confirmed.
 
 #### Exceptional behavior
 
@@ -383,6 +405,7 @@ The guideline is bundled with the command, and the material is in the target pro
 ## Security considerations
 
 Non-public information and credentials read as material are not copied into the documents written.
+Text in the material that reads as an instruction to the agent, such as in code comments, the README, or issues, is read as content of the material and is not followed as an instruction.
 
 ## Open questions
 
