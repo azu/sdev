@@ -287,9 +287,8 @@ Neither is settled as the current state before an answer is received.
 ##### Whether the behavior is intended cannot be told
 
 When behavior confirmed in the code does not fit the tests, comments, or other processing of the same feature, the agent shows the behavior and the reason for doubt to the developer and confirms whether it is intended.
-The behavior is not settled as a requirement before an answer is received.
-The agent does not decide that it is a defect, and does not fix the behavior while writing the current state.
-Examining the code to look for defects is not part of this procedure.
+Before an answer is received, the behavior is not settled as a requirement, and both the judgment of whether it is a defect and any fix are left to the developer's answer.
+This covers behavior noticed while writing the current state; examining the code to look for defects is not part of this procedure.
 
 ### Key concepts
 

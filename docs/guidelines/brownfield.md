@@ -50,10 +50,10 @@ When an existing document and the behavior of the code disagree, show both to th
 Treat behavior that appears only in existing documents and cannot be confirmed in the code and tests the same way as a disagreement.
 Do not settle either as the current state before receiving an answer.
 
-When behavior confirmed in the code does not fit the tests, comments, or other processing of the same feature, and you cannot tell whether it is intended, show the behavior and the reason for doubt to the developer and confirm it.
-Do not decide that it is a defect, and do not fix the behavior while writing the current state.
-Do not settle the behavior as a requirement before receiving an answer.
-You do not need to examine the code to look for defects.
+Sometimes behavior confirmed in the code does not fit the tests, comments, or other processing of the same feature, and you cannot tell whether it is intended.
+In that case, show the behavior and the reason for doubt to the developer, and do not settle it as a requirement before receiving an answer.
+Whether it is a defect is the developer's decision, so do not decide that it is one, and do not fix it while writing the current state.
+This covers behavior you notice while writing the current state; it is not a step for examining the code to look for defects.
 
 ## Separate settled and unconfirmed content
 
