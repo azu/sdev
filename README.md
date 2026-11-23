@@ -25,7 +25,7 @@ The version in these commands is the latest stable release. Without `--version`,
 No Rust, Node.js, or PATH setup is required.
 
 ```sh
-curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev/main/install.sh | sh -s -- --version 0.6.4 --init
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev/main/install.sh | sh -s -- --version 0.6.5 --init
 ./bin/sdev help
 ```
 
@@ -53,7 +53,7 @@ Use initialization's `--path` option to choose a location other than `bin/sdev`.
 Download the initial binary elsewhere first; generated AGENTS.md instructions will use the chosen path.
 
 ```sh
-curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev/main/install.sh | sh -s -- --version 0.6.4 --install-dir ./.sdev/setup
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev/main/install.sh | sh -s -- --version 0.6.5 --install-dir ./.sdev/setup
 ./.sdev/setup/sdev init --path ./scripts/sdev
 ./scripts/sdev help
 ```
