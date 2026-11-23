@@ -25,7 +25,7 @@ sdevは、人とAIが仕様をもとに開発を進めるためのフレーム�
 RustやNode.jsの準備、PATHの変更は必要ありません。
 
 ```sh
-curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev/main/install.sh | sh -s -- --version 0.6.4 --init
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev/main/install.sh | sh -s -- --version 0.6.5 --init
 ./bin/sdev help
 ```
 
@@ -55,7 +55,7 @@ GitHubによる配布元の証明も確認したい場合は、インストー�
 本体を別の場所へ取得してから初期設定すると、AGENTS.mdも指定先を参照します。
 
 ```sh
-curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev/main/install.sh | sh -s -- --version 0.6.4 --install-dir ./.sdev/setup
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/azu/sdev/main/install.sh | sh -s -- --version 0.6.5 --install-dir ./.sdev/setup
 ./.sdev/setup/sdev init --path ./scripts/sdev
 ./scripts/sdev help
 ```
