@@ -51,9 +51,19 @@ Treat behavior that appears only in existing documents and cannot be confirmed i
 Do not settle either as the current state before receiving an answer.
 
 Sometimes behavior confirmed in the code does not fit the tests, comments, or other processing of the same feature, and you cannot tell whether it is intended.
-In that case, show the behavior and the reason for doubt to the developer, and do not settle it as a requirement before receiving an answer.
-Whether it is a defect is the developer's decision, so do not decide that it is one, and do not fix it while writing the current state.
-This covers behavior you notice while writing the current state; it is not a step for examining the code to look for defects.
+Whether it is a defect is the developer's decision, so handle it as follows.
+
+Do:
+
+- Show the behavior, and why its intent is in doubt, to the developer and confirm it
+- While waiting for an answer, leave it as unconfirmed, following [Separate settled and unconfirmed content](#separate-settled-and-unconfirmed-content)
+
+Do not:
+
+- Settle the behavior as a requirement before receiving an answer
+- Decide that it is a defect
+- Fix the behavior while writing the current state
+- Examine the code to look for defects
 
 ## Separate settled and unconfirmed content
 
