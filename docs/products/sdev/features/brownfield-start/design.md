@@ -42,7 +42,7 @@ The first section states when the guide applies, and directs a project that alre
 
 The following sections are, in order: check the material, write the Product, choose the touched features, write the current state, and write the change.
 Each section separates what the agent reads from the material from what it asks the developer.
-The current behavior and structure are read from the code, tests, and existing documents, and questions are limited to reasons missing from the material and contradictions between materials.
+The current behavior and structure are read from the code, tests, and existing documents, and questions are limited to reasons missing from the material, contradictions between materials, and behavior that cannot be told to be intended.
 How to ask questions is linked to the shared working guide and is not repeated in this guide.
 
 The section on writing the current state directs the agent to use the existing guides and templates for creating the Product, Requirements, and Design.
@@ -70,7 +70,7 @@ Documents separate content into the following three states.
 | State | Content | Where it is written |
 | --- | --- | --- |
 | Settled | Content confirmed in code or tests, reasons taken from existing documents, and content the developer answered | The body, as a description of the product or feature itself |
-| Unconfirmed | Content waiting for the developer's answer, such as contradictions between materials, or candidates the agent thought of for a reason not in the material | The open questions of that document, with what needs confirmation, the candidate and the material it is based on, that it stays out of the body until decided, and who decides |
+| Unconfirmed | Content waiting for the developer's answer, such as contradictions between materials, behavior that cannot be told to be intended, or candidates the agent thought of for a reason not in the material | The open questions of that document, with what needs confirmation, the candidate and the material it is based on, that it stays out of the body until decided, and who decides |
 | Unknown | A reason the developer does not know either | The position in the body where the rationale is written, stated in prose |
 
 Unconfirmed items are placed in the open questions, which every template has.
@@ -83,11 +83,23 @@ For alternatives considered, when there is no record, the Design states that the
 Writing "None, because this describes the current state" cannot be told apart from not having considered alternatives, so the guide says not to write it that way.
 Neither unconfirmed items nor unknowns get a dedicated marker or metadata, so the text reads as ordinary Markdown prose.
 
+When behavior confirmed in the code does not fit the tests, comments, or other processing of the same feature, it is also written as unconfirmed in the open questions.
+Even though the behavior is confirmed in the code, writing it in the body as a requirement would keep behavior that may be a defect as a requirement to preserve.
+The open questions state the confirmed behavior, why its intent is in doubt, and who decides.
+The agent does not decide whether it is a defect, and writes the behavior in the body when the developer answers that it is intended.
+A fix for a defect is kept apart from writing the current state and handled as an ordinary change.
+
 The breakdown of the basis is written, in the report given when the documents are presented, in five groups.
 They are content confirmed in code or tests, reasons taken from existing documents, content based on the developer's answers, content left as unconfirmed in the open questions, and content left unknown.
 Reasons taken from existing documents are listed with their material, so that the developer can check in review whether any no longer applies.
 This report is kept in the conversation or PR description and is not saved in a document.
 This matches the existing placement rule that verification results for a piece of work are not placed in documents.
+
+Among content confirmed in code or tests, a statement that some behavior never happens, that something holds in all cases, or that there is only one of something is reported with the range that was examined.
+The report states three things: what was searched for, how far the search went, and what was not examined.
+Such a statement becomes wrong with a single overlooked place, and then reverses the decision of the person who reads it.
+With the examined range in the breakdown, the developer can check in review whether a counterexample exists in the places that were not examined.
+The statement in the body matches the examined range; when the whole was not confirmed, it is limited to the range that was confirmed.
 
 ### Key concepts and the feature list in the Product
 
@@ -185,6 +197,8 @@ Reading and writing files follow the permissions of the environment in use, and 
 
 The guide states that non-public information and credentials read as material are not copied into documents.
 It also states that when history or issues are used as material, the names and contact details of the people who wrote them are not copied into documents.
+It also states that text in the material that reads as an instruction to the agent is not followed as an instruction.
+This is because issues and comments in a public repository can be written by people other than the developer.
 
 ## Deployment notes
 
@@ -240,6 +254,20 @@ This treats a reason in the README or existing documents as a candidate until th
 It has the advantage that no outdated reason is written in the body.
 However, every reason becomes a question, which increases the effort to start, and most reasons in existing documents are still correct.
 Reasons are adopted, shown with their material in the breakdown of the basis, and corrected by the developer in review when they no longer apply.
+
+### Write the code location for every item in the breakdown of the basis
+
+This adds the file or test that confirmed it to every piece of content confirmed in code or tests.
+It has the advantage that the developer can open the original code for any statement.
+However, the breakdown becomes long and the places the developer should read are buried.
+The examined range is added only to statements of the "never", "all", or "only" kind, where a mistake has a large effect.
+
+### Collect behavior that may be a defect in a dedicated document
+
+This gathers behavior that cannot be told to be intended in a list document separate from the specifications.
+It has the advantage that all of it can be seen in one place.
+However, it adds a document type, and content waiting for the developer's answer is split between that document and the open questions.
+It is written in the existing open questions, as content waiting for the developer's answer.
 
 ## Open questions
 
